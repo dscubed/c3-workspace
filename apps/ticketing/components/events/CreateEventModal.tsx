@@ -1,0 +1,741 @@
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ResponsiveModal } from "@/components/ui/responsive-modal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { FaInstagram } from "react-icons/fa";
+import {
+  PenLine,
+  ArrowLeft,
+  Loader2,
+  ImageIcon,
+  Trash2,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { cn } from "@c3/utils";
+import { toast } from "sonner";
+import { useAuthStore } from "@c3/auth";
+import Image from "next/image";
+import { formatDateTimestamp } from "../shared/utils";
+
+/* ── Types ── */
+
+interface InstagramPost {
+  id: string;
+  posted_by: string;
+  caption: string;
+  timestamp: number | null;
+  location: string | null;
+  images: string[];
+  collaborators: string[];
+  fetched_at: string;
+}
+
+interface SlugProfile {
+  id: string;
+  first_name: string;
+  avatar_url: string | null;
+  slug: string;
+}
+
+/* ── Post row sub-component ── */
+
+function PostRow({
+  post,
+  isSelected,
+  onSelect,
+  slugToProfile,
+  alreadyImported,
+  isOwner,
+  onDelete,
+}: {
+  post: InstagramPost;
+  isSelected: boolean;
+  onSelect: (post: InstagramPost) => void;
+  slugToProfile: Record<string, SlugProfile>;
+  alreadyImported: boolean;
+  isOwner: boolean;
+  onDelete: (postId: string) => void;
+}) {
+  const postLimit = 4;
+
+  const collabProfiles = useMemo(() => {
+    const profiles: SlugProfile[] = [];
+    for (const slug of post.collaborators ?? []) {
+      if (slug === post.posted_by) continue;
+      const p = slugToProfile[slug];
+      if (p) profiles.push(p);
+    }
+    return profiles;
+  }, [post.collaborators, post.posted_by, slugToProfile]);
+
+  const { length } = collabProfiles;
+  let collaboratorsLabel = "";
+  if (length > 2) {
+    const names = collabProfiles.slice(0, 2).map((p) => `@${p.slug}`).join(", ");
+    const remaining = length - 2;
+    collaboratorsLabel = `with ${names} + ${remaining} other${remaining > 1 ? "s" : ""}`;
+  } else if (length > 0) {
+    collaboratorsLabel = `with ${collabProfiles.map((p) => `@${p.slug}`).join(", ")}`;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => !alreadyImported && onSelect(post)}
+      disabled={alreadyImported}
+      className={cn(
+        "relative flex w-full flex-col gap-4 rounded-lg border-2 px-6 py-4 text-left transition-all",
+        alreadyImported
+          ? "border-transparent opacity-50 cursor-not-allowed"
+          : isSelected
+            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+            : "border-transparent hover:bg-muted/50",
+      )}
+    >
+      {/* Selection indicator / delete button — top-right corner */}
+      <div className="absolute right-3 top-3 flex flex-col items-center gap-1">
+        {isSelected && (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+        )}
+        {alreadyImported && isOwner && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(post.id);
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10"
+            title="Delete imported event"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Image strip — up to 4 equal squares, +X overlay on last */}
+      {post.images.length > 0 && (
+        <div className={cn("flex shrink-0 gap-1.5", alreadyImported && "opacity-70")}>
+          {post.images.slice(0, postLimit).map((imgUrl, i) => (
+            <div
+              key={i}
+              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted"
+            >
+              <Image
+                src={imgUrl}
+                alt={`image ${i + 1}`}
+                fill
+                className="object-cover"
+                sizes="80px"
+                unoptimized
+              />
+              {i === postLimit - 1 && post.images.length > postLimit && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 text-sm font-semibold text-white">
+                  +{post.images.length - postLimit}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        {/* @posted_by + collaborators label */}
+        <div className="flex items-center gap-1">
+          {post.posted_by && (
+            <p className="text-xs font-medium text-muted-foreground">
+              @{post.posted_by}
+            </p>
+          )}
+          {collaboratorsLabel && (
+            <p className="text-xs font-medium text-muted-foreground">
+              {collaboratorsLabel}
+            </p>
+          )}
+        </div>
+
+        {/* Caption */}
+        <p className="line-clamp-3 text-sm leading-snug">
+          {post.caption || (
+            <span className="italic text-muted-foreground">No caption</span>
+          )}
+        </p>
+
+        {/* Already imported badge */}
+        {alreadyImported && (
+          <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            Already imported
+          </span>
+        )}
+
+        {/* Footer: id · timestamp · location */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <span className="font-mono opacity-50">{post.id}</span>
+          {post.timestamp && (
+            <span>{formatDateTimestamp(post.timestamp)}</span>
+          )}
+          {post.location && (
+            <span className="truncate">{post.location}</span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ── Post list ── */
+
+function PostList({
+  posts,
+  loading,
+  selectedId,
+  onSelect,
+  slugToProfile,
+  importedIds,
+  currentUserId,
+  onDelete,
+}: {
+  posts: InstagramPost[];
+  loading: boolean;
+  selectedId: string | null;
+  onSelect: (post: InstagramPost) => void;
+  slugToProfile: Record<string, SlugProfile>;
+  importedIds: Set<string>;
+  currentUserId: string | null;
+  onDelete: (postId: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin mb-2" />
+        <p className="text-sm">Loading posts…</p>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <ImageIcon className="h-8 w-8 mb-2" />
+        <p className="text-sm font-medium">No Instagram posts found</p>
+        <p className="text-xs mt-1">
+          Make sure your club&apos;s Instagram has been linked
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {posts.map((post) => (
+        <PostRow
+          key={post.id}
+          post={post}
+          isSelected={selectedId === post.id}
+          onSelect={onSelect}
+          slugToProfile={slugToProfile}
+          alreadyImported={importedIds.has(post.id)}
+          isOwner={
+            currentUserId != null &&
+            slugToProfile[post.posted_by]?.id === currentUserId
+          }
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ── Main component ── */
+
+interface CreateEventModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** When provided, the event is created under this club rather than the current user. */
+  clubId?: string;
+}
+
+export function CreateEventModal({
+  open,
+  onOpenChange,
+  clubId,
+}: CreateEventModalProps) {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const [view, setView] = useState<"pick-method" | "instagram">("pick-method");
+  const [posts, setPosts] = useState<InstagramPost[]>([]);
+  const [slugToProfile, setSlugToProfile] = useState<
+    Record<string, SlugProfile>
+  >({});
+  const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [easyImporting, setEasyImporting] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<InstagramPost | null>(null);
+  const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+
+  /* Delete confirmation state */
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    postId: string;
+  }>({ open: false, postId: "" });
+  const [deleting, setDeleting] = useState(false);
+
+  /* Collaborator alert state */
+  const [collabAlert, setCollabAlert] = useState<{
+    open: boolean;
+    profiles: SlugProfile[];
+    eventId: string;
+  }>({ open: false, profiles: [], eventId: "" });
+
+  /* Reset state when dialog closes */
+  useEffect(() => {
+    if (!open) {
+      setView("pick-method");
+      setPosts([]);
+      setSlugToProfile({});
+      setSelectedPost(null);
+      setImporting(false);
+      setEasyImporting(false);
+      setImportedIds(new Set());
+    }
+  }, [open]);
+
+  /* Fetch posts when entering instagram view */
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const query = clubId ? `?club_id=${encodeURIComponent(clubId)}` : "";
+      const res = await fetch(`/api/media/instagram/posts${query}`);
+      const json = await res.json();
+      if (res.ok) {
+        const fetchedPosts: InstagramPost[] = json.data ?? [];
+        setPosts(fetchedPosts);
+        setSlugToProfile(json.slugToProfile ?? {});
+
+        // Check which posts are already imported (event exists with that ID)
+        if (fetchedPosts.length > 0) {
+          try {
+            const ids = fetchedPosts.map((p) => p.id);
+            const checkRes = await fetch(
+              `/api/events/check-ids?${ids.map((id) => `ids=${encodeURIComponent(id)}`).join("&")}`,
+            );
+            if (checkRes.ok) {
+              const checkJson = await checkRes.json();
+              setImportedIds(new Set(checkJson.existingIds ?? []));
+            }
+          } catch {
+            // Non-critical — just won't show "already imported" badges
+          }
+        }
+      } else {
+        console.error("Failed to fetch Instagram posts:", json.error);
+      }
+    } catch (err) {
+      console.error("Failed to fetch Instagram posts:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [clubId]);
+
+  const handleInstagramClick = () => {
+    setView("instagram");
+    fetchPosts();
+  };
+
+  /* Import the selected post */
+  const handleImport = async () => {
+    if (!selectedPost || importing) return;
+    setImporting(true);
+
+    try {
+      const res = await fetch("/api/media/instagram/posts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: selectedPost.id,
+          ...(clubId ? { clubId } : {}),
+        }),
+      });
+
+      const json = await res.json();
+
+      // Handle already-imported (409 conflict)
+      if (res.status === 409 && json.eventId) {
+        toast.info("This post has already been imported.");
+        onOpenChange(false);
+        router.push(`/events/${json.eventId}/edit`);
+        return;
+      }
+
+      if (!res.ok) throw new Error(json.error ?? "Import failed");
+
+      const { eventId, collaboratorProfiles } = json;
+
+      onOpenChange(false);
+
+      // If collaborators were detected, show alert then navigate
+      if (collaboratorProfiles && collaboratorProfiles.length > 0) {
+        setCollabAlert({
+          open: true,
+          profiles: collaboratorProfiles,
+          eventId,
+        });
+      } else {
+        router.push(`/events/${eventId}/edit`);
+      }
+    } catch (err) {
+      console.error("Import failed:", err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  /* Easy import: LLM-assisted extraction + import */
+  const handleEasyImport = async () => {
+    if (!selectedPost || easyImporting) return;
+    setEasyImporting(true);
+
+    try {
+      const res = await fetch("/api/media/instagram/posts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: selectedPost.id,
+          easyImport: true,
+          clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(clubId ? { clubId } : {}),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.status === 409 && json.eventId) {
+        toast.info("This post has already been imported.");
+        onOpenChange(false);
+        router.push(`/events/${json.eventId}/edit`);
+        return;
+      }
+
+      if (!res.ok) throw new Error(json.error ?? "Easy import failed");
+
+      const { eventId, collaboratorProfiles } = json;
+
+      onOpenChange(false);
+
+      if (collaboratorProfiles && collaboratorProfiles.length > 0) {
+        setCollabAlert({
+          open: true,
+          profiles: collaboratorProfiles,
+          eventId,
+        });
+      } else {
+        toast.success("Easy import applied. Review the details.");
+        router.push(`/events/${eventId}/edit`);
+      }
+    } catch (err) {
+      console.error("Easy import failed:", err);
+      toast.error("Easy import failed");
+    } finally {
+      setEasyImporting(false);
+    }
+  };
+
+  /* Delete an already-imported event */
+  const handleDeleteConfirm = async () => {
+    const { postId } = deleteConfirm;
+    if (!postId || deleting) return;
+    setDeleting(true);
+
+    try {
+      const res = await fetch(`/api/events/${postId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json();
+        toast.error(json.error ?? "Failed to delete event");
+        return;
+      }
+
+      toast.success("Imported event deleted");
+      setImportedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete event");
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm({ open: false, postId: "" });
+    }
+  };
+
+  const handleCollabAlertClose = () => {
+    const eid = collabAlert.eventId;
+    setCollabAlert({ open: false, profiles: [], eventId: "" });
+    router.push(`/events/${eid}/edit`);
+  };
+
+  /* Resolve collaborator profiles for the selected post */
+  const selectedCollabs = useMemo(() => {
+    if (!selectedPost) return [];
+    const profiles: SlugProfile[] = [];
+    for (const slug of selectedPost.collaborators ?? []) {
+      if (slug === selectedPost.posted_by) continue;
+      const p = slugToProfile[slug];
+      if (p) profiles.push(p);
+    }
+    return profiles;
+  }, [selectedPost, slugToProfile]);
+
+  return (
+    <>
+      {/* ── Method picker (always a centered Dialog) ── */}
+      {view === "pick-method" && (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Create Event</DialogTitle>
+              <DialogDescription>
+                How would you like to create your event?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="h-auto justify-start gap-4 px-4 py-4"
+                onClick={() => {
+                  onOpenChange(false);
+                  const url = clubId
+                    ? `/events/create?club_id=${clubId}`
+                    : "/events/create";
+                  router.push(url);
+                }}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <PenLine className="h-5 w-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Create from scratch</p>
+                  <p className="text-xs text-muted-foreground">
+                    Build your event page from the ground up
+                  </p>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-auto justify-start gap-4 px-4 py-4"
+                onClick={handleInstagramClick}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-purple-500 to-pink-500 text-white">
+                  <FaInstagram className="h-5 w-5" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Import from Instagram</p>
+                  <p className="text-xs text-muted-foreground">
+                    Create from an existing Instagram post
+                  </p>
+                </div>
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* ── Instagram post picker (ResponsiveModal — sheet on mobile) ── */}
+      {view === "instagram" && (
+        <ResponsiveModal
+          open={open}
+          onOpenChange={onOpenChange}
+          className="max-w-2xl"
+        >
+          {/* Custom header with back button */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => {
+                setView("pick-method");
+                setSelectedPost(null);
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h2 className="text-lg font-semibold leading-none">
+                Select a Post
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Choose an Instagram post to import as an event
+              </p>
+            </div>
+          </div>
+
+          <div className="max-h-[55vh] overflow-y-auto -mx-2 px-2">
+            <PostList
+              posts={posts}
+              loading={loading}
+              selectedId={selectedPost?.id ?? null}
+              onSelect={setSelectedPost}
+              slugToProfile={slugToProfile}
+              importedIds={importedIds}
+              currentUserId={user?.id ?? null}
+              onDelete={(postId) => setDeleteConfirm({ open: true, postId })}
+            />
+          </div>
+
+          {/* Footer bar when a post is selected */}
+          {selectedPost && (
+            <div className="border-t pt-3 mt-3 flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium line-clamp-1">
+                  {selectedPost.images.length} image
+                  {selectedPost.images.length !== 1 ? "s" : ""}
+                  {selectedPost.location && ` · ${selectedPost.location}`}
+                  {selectedCollabs.length > 0 &&
+                    ` · ${selectedCollabs.length} collaborator${selectedCollabs.length !== 1 ? "s" : ""}`}
+                </p>
+              </div>
+              <div className="relative shrink-0 group pt-11 -mt-11">
+                <Button
+                  onClick={handleEasyImport}
+                  disabled={easyImporting || importing}
+                  size="sm"
+                  variant="secondary"
+                  className="absolute top-0 right-0 z-10 opacity-0 translate-y-1 pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:pointer-events-auto"
+                >
+                  {easyImporting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Easy Import
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={importing || easyImporting}
+                  className="shrink-0"
+                >
+                  {importing && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Import Post
+                </Button>
+              </div>
+            </div>
+          )}
+        </ResponsiveModal>
+      )}
+
+      {/* ── Collaborator detection alert ── */}
+      <AlertDialog
+        open={collabAlert.open}
+        onOpenChange={(o) => {
+          if (!o) handleCollabAlertClose();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Collaborators Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              We detected the following collaborators on this Instagram post and
+              have added them as collaborators for your event:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex flex-col gap-2 py-2">
+            {collabAlert.profiles.map((p) => (
+              <div key={p.id} className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  {p.avatar_url && (
+                    <AvatarImage src={p.avatar_url} alt={p.first_name} />
+                  )}
+                  <AvatarFallback className="text-xs">
+                    {p.first_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{p.first_name}</p>
+                  <p className="text-xs text-muted-foreground">@{p.slug}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleCollabAlertClose}>
+              Continue to Event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete confirmation alert ── */}
+      <AlertDialog
+        open={deleteConfirm.open}
+        onOpenChange={(o) => {
+          if (!o) setDeleteConfirm({ open: false, postId: "" });
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Imported Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this imported event? This will
+              permanently remove the event and all its data. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setDeleteConfirm({ open: false, postId: "" })}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
+              Cancel
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
