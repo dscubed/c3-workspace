@@ -14,27 +14,28 @@ type FilterType = "all" | "upcoming" | "past" | "draft" | "live";
 export default function EventsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterType>("all");
-  const events = (mockEvents as any[]) as EventCardDetails[];
+  const events = mockEvents as any[] as EventCardDetails[];
 
   const filtered =
     filter === "all" ? events : events.filter((e) => e.status === filter);
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Events</h1>
-        <Button onClick={() => {/* TODO */}}>
+        <Button
+          onClick={() => {
+            /* TODO */
+          }}
+        >
           <Plus className="size-4" />
           Publish New Event
         </Button>
       </div>
 
       {/* Filter tabs */}
-      <Tabs
-        value={filter}
-        onValueChange={(v) => setFilter(v as FilterType)}
-      >
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="live">Live</TabsTrigger>
@@ -60,12 +61,9 @@ export default function EventsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {filtered.map((event) => (
-            <EventDisplayCard
-              key={event.id}
-              event={event}
-            />
+            <EventDisplayCard key={event.id} event={event} />
           ))}
         </div>
       )}

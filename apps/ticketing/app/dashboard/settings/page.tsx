@@ -4,7 +4,7 @@ import { Settings } from "lucide-react";
 
 export default function SettingsPage() {
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">

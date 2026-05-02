@@ -23,7 +23,10 @@ function OrgAvatar({ p, size }: { p: AvatarProfile; size: number }) {
       className="flex shrink-0 items-center justify-center rounded-full bg-purple-100 ring-2 ring-white"
       style={{ width: size, height: size }}
     >
-      <span className="font-semibold text-purple-600" style={{ fontSize: size * 0.4 }}>
+      <span
+        className="font-semibold text-purple-600"
+        style={{ fontSize: size * 0.4 }}
+      >
         {initials}
       </span>
     </div>
@@ -53,21 +56,27 @@ function CollaboratorStack({ organizers }: { organizers: AvatarProfile[] }) {
         {extra > 0 && (
           <div
             className="flex shrink-0 items-center justify-center rounded-full bg-gray-200 ring-2 ring-white"
-            style={{ width: size, height: size, marginLeft: -(size * 0.3), fontSize: size * 0.35 }}
+            style={{
+              width: size,
+              height: size,
+              marginLeft: -(size * 0.3),
+              fontSize: size * 0.35,
+            }}
           >
             <span className="font-semibold text-gray-500">+{extra}</span>
           </div>
         )}
       </div>
-      <span className="text-[11px] text-muted-foreground truncate">{label}</span>
+      <span className="text-[11px] text-muted-foreground truncate">
+        {label}
+      </span>
     </div>
   );
 }
 
-
 function EventThumbnail({ event }: { event: EventCardDetails }) {
   return (
-    <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center shrink-0">
+    <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-purple-100 to-purple-200 flex items-center justify-center shrink-0">
       {event.thumbnail ? (
         <Image
           src={event.thumbnail}
@@ -119,7 +128,7 @@ export function EventDisplayCard({
     <div className="relative flex gap-4 group">
       {/* Square thumbnail */}
       <div
-        className="w-[110px] shrink-0 cursor-pointer"
+        className="w-27.5 shrink-0 cursor-pointer"
         onClick={() => router.push(`/dashboard/events/${event.id}`)}
       >
         <EventThumbnail event={event} />
@@ -136,25 +145,23 @@ export function EventDisplayCard({
         >
           {event.name || "Untitled Event"}
         </p>
-        <CollaboratorStack organizers={[event.host, ...(event.collaborators ?? [])]} />
+        <CollaboratorStack
+          organizers={[event.host, ...(event.collaborators ?? [])]}
+        />
         <p className="flex items-center gap-1 text-xs text-muted-foreground truncate">
           {event.is_online ? (
             <Globe className="h-3 w-3 shrink-0" />
           ) : (
             <MapPin className="h-3 w-3 shrink-0" />
           )}
-          {event.is_online ? "Online" : (event.location_name || "TBA")}
+          {event.is_online ? "Online" : event.location_name || "TBA"}
         </p>
 
         {content && <div className="mt-1.5">{content}</div>}
       </div>
 
       {/* 3-dot menu — absolute top-right */}
-      {menu && (
-        <div className="absolute top-0 right-0">
-          {menu}
-        </div>
-      )}
+      {menu && <div className="absolute top-0 right-0">{menu}</div>}
     </div>
   );
 }

@@ -493,10 +493,10 @@ export function EventsListContent({
           )}
         </>
       ) : initialLoading && !hasFetchedOnce.current ? (
-        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex gap-4">
-              <Skeleton className="w-[110px] h-[110px] rounded-xl shrink-0" />
+              <Skeleton className="w-27.5 h-27.5 rounded-xl shrink-0" />
               <div className="flex flex-col justify-center gap-2 flex-1">
                 <Skeleton className="h-3 w-16" />
                 <Skeleton className="h-4 w-full" />
@@ -518,7 +518,7 @@ export function EventsListContent({
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             {events.map((event) => (
               <EventDisplayCard
                 key={event.id}

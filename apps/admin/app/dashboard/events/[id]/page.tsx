@@ -49,7 +49,7 @@ export default function EventDetailPage({
 
   return (
     <>
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         {/* Back button */}
         <button
           onClick={() => router.push("/dashboard/events")}
@@ -68,7 +68,8 @@ export default function EventDetailPage({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {event.start ? new Date(event.start).toLocaleDateString() : "TBA"} &bull; {event.location_name || "TBA"}
+            {event.start ? new Date(event.start).toLocaleDateString() : "TBA"}{" "}
+            &bull; {event.location_name || "TBA"}
           </p>
         </div>
 
@@ -79,7 +80,7 @@ export default function EventDetailPage({
         </p>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Total Registrations</p>
             <p className="text-3xl font-bold mt-1">{event.registrations}</p>
@@ -90,7 +91,9 @@ export default function EventDetailPage({
           </div>
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Revenue</p>
-            <p className="text-3xl font-bold mt-1">${event.revenue.toLocaleString()}</p>
+            <p className="text-3xl font-bold mt-1">
+              ${event.revenue.toLocaleString()}
+            </p>
           </div>
         </div>
 
@@ -98,7 +101,13 @@ export default function EventDetailPage({
         <div className="rounded-lg border bg-white overflow-hidden">
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <h2 className="font-semibold text-sm">Attendees</h2>
-            <Button variant="outline" size="sm" onClick={() => {/* TODO */}}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                /* TODO */
+              }}
+            >
               <Download className="size-4" />
               Export Attendees CSV
             </Button>
@@ -106,8 +115,12 @@ export default function EventDetailPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Check-in Status</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                  Name
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                  Check-in Status
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -136,9 +149,7 @@ export default function EventDetailPage({
 
         {/* Event screen button */}
         <div>
-          <Button onClick={() => setShowScreen(true)}>
-            Event Screen
-          </Button>
+          <Button onClick={() => setShowScreen(true)}>Event Screen</Button>
         </div>
       </div>
 

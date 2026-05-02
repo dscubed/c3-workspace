@@ -3,7 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ArrowDownRight, MapPin, UserCheck, Ticket, ScanLine, Shield, Handshake } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  MapPin,
+  UserCheck,
+  Ticket,
+  ScanLine,
+  Shield,
+  Handshake,
+} from "lucide-react";
 import { useAuthStore } from "@c3/auth";
 import { useClubStore } from "@c3/auth";
 import { mockEvents, mockActivity } from "@/lib/mock-data";
@@ -69,17 +78,47 @@ function relativeTime(dateStr: string): string {
 function activityMeta(type: string, actor: string, detail: string | null) {
   switch (type) {
     case "membership":
-      return { icon: UserCheck, bg: "bg-green-100", color: "text-green-600", label: `${actor} verified their membership` };
+      return {
+        icon: UserCheck,
+        bg: "bg-green-100",
+        color: "text-green-600",
+        label: `${actor} verified their membership`,
+      };
     case "ticket":
-      return { icon: Ticket, bg: "bg-blue-100", color: "text-blue-600", label: `${actor} bought a ticket${detail ? ` to ${detail}` : ""}` };
+      return {
+        icon: Ticket,
+        bg: "bg-blue-100",
+        color: "text-blue-600",
+        label: `${actor} bought a ticket${detail ? ` to ${detail}` : ""}`,
+      };
     case "check_in":
-      return { icon: ScanLine, bg: "bg-purple-100", color: "text-[#854ECB]", label: `${actor} checked into ${detail ?? "an event"}` };
+      return {
+        icon: ScanLine,
+        bg: "bg-purple-100",
+        color: "text-[#854ECB]",
+        label: `${actor} checked into ${detail ?? "an event"}`,
+      };
     case "committee":
-      return { icon: Shield, bg: "bg-amber-100", color: "text-amber-600", label: `${actor} was added as a Committee Member` };
+      return {
+        icon: Shield,
+        bg: "bg-amber-100",
+        color: "text-amber-600",
+        label: `${actor} was added as a Committee Member`,
+      };
     case "collaboration":
-      return { icon: Handshake, bg: "bg-rose-100", color: "text-rose-600", label: `${actor} invited you to collaborate on ${detail ?? "an event"}` };
+      return {
+        icon: Handshake,
+        bg: "bg-rose-100",
+        color: "text-rose-600",
+        label: `${actor} invited you to collaborate on ${detail ?? "an event"}`,
+      };
     default:
-      return { icon: UserCheck, bg: "bg-gray-100", color: "text-gray-500", label: `${actor} performed an action` };
+      return {
+        icon: UserCheck,
+        bg: "bg-gray-100",
+        color: "text-gray-500",
+        label: `${actor} performed an action`,
+      };
   }
 }
 
@@ -179,7 +218,9 @@ export default function OverviewPage() {
     .sort((a, b) => {
       if (a.status === "live") return -1;
       if (b.status === "live") return 1;
-      return new Date(a.start || "").getTime() - new Date(b.start || "").getTime();
+      return (
+        new Date(a.start || "").getTime() - new Date(b.start || "").getTime()
+      );
     })
     .slice(0, 4);
 
@@ -190,8 +231,8 @@ export default function OverviewPage() {
   const chartData = buildChartData(activeMetric.data);
 
   return (
-    <div className="p-8 space-y-6">
-      <p className=" md:text-base lg:text-lg xl:text-xl ">
+    <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl">
+      <p className="text-sm md:text-base lg:text-lg xl:text-xl">
         <span className="font-bold">Hey {firstName}</span>
         <span className="text-muted-foreground">
           {" "}
@@ -201,11 +242,13 @@ export default function OverviewPage() {
       </p>
 
       {/* Upcoming Events + Recent Activity row */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upcoming events */}
         <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-foreground">Upcoming Events</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              Upcoming Events
+            </h2>
             <button
               onClick={() => router.push("/dashboard/events")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -215,7 +258,9 @@ export default function OverviewPage() {
           </div>
 
           {upcomingEvents.length === 0 ? (
-            <p className="px-6 py-8 text-sm text-muted-foreground text-center">No upcoming events.</p>
+            <p className="px-6 py-8 text-sm text-muted-foreground text-center">
+              No upcoming events.
+            </p>
           ) : (
             <ul className="divide-y divide-gray-100">
               {upcomingEvents.map((event) => {
@@ -228,16 +273,31 @@ export default function OverviewPage() {
                     className="flex items-center gap-3 px-6 py-3.5 hover:bg-gray-50/70 transition-colors cursor-pointer"
                     onClick={() => router.push(`/dashboard/events/${event.id}`)}
                   >
-                    <div className={`shrink-0 h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center ${isLive ? "bg-green-100" : "bg-purple-100"}`}>
+                    <div
+                      className={`shrink-0 h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center ${isLive ? "bg-green-100" : "bg-purple-100"}`}
+                    >
                       {event.thumbnail ? (
-                        <Image src={event.thumbnail} alt={event.name || "Event"} width={36} height={36} className="object-cover w-full h-full" unoptimized />
+                        <Image
+                          src={event.thumbnail}
+                          alt={event.name || "Event"}
+                          width={36}
+                          height={36}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
                       ) : (
-                        <span className={`text-sm font-bold ${isLive ? "text-green-600" : "text-purple-500"}`}>{initial}</span>
+                        <span
+                          className={`text-sm font-bold ${isLive ? "text-green-600" : "text-purple-500"}`}
+                        >
+                          {initial}
+                        </span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {event.name}
+                        </p>
                         {isLive && (
                           <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -251,9 +311,16 @@ export default function OverviewPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className={`text-xs font-medium tabular-nums ${isLive ? "text-green-600" : "text-muted-foreground"}`}>{rel}</span>
+                      <span
+                        className={`text-xs font-medium tabular-nums ${isLive ? "text-green-600" : "text-muted-foreground"}`}
+                      >
+                        {rel}
+                      </span>
                       <button
-                        onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/events/${event.id}`); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/dashboard/events/${event.id}`);
+                        }}
                         className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
                           isLive
                             ? "bg-green-100 text-green-700 hover:bg-green-200"
@@ -273,7 +340,9 @@ export default function OverviewPage() {
         {/* Recent activity */}
         <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-foreground">Recent Activity</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              Recent Activity
+            </h2>
             <button
               onClick={() => router.push("/dashboard/notifications")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -283,14 +352,26 @@ export default function OverviewPage() {
           </div>
           <ul className="divide-y divide-gray-100">
             {mockActivity.slice(0, 5).map((item) => {
-              const { icon: Icon, bg, color, label } = activityMeta(item.type, item.actor, item.detail);
+              const {
+                icon: Icon,
+                bg,
+                color,
+                label,
+              } = activityMeta(item.type, item.actor, item.detail);
               return (
-                <li key={item.id} className="flex items-center gap-3 px-6 py-3.5">
-                  <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${bg}`}>
+                <li
+                  key={item.id}
+                  className="flex items-center gap-3 px-6 py-3.5"
+                >
+                  <div
+                    className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${bg}`}
+                  >
                     <Icon className={`h-4 w-4 ${color}`} />
                   </div>
                   <p className="flex-1 text-sm text-foreground">{label}</p>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{item.time}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {item.time}
+                  </span>
                 </li>
               );
             })}
@@ -299,10 +380,12 @@ export default function OverviewPage() {
       </div>
 
       {/* Analytics header */}
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Analytics</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        Analytics
+      </p>
 
       <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex">
+        <div className="grid grid-cols-2 md:grid-cols-4">
           {metrics.map((m, i) => (
             <MetricSection
               key={m.id}
@@ -371,7 +454,6 @@ export default function OverviewPage() {
           </ResponsiveContainer>
         </div>
       </div>
-
     </div>
   );
 }

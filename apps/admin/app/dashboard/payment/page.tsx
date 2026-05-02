@@ -15,7 +15,7 @@ export default function StripePage() {
   const [isConnected, setIsConnected] = useState(false);
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Stripe</h1>
         {/* Dev-only toggle */}
@@ -29,7 +29,7 @@ export default function StripePage() {
 
       {!isConnected ? (
         /* Not connected */
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-100">
           <div className="rounded-lg border bg-white p-10 max-w-md w-full text-center space-y-4">
             <div className="flex items-center justify-center size-14 rounded-full bg-gray-100 mx-auto">
               <CreditCard className="size-7 text-gray-600" />
@@ -40,7 +40,9 @@ export default function StripePage() {
             </p>
             <Button
               className="w-full"
-              onClick={() => {/* TODO: implement Stripe Connect OAuth */}}
+              onClick={() => {
+                /* TODO: implement Stripe Connect OAuth */
+              }}
             >
               Connect Stripe
             </Button>
@@ -80,12 +82,19 @@ export default function StripePage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/5" onClick={() => {/* TODO */}}>
+                <Button
+                  variant="outline"
+                  className="text-destructive border-destructive hover:bg-destructive/5"
+                  onClick={() => {
+                    /* TODO */
+                  }}
+                >
                   Disconnect Stripe
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                You have upcoming paid events — disconnecting Stripe will disable ticket sales
+                You have upcoming paid events — disconnecting Stripe will
+                disable ticket sales
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

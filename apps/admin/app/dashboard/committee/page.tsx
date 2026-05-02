@@ -22,11 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface AdminMember {
   id: string;
@@ -110,7 +106,7 @@ export default function CommitteePage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Committee</h1>
@@ -151,10 +147,7 @@ export default function CommitteePage() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
+              <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button
@@ -173,32 +166,54 @@ export default function CommitteePage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-gray-50">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date Joined</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actions</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Name
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Role
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Status
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Date Joined
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   Loading admins...
                 </td>
               </tr>
             ) : committee.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   No admins found. Invite your first committee member!
                 </td>
               </tr>
             ) : (
               committee.map((member) => {
-                const fullName = [member.profiles.first_name, member.profiles.last_name]
+                const fullName = [
+                  member.profiles.first_name,
+                  member.profiles.last_name,
+                ]
                   .filter(Boolean)
                   .join(" ");
-                const initials = [member.profiles.first_name?.[0], member.profiles.last_name?.[0]]
+                const initials = [
+                  member.profiles.first_name?.[0],
+                  member.profiles.last_name?.[0],
+                ]
                   .filter(Boolean)
                   .join("")
                   .toUpperCase();
@@ -212,7 +227,10 @@ export default function CommitteePage() {
                       <div className="flex items-center gap-3">
                         <Avatar size="sm">
                           {member.profiles.avatar_url && (
-                            <AvatarImage src={member.profiles.avatar_url} alt={fullName} />
+                            <AvatarImage
+                              src={member.profiles.avatar_url}
+                              alt={fullName}
+                            />
                           )}
                           <AvatarFallback>{initials || "?"}</AvatarFallback>
                         </Avatar>
@@ -226,27 +244,31 @@ export default function CommitteePage() {
                             ? "bg-gray-900 text-white border-gray-900"
                             : ""
                         }
-                        variant={member.role === "admin" ? "default" : "outline"}
+                        variant={
+                          member.role === "admin" ? "default" : "outline"
+                        }
                       >
                         {member.role}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <Badge
-                        variant={member.status === "accepted" ? "default" : "outline"}
+                        variant={
+                          member.status === "accepted" ? "default" : "outline"
+                        }
                         className={
                           member.status === "accepted"
                             ? "bg-green-100 text-green-700 border-green-300"
                             : member.status === "pending"
-                            ? "bg-amber-100 text-amber-700 border-amber-300"
-                            : "bg-red-100 text-red-700 border-red-300"
+                              ? "bg-amber-100 text-amber-700 border-amber-300"
+                              : "bg-red-100 text-red-700 border-red-300"
                         }
                       >
                         {member.status === "accepted"
                           ? "Accepted"
                           : member.status === "pending"
-                          ? "Pending"
-                          : "Declined"}
+                            ? "Pending"
+                            : "Declined"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
@@ -256,7 +278,9 @@ export default function CommitteePage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {/* TODO */}}
+                        onClick={() => {
+                          /* TODO */
+                        }}
                         className="text-destructive hover:text-destructive"
                       >
                         Remove

@@ -61,10 +61,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${fredoka.variable} antialiased`}
-      >
+    <html lang="en" className={`${fredoka.variable} antialiased`}>
+      <body>
         <TooltipProvider>
           <AuthProvider>
             <NavbarDisplayProvider>
