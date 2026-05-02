@@ -1,0 +1,135 @@
+import { useAuthStore } from "@/stores/authStore";
+import {
+  OrganisationCategories,
+  organisationCategoriesList,
+  UserCategories,
+  userCategoriesList,
+} from "./ChunkUtils";
+import { useChunkContext } from "./hooks/ChunkProvider";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ChevronDown, Plus } from "lucide-react";
+import { SectionCard, SectionCardHeader } from "../SectionCard";
+import { CardContent } from "@/components/ui/card";
+
+export function AddCategoryButton() {
+  const { profile, loading } = useAuthStore.getState();
+  const { orderedCategoryChunks } = useChunkContext();
+  const [showSelector, setShowSelector] = useState(false);
+
+  let categoriesList: UserCategories[] | OrganisationCategories[] = [];
+  if (profile?.account_type === "user") {
+    categoriesList = userCategoriesList.filter(
+      (category) =>
+        !orderedCategoryChunks.find((cat) => cat.category === category)
+    );
+  } else if (profile?.account_type === "organisation") {
+    categoriesList = organisationCategoriesList.filter(
+      (category) =>
+        category !== "Events" &&
+        !orderedCategoryChunks.find((cat) => cat.category === category)
+    );
+  }
+
+  if (categoriesList.length === 0) return null;
+
+  return (
+    <div className="w-full flex flex-col items-center gap-2">
+      {!profile || loading ? (
+        <Spinner className="h-4 w-4" />
+      ) : !showSelector ? (
+        <Button
+          variant={"ghost"}
+          onClick={() => setShowSelector(true)}
+          className="rounded-full bg-gray-200 px-3 py-2 text-muted-foreground hover:bg-purple-200 hover:text-purple-900 transition-colors flex items-center gap-1.5"
+        >
+          <span>Add section</span>
+          <Plus className="!size-4" />
+        </Button>
+      ) : (
+        <SectionCard variant="white">
+          <SectionCardHeader
+            title={
+              <CategorySelector
+                categoriesList={categoriesList}
+                setShowSelector={setShowSelector}
+              />
+            }
+            showDragHandle
+          />
+
+          <CardContent className="w-full flex flex-col gap-0 !p-4 !pt-0">
+            <p className="text-base text-muted/80 pointer-events-none select-none">
+              Select a category first to start adding chunks
+            </p>
+            <div className="w-full flex flex-row justify-end gap-2">
+              <Button
+                variant="ghost"
+                className="rounded-full bg-gray-200 px-4 py-1.5 text-muted hover:bg-gray-300 hover:text-card-foreground"
+                onClick={() => setShowSelector(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
+const CategorySelector = ({
+  categoriesList,
+  setShowSelector,
+}: {
+  categoriesList: UserCategories[] | OrganisationCategories[];
+  setShowSelector: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
+  const { addCategory } = useChunkContext();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        asChild
+        className="rounded-md px-2 py-1 cursor-pointer transition-all focus-visible:ring-0 focus-visible::outline-none"
+      >
+        <Button variant="ghost" className="!p-0 !bg-transparent h-fit inline-flex items-center gap-1.5">
+          <span className="text-base font-medium !text-card-foreground">
+            Select Category
+          </span>
+          <ChevronDown className="size-3.5 shrink-0 text-muted" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        side="top"
+        align="end"
+        sideOffset={12}
+        className="max-h-48 overflow-scroll scrollbar-hide"
+      >
+        {categoriesList.length === 0 ? (
+          <DropdownMenuItem disabled>No categories left</DropdownMenuItem>
+        ) : (
+          categoriesList.map((category) => (
+            <DropdownMenuItem
+              className="text-base"
+              key={category}
+              onClick={() => {
+                addCategory(category);
+                setShowSelector(false);
+              }}
+            >
+              {category}
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};

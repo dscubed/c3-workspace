@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Add blur effect to shadcn dialog overlay */
+[data-slot="dialog-overlay"] {
+  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-slot="dialog-content"] {
+  background: rgba(255, 255, 255);
+  /* Use opacity-only animation - tailwindcss-animate's enter/exit keyframes
+     override transform and break the dialog's translate(-50%, -50%) centering,
+     causing it to jump to bottom-right. This preserves the centering transform. */
+  animation: none;
+}
+[data-slot="dialog-content"][data-state="open"] {
+  animation: dialog-fade-in 200ms ease-out;
+}
+[data-slot="dialog-content"][data-state="closed"] {
+  animation: dialog-fade-out 200ms ease-in;
+}
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+[data-sonner-toast] {
+  background: rgb(var(--background)) !important;
+  /* or any solid color you prefer */
+  color: rgb(var(--foreground)) !important;
+}
+
+@layer base {
+  :root {
+    --background: 249 236 255;
+    --foreground: 133 78 203;
+    --card: 249 236 255;
+    --card-foreground: 0 0 0;
+    --popover: 255 255 255;
+    --popover-foreground: 0 0 0;
+    --primary: 249 236 255;
+    --primary-foreground: 133 78 203;
+    --secondary: 241 241 241;
+    --secondary-foreground: 0 0 0;
+    --muted: 113 113 123;
+    --muted-foreground: 102 102 102;
+    --accent: 249 236 255;
+    --accent-foreground: 133 78 203;
+    --destructive: 130 29 29;
+    --destructive-foreground: 250 250 250;
+    --border: 229 231 235;
+    --input: 229 231 235;
+    --ring: 212 212 212;
+    --chart-1: 51 92 204;
+    --chart-2: 51 183 153;
+    --chart-3: 255 183 77;
+    --chart-4: 170 77 204;
+    --chart-5: 232 51 102;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 249 236 255;
+    --foreground: 133 78 203;
+    --card: 249 236 255;
+    --card-foreground: 133 78 203;
+    --popover: 255 255 255;
+    --popover-foreground: 0 0 0;
+    --primary: 249 236 255;
+    --primary-foreground: 133 78 203;
+    --secondary: 241 241 241;
+    --secondary-foreground: 0 0 0;
+    --muted: 170 170 170;
+    --muted-foreground: 102 102 102;
+    --accent: 249 236 255;
+    --accent-foreground: 133 78 203;
+    --destructive: 130 29 29;
+    --destructive-foreground: 250 250 250;
+    --border: 229 231 235;
+    --input: 229 231 235;
+    --ring: 212 212 212;
+    --chart-1: 51 92 204;
+    --chart-2: 51 183 153;
+    --chart-3: 255 183 77;
+    --chart-4: 170 77 204;
+    --chart-5: 232 51 102;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* html {
+    @apply dark;
+  } */
+  body {
+    @apply bg-white text-black;
+  }
+}
+
+/* Hide scrollbar for horizontal carousel */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* Custom styled scrollbar */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: #d8b4fe transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background: #d8b4fe;
+  border-radius: 999px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background: #c084fc;
+}
+
+/* Skeleton shimmer animation - silver gradient sweep */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e2e4e8 0%,
+    #e2e4e8 35%,
+    #f1f3f5 50%,
+    #e2e4e8 65%,
+    #e2e4e8 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease;
+  }
+
+  .animate-fade-out {
+    animation: fadeOut 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+  }
+}
+
+.animated-gradient {
+  background-color: hsla(0, 0%, 0%, 1);
+  background-image: radial-gradient(circle at 85% 80%, hsla(266.99999999999983, 1%, 8%, 0.7) 9%, transparent 55%), radial-gradient(circle at 60% 24%, hsla(335.9999999999997, 2%, 15%, 0.6) 5%, transparent 72%), radial-gradient(circle at 13% 82%, hsla(53.999999999999886, 0%, 0%, 0.3) 5%, transparent 52%), radial-gradient(circle at 24% 7%, hsla(299, 4%, 25%, 0.8) 13%, transparent 68%);
+  background-blend-mode: normal, normal, normal, normal;
+}
+
+/* 3D flip card utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+.noise {
+  position: relative;
+}
+
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.3'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 100;
+}
+
+#auth-background {
+  background-color: hsla(256, 85%, 78%, 1);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"), radial-gradient(circle at 46.71505146814667% 45.36673934371383%, hsla(256, 84%, 78%, 0.1) 36.25241449144171%, transparent 62.08365242569557%), radial-gradient(circle at 9.454006088124377% 4.738133041946976%, hsla(0, 0%, 100%, 0.7) 6.25%, transparent 37.939000800804195%), radial-gradient(circle at 25.771288706739526% 104.16449546813965%, hsla(272, 68%, 81%, 1) 8.378432167900934%, transparent 38.1654970380995%), radial-gradient(circle at 122.38508609648498% 77.88628472222223%, hsla(0, 0%, 100%, 1) 18.221255337750488%, transparent 52.514828364054544%), radial-gradient(circle at 8.102800546448087% 7.914496527777778%, hsla(211, 81%, 87%, 1) 8.378432167900934%, transparent 44.4033666540076%);
+  background-blend-mode: overlay, normal, normal, normal, normal, normal;
+}
+
+.home-hero-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.home-hero-scribble {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+  padding: 0 0.05em;
+}
+
+.home-hero-scribble::after {
+  content: "";
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  height: 0.28em;
+  bottom: 0.08em;
+  background: #9f86ff;
+  border-radius: 999px;
+  transform: rotate(-1.5deg);
+  z-index: -1;
+  opacity: 0.9;
+}

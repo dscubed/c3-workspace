@@ -1,0 +1,195 @@
+import { create } from "zustand";
+import { createClient } from "@/lib/supabase/client";
+import { fetchProfile as fetchProfileApi } from "@/lib/profiles/fetchProfile";
+import { getFingerprint } from "@/hooks/useFingerprint";
+import { getUniversityFromEmail } from "@/lib/auth/validateUniversityEmail";
+import type { User, Session, Subscription } from "@supabase/supabase-js";
+
+export interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  avatar_url: string;
+  blurred_avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+
+  humanitix_event_integration_setup: boolean; // Later should be moved to orgs table
+  name_provided: boolean;
+  location?: string;
+  tldr?: string;
+  cover_image_url?: string;
+  status?: string;
+  university?: string | null;
+  account_type?: "user" | "organisation";
+}
+
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean;
+  profileLoading: boolean;
+  session: Session | null;
+  authSub: Subscription | null;
+  initialize: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (fields: Partial<Profile>) => Promise<void>;
+  makeAuthenticatedRequest: (
+    url: string,
+    options?: RequestInit,
+  ) => Promise<Response>;
+  getSupabaseClient: () => ReturnType<typeof createClient>;
+}
+
+async function fetchProfile(
+  userId: string,
+  user: User | null,
+  set: (state: Partial<AuthState>) => void,
+  get: () => AuthState,
+) {
+  // Only show loading skeleton if we don't already have a cached profile.
+  // On token-refresh re-fetches (tab focus), silently update in the background.
+  if (!get().profile) {
+    set({ profileLoading: true });
+  }
+  let profile = await fetchProfileApi<Profile>(userId);
+
+  // Auto-assign university for student accounts when not set but email domain is allowed
+  if (
+    profile &&
+    user?.email &&
+    profile.account_type !== "organisation" &&
+    !profile.university
+  ) {
+    const university = getUniversityFromEmail(user.email);
+    if (university) {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          university,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      if (!error) {
+        profile = { ...profile, university };
+      }
+    }
+  }
+
+  set({ profile: profile ?? null, profileLoading: false });
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  profile: null,
+  loading: true,
+  profileLoading: false,
+  session: null,
+  authSub: null,
+
+  initialize: async () => {
+    if (get().authSub) return; // Already initialized
+
+    const supabase = createClient();
+
+    // Get initial session and user
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const isAnon = session?.user?.is_anonymous ?? false;
+
+    set({ user: session?.user ?? null, session, loading: false });
+
+    if (session?.user && !isAnon) {
+      fetchProfile(session.user.id, session.user, set, get);
+    } else {
+      set({ profile: null });
+    }
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      const isAnon = session?.user?.is_anonymous ?? false;
+      set({ user: session?.user ?? null, session, loading: false });
+      if (session?.user && !isAnon) {
+        fetchProfile(session.user.id, session.user, set, get);
+      } else {
+        set({ profile: null });
+      }
+    });
+    set({ authSub: subscription });
+  },
+
+  signOut: async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    set({ user: null, profile: null, session: null });
+  },
+
+  updateProfile: async (fields) => {
+    const supabase = createClient();
+    const userId = get().user?.id;
+    if (!userId) return;
+
+    const updateData = {
+      ...fields,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updateData)
+      .eq("id", userId);
+
+    if (!error) {
+      set({ profile: { ...get().profile!, ...updateData } });
+    }
+  },
+
+  makeAuthenticatedRequest: async (url: string, options: RequestInit = {}) => {
+    const { session } = get();
+
+    if (!session?.access_token) {
+      throw new Error("Authentication required. Please log in.");
+    }
+
+    // Build headers so FormData requests don't get an explicit Content-Type
+    const isFormData = options.body instanceof FormData;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    const fp = getFingerprint();
+    if (fp) {
+      headers["X-Fingerprint"] = fp;
+    }
+
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    } else {
+      delete headers["Content-Type"];
+      delete headers["content-type"];
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401) {
+      get().signOut();
+      console.error("Authentication failed. Please log in again.");
+      throw new Error("Authentication failed. Please log in again.");
+    }
+
+    return response;
+  },
+
+  getSupabaseClient: () => {
+    return createClient();
+  },
+}));
