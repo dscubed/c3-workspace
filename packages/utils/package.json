@@ -1,0 +1,19 @@
+{
+  "name": "@c3/utils",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@c3/tsconfig": "workspace:*",
+    "typescript": "^5"
+  }
+}

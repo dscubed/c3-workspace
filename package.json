@@ -1,0 +1,21 @@
+{
+  "name": "c3-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:connect3": "turbo run dev --filter=connect3",
+    "dev:ticketing": "turbo run dev --filter=ticketing",
+    "dev:admin": "turbo run dev --filter=admin",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
