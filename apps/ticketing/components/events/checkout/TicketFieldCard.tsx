@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ResponsivePopover } from "@/components/ui/responsive-popover";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type {
   TicketingFieldDraft,
   TicketingFieldType,

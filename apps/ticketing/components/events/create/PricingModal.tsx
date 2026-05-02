@@ -16,7 +16,7 @@ import { Info, Plus, Trash2, Settings2, AlertTriangle } from "lucide-react";
 import type { TicketTier } from "../shared/types";
 import { validateTicketTier as validateTier } from "../shared/pricingUtils";
 import { TicketOfferWindowFields } from "./TicketOfferWindowFields";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface PricingModalProps {

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Check } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import {
   PRESET_COMPANIES,
   COMPANY_CATEGORIES,

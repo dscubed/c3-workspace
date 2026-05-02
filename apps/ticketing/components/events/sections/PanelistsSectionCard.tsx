@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, ImagePlus, GripVertical } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { PanelistsSectionData, Panelist } from "./types";
 import { useMemo, useState } from "react";
 import { MediaLibraryDialog } from "@/components/media/MediaLibraryDialog";

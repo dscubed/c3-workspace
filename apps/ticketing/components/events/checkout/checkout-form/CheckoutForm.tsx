@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { fetchEvent, type FetchedEventData } from "@/lib/api/fetchEvent";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import type {

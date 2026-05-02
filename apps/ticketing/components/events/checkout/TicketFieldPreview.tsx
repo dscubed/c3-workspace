@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { TicketingFieldDraft } from "@/lib/types/ticketing";
 import type { ThemeColors } from "@/components/events/shared/types";
 

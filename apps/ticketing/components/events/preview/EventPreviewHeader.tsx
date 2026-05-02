@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { ArrowLeft, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { NavUserMenu } from "@/components/auth/NavUserMenu";
 import { useRouter } from "next/navigation";
 

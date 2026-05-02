@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { useEventEditor, LastSavedLabel } from "./EventEditorContext";
 import { SettingsModal } from "./toolbox/SettingsModal";
 import { NavUserMenu } from "@/components/auth/NavUserMenu";

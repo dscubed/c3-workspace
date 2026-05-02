@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Pencil } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 /* ── Shared ── */
 import type { ClubProfile, EventFormData, CarouselImage } from "./shared/types";

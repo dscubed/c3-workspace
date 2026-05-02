@@ -1,10 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin as supabase } from "@c3/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!,
-);
 
 const ALLOWED_TABLES = new Set(["profiles", "profile_detail"]);
 

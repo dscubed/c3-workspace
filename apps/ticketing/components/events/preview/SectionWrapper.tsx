@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { ThemeLayout } from "../shared/types";
 import { useEditorTheme } from "../shared/EventEditorContext";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 interface SectionWrapperProps {
   title: string;

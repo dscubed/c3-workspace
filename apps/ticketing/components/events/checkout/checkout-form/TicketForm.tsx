@@ -4,7 +4,7 @@ import { Loader2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { TicketFieldPreview } from "@/components/events/checkout/TicketFieldPreview";
 import { CHECKOUT_PRESET_FIELDS } from "@/lib/types/ticketing";

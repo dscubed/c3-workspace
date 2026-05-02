@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { createBrowserClient } from "@c3/supabase/client";
+import { createClient } from "@c3/supabase/client";
 import { useAuthStore } from "./store";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setProfile, setLoading } = useAuthStore();
-  const supabase = createBrowserClient();
+  const supabase = createClient();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

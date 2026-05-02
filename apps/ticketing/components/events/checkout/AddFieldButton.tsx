@@ -16,7 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { TicketingFieldType } from "@/lib/types/ticketing";
 import { FIELD_TYPE_META } from "@/lib/types/ticketing";
 import type { ThemeColors } from "@/components/events/shared/types";

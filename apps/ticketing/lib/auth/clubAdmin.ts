@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@c3/supabase/admin";
 
 /**
  * Check if a user is an accepted admin for a given club.

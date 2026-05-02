@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionWrapper } from "../preview/SectionWrapper";
 import { useEventEditor } from "../shared/EventEditorContext";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
 

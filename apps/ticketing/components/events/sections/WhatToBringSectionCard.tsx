@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, GripVertical } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { WhatToBringSectionData } from "./types";
 import {
   DndContext,

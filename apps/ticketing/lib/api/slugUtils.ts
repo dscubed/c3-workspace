@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@c3/supabase/admin";
 
 /**
  * Convert any string into a URL-safe kebab-case slug.

@@ -11,7 +11,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { EventFormData } from "./shared/types";
 import type { SectionData, FAQSectionData } from "./sections";
 import { useEditorTheme } from "./shared/EventEditorContext";

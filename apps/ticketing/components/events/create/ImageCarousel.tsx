@@ -12,7 +12,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { ImagePlus, Pencil } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { CarouselImage } from "../shared/types";
 import { AttentionBadge } from "../EventChecklist";
 

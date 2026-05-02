@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@c3/auth";
 import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 type StorageCategory = "images" | "companies" | "panelists";
 type MediaTab = StorageCategory | "instagram";

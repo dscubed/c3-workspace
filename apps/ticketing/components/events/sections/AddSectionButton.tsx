@@ -16,7 +16,7 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { SECTION_TYPES, SECTION_META, type SectionType } from "./types";
 import { useEditorTheme } from "../shared/EventEditorContext";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@c3/auth";
 import { toast } from "sonner";
 
 export type AttendeeData = Record<number, Record<string, string>>;

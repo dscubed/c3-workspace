@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { TicketForm } from "./TicketForm";
 import type { TicketingFieldDraft } from "@/lib/types/ticketing";
 import type {

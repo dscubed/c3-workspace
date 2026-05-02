@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@c3/supabase/client";
 
 const BUCKET = "media";
 

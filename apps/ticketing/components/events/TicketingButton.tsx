@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { ThemeAccent } from "@/components/events/shared/types";
 import { useEditorTheme } from "@/components/events/shared/EventEditorContext";
 import { TooltipContent, TooltipTrigger, Tooltip } from "../ui/tooltip";

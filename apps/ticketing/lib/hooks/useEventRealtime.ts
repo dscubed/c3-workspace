@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@c3/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { FieldGroup } from "@/lib/api/patchEvent";
 

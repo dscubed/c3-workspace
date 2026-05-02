@@ -29,7 +29,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuthStore } from "@c3/auth";
 import Image from "next/image";

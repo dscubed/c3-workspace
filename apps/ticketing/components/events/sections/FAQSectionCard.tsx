@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, GripVertical, X, Lightbulb } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { FAQSectionData, FAQItem } from "./types";
 import {
   DndContext,

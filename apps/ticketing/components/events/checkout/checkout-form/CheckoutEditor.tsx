@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { TicketFieldCard } from "@/components/events/checkout/TicketFieldCard";
 import { AddFieldButton } from "@/components/events/checkout/AddFieldButton";

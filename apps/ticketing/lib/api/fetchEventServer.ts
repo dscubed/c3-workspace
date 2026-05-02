@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@c3/supabase/admin";
 import { getClubAdminRow } from "@/lib/auth/clubAdmin";
 import type { FetchedEventData } from "@/lib/api/fetchEvent";
 import type {

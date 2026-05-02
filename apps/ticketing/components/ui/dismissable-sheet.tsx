@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 interface DismissableSheetProps {
   open: boolean;

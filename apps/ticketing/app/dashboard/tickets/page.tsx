@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { QrCode, Receipt, RotateCcw } from "lucide-react";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 type Tab = "all" | "active" | "orders" | "refunds";
 

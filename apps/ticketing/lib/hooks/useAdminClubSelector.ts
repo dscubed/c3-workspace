@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@c3/auth";
 
 /* ── Types (re-exported so consumers don't need their own) ── */
 

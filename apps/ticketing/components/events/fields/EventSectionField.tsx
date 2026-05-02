@@ -30,7 +30,7 @@ import {
   SectionWrapper,
 } from "../preview";
 import { Button } from "@/components/ui/button";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import {
   HelpCircle,
   Backpack,

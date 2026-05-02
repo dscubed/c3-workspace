@@ -26,7 +26,7 @@ import type {
   ThemeLayout,
   ThemeAccent,
 } from "../shared/types";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { HexColorPicker } from "react-colorful";
 
 interface ThemeDialogProps {

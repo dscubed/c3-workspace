@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import LogoAnimated from "@c3/ui";
+import LogoAnimated from "../logo/LogoAnimated";
 import { NavUserMenu } from "@/components/auth/NavUserMenu";
 
 export function Navbar() {

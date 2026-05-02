@@ -2,7 +2,7 @@
 
 import { forwardRef, useMemo, useState } from "react";
 import { HexColorPicker } from "react-colorful";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import { useForwardedRef } from "@/lib/use-forwarded-ref";
 import { Button } from "@/components/ui/button";
 import {

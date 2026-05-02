@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 import type { CompaniesSectionData, Company } from "./types";
 import { useMemo, useState } from "react";
 import { MediaLibraryDialog } from "@/components/media/MediaLibraryDialog";

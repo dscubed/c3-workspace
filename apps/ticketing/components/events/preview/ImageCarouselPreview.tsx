@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/carousel";
 import { ImageIcon } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@c3/utils";
+import { cn } from "@/lib/utils";
 
 interface ImageCarouselPreviewProps {
   value: string[];
