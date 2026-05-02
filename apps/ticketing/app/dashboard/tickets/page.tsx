@@ -13,7 +13,13 @@ const pills: { label: string; value: Tab }[] = [
   { label: "Refunds", value: "refunds" },
 ];
 
-function EmptyState({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+function EmptyState({
+  icon: Icon,
+  text,
+}: {
+  icon: React.ElementType;
+  text: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
       <Icon className="h-9 w-9 opacity-30" />
@@ -79,7 +85,9 @@ function ActiveTab() {
   return (
     <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-foreground">Active Tickets</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          Active Tickets
+        </h2>
       </div>
       <EmptyState icon={QrCode} text="Your tickets will appear here" />
     </div>

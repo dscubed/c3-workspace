@@ -101,8 +101,11 @@ function RequestCard({
 }) {
   const [busy, setBusy] = useState(false);
   const event = invite.events;
-  const thumbnail = event?.event_images?.sort((a, b) => a.sort_order - b.sort_order)[0]?.url ?? null;
-  const primaryPerson = direction === "incoming" ? invite.inviter : invite.invitee;
+  const thumbnail =
+    event?.event_images?.sort((a, b) => a.sort_order - b.sort_order)[0]?.url ??
+    null;
+  const primaryPerson =
+    direction === "incoming" ? invite.inviter : invite.invitee;
   const senderPerson = direction === "outgoing" ? invite.inviter : null;
 
   const act = async (action: "accept" | "decline" | "cancel") => {
@@ -116,7 +119,13 @@ function RequestCard({
       {/* Event thumbnail */}
       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0">
         {thumbnail ? (
-          <Image src={thumbnail} alt={event?.name ?? ""} fill className="object-cover" unoptimized />
+          <Image
+            src={thumbnail}
+            alt={event?.name ?? ""}
+            fill
+            className="object-cover"
+            unoptimized
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <CalendarDays className="h-5 w-5 text-gray-300" />
@@ -126,38 +135,62 @@ function RequestCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{event?.name ?? "Untitled Event"}</p>
-        <p className="text-xs text-muted-foreground">{formatDateTBA(event?.start ?? null)}</p>
+        <p className="text-sm font-medium truncate">
+          {event?.name ?? "Untitled Event"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {formatDateTBA(event?.start ?? null)}
+        </p>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {primaryPerson && (
             <>
               <Avatar className="h-4 w-4 shrink-0">
-                {primaryPerson.avatar_url && <AvatarImage src={primaryPerson.avatar_url} alt={primaryPerson.first_name} />}
+                {primaryPerson.avatar_url && (
+                  <AvatarImage
+                    src={primaryPerson.avatar_url}
+                    alt={primaryPerson.first_name}
+                  />
+                )}
                 <AvatarFallback className="text-[8px] bg-purple-100 text-purple-700">
                   {primaryPerson.first_name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <p className="text-xs text-muted-foreground truncate">
-                {direction === "incoming" ? "from" : "to"} <span className="font-medium text-foreground">{primaryPerson.first_name} {primaryPerson.last_name ?? ""}</span>
+                {direction === "incoming" ? "from" : "to"}{" "}
+                <span className="font-medium text-foreground">
+                  {primaryPerson.first_name} {primaryPerson.last_name ?? ""}
+                </span>
               </p>
             </>
           )}
           {senderPerson && (
             <>
-              <span className="text-muted-foreground/40 text-xs shrink-0">·</span>
+              <span className="text-muted-foreground/40 text-xs shrink-0">
+                ·
+              </span>
               <Avatar className="h-4 w-4 shrink-0">
-                {senderPerson.avatar_url && <AvatarImage src={senderPerson.avatar_url} alt={senderPerson.first_name} />}
+                {senderPerson.avatar_url && (
+                  <AvatarImage
+                    src={senderPerson.avatar_url}
+                    alt={senderPerson.first_name}
+                  />
+                )}
                 <AvatarFallback className="text-[8px] bg-purple-100 text-purple-700">
                   {senderPerson.first_name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <p className="text-xs text-muted-foreground truncate">
-                sent by <span className="font-medium text-foreground">{senderPerson.first_name} {senderPerson.last_name ?? ""}</span>
+                sent by{" "}
+                <span className="font-medium text-foreground">
+                  {senderPerson.first_name} {senderPerson.last_name ?? ""}
+                </span>
               </p>
             </>
           )}
           <span className="text-muted-foreground/40 text-xs shrink-0">·</span>
-          <p className="text-xs text-muted-foreground shrink-0">{timeAgo(invite.created_at)}</p>
+          <p className="text-xs text-muted-foreground shrink-0">
+            {timeAgo(invite.created_at)}
+          </p>
         </div>
       </div>
 
@@ -225,7 +258,9 @@ export function EventsListContent({
   const [incoming, setIncoming] = useState<Invite[]>([]);
   const [outgoing, setOutgoing] = useState<Invite[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
-  const [requestsTab, setRequestsTab] = useState<"incoming" | "outgoing">("incoming");
+  const [requestsTab, setRequestsTab] = useState<"incoming" | "outgoing">(
+    "incoming",
+  );
 
   /* ── Delete state ── */
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -235,7 +270,9 @@ export function EventsListContent({
   }>({ open: false, eventId: "", eventName: "" });
   const [deleting, setDeleting] = useState(false);
 
-  const { ref: sentinelRef, isIntersecting } = useIntersection({ rootMargin: "200px" });
+  const { ref: sentinelRef, isIntersecting } = useIntersection({
+    rootMargin: "200px",
+  });
 
   /* ── Fetch events ── */
   const fetchPage = useCallback(
@@ -244,7 +281,10 @@ export function EventsListContent({
       if (!replace) setLoadingMore(true);
 
       try {
-        const params = new URLSearchParams({ limit: String(PAGE_SIZE), club_id: clubId });
+        const params = new URLSearchParams({
+          limit: String(PAGE_SIZE),
+          club_id: clubId,
+        });
         if (tab !== "all" && tab !== "requests") params.set("status", tab);
         if (cursor) params.set("cursor", cursor);
 
@@ -277,7 +317,10 @@ export function EventsListContent({
         fetch("/api/invites?direction=incoming&status=pending"),
         fetch("/api/invites?direction=outgoing"),
       ]);
-      const [inJson, outJson] = await Promise.all([inRes.json(), outRes.json()]);
+      const [inJson, outJson] = await Promise.all([
+        inRes.json(),
+        outRes.json(),
+      ]);
       setIncoming(inJson.data ?? []);
       setOutgoing(outJson.data ?? []);
     } catch {
@@ -306,7 +349,10 @@ export function EventsListContent({
 
   useEffect(() => {
     const onFocus = () => {
-      if (tab === "requests") { fetchRequests(); return; }
+      if (tab === "requests") {
+        fetchRequests();
+        return;
+      }
       cursorRef.current = null;
       fetchPage(null, true);
     };
@@ -317,7 +363,9 @@ export function EventsListContent({
   /* ── Remove self as collaborator ── */
   const handleRemoveSelf = async (eventId: string) => {
     try {
-      const res = await fetch(`/api/events/${eventId}/hosts`, { method: "DELETE" });
+      const res = await fetch(`/api/events/${eventId}/hosts`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         toast.success("Removed from event");
         setEvents((prev) => prev.filter((e) => e.id !== eventId));
@@ -333,7 +381,9 @@ export function EventsListContent({
   const handleDeleteEvent = async () => {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/events/${deleteConfirm.eventId}`, { method: "DELETE" });
+      const res = await fetch(`/api/events/${deleteConfirm.eventId}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         toast.success("Event deleted");
         setEvents((prev) => prev.filter((e) => e.id !== deleteConfirm.eventId));
@@ -350,7 +400,10 @@ export function EventsListContent({
   };
 
   /* ── Handle invite action ── */
-  const handleInviteAction = async (id: string, action: "accept" | "decline" | "cancel") => {
+  const handleInviteAction = async (
+    id: string,
+    action: "accept" | "decline" | "cancel",
+  ) => {
     try {
       if (action === "cancel") {
         const res = await fetch(`/api/invites/${id}`, { method: "DELETE" });
@@ -368,7 +421,9 @@ export function EventsListContent({
         });
         if (res.ok) {
           setIncoming((prev) => prev.filter((i) => i.id !== id));
-          toast.success(action === "accept" ? "Invite accepted" : "Invite declined");
+          toast.success(
+            action === "accept" ? "Invite accepted" : "Invite declined",
+          );
         } else {
           toast.error("Failed to update invite");
         }
@@ -421,7 +476,10 @@ export function EventsListContent({
       {/* Requests tab */}
       {tab === "requests" ? (
         <>
-          <Tabs value={requestsTab} onValueChange={(v) => setRequestsTab(v as "incoming" | "outgoing")}>
+          <Tabs
+            value={requestsTab}
+            onValueChange={(v) => setRequestsTab(v as "incoming" | "outgoing")}
+          >
             <TabsList>
               <TabsTrigger value="incoming">
                 Incoming
@@ -445,7 +503,10 @@ export function EventsListContent({
           {requestsLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-gray-200">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-gray-200"
+                >
                   <Skeleton className="w-14 h-14 rounded-lg shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-40" />
@@ -463,14 +524,22 @@ export function EventsListContent({
                   <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
                   <div>
                     <p className="font-medium">No incoming requests</p>
-                    <p className="text-sm text-muted-foreground">When someone invites you to collaborate on an event, it&apos;ll show up here.</p>
+                    <p className="text-sm text-muted-foreground">
+                      When someone invites you to collaborate on an event,
+                      it&apos;ll show up here.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-2">
                 {incoming.map((inv) => (
-                  <RequestCard key={inv.id} invite={inv} direction="incoming" onAction={handleInviteAction} />
+                  <RequestCard
+                    key={inv.id}
+                    invite={inv}
+                    direction="incoming"
+                    onAction={handleInviteAction}
+                  />
                 ))}
               </div>
             )
@@ -480,14 +549,21 @@ export function EventsListContent({
                 <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
                 <div>
                   <p className="font-medium">No outgoing requests</p>
-                  <p className="text-sm text-muted-foreground">Invites you&apos;ve sent to collaborators appear here.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Invites you&apos;ve sent to collaborators appear here.
+                  </p>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-2">
               {outgoing.map((inv) => (
-                <RequestCard key={inv.id} invite={inv} direction="outgoing" onAction={handleInviteAction} />
+                <RequestCard
+                  key={inv.id}
+                  invite={inv}
+                  direction="outgoing"
+                  onAction={handleInviteAction}
+                />
               ))}
             </div>
           )}
@@ -530,7 +606,10 @@ export function EventsListContent({
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-36 rounded-xl border border-gray-200 bg-white p-1">
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-36 rounded-xl border border-gray-200 bg-white p-1"
+                    >
                       <DropdownMenuItem
                         className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm"
                         onClick={() => router.push(`/events/${event.id}/edit`)}
@@ -569,7 +648,9 @@ export function EventsListContent({
           </div>
 
           <div ref={sentinelRef} className="flex justify-center py-4">
-            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+            {loadingMore && (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            )}
           </div>
         </>
       )}
@@ -578,14 +659,16 @@ export function EventsListContent({
       <AlertDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => {
-          if (!open) setDeleteConfirm({ open: false, eventId: "", eventName: "" });
+          if (!open)
+            setDeleteConfirm({ open: false, eventId: "", eventName: "" });
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{deleteConfirm.eventName}&rdquo;? This action cannot be undone.
+              Are you sure you want to delete &ldquo;{deleteConfirm.eventName}
+              &rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -595,7 +678,11 @@ export function EventsListContent({
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {deleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
