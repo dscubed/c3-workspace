@@ -174,7 +174,7 @@ function MonthGrid({
                     onDayClick(dateStr);
                   }
                 }}
-                className={`relative min-h-[72px] border-r last:border-r-0 p-1 text-left transition-colors cursor-pointer
+                className={`relative min-h-18 border-r last:border-r-0 p-1 text-left transition-colors cursor-pointer
                   ${!inMonth ? "bg-muted/30 text-muted-foreground/40" : ""}
                   ${isSelected ? "bg-accent/50" : "hover:bg-muted/50"}
                   ${hasEditingOcc ? "ring-2 ring-inset ring-primary" : ""}
@@ -210,9 +210,10 @@ function MonthGrid({
                           }
                         }}
                         className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight transition-colors cursor-pointer
-                          ${occ.id === editingId
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-foreground/80 text-background hover:bg-foreground"
+                          ${
+                            occ.id === editingId
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-foreground/80 text-background hover:bg-foreground"
                           }
                         `}
                       >
@@ -291,17 +292,21 @@ function OccurrenceList({
         <p className="text-xs text-muted-foreground">
           {sorted.length} occurrence{sorted.length !== 1 ? "s" : ""}
         </p>
-        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onAdd}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={onAdd}
+        >
           Add
         </Button>
       </div>
 
       <div className="max-h-[50vh] space-y-1.5 overflow-y-auto pr-1">
         {sorted.map((occ) => {
-          const occVenues =
-            occ.venueIds
-              ?.map((vid) => venueMap.get(vid))
-              .filter(Boolean) as Venue[] | undefined;
+          const occVenues = occ.venueIds
+            ?.map((vid) => venueMap.get(vid))
+            .filter(Boolean) as Venue[] | undefined;
 
           return (
             <button
@@ -427,7 +432,8 @@ export function OccurrenceEditor({
   // Track whether repeat-until input is focused (for calendar click → fill)
   const repeatUntilFocused = useRef(false);
 
-  const editingId = panelMode !== null && panelMode !== "add" ? panelMode : null;
+  const editingId =
+    panelMode !== null && panelMode !== "add" ? panelMode : null;
 
   const resetPanel = useCallback(() => {
     setPanelMode(null);
@@ -564,8 +570,7 @@ export function OccurrenceEditor({
         const dayDiff =
           startDate && endDate && startDate !== endDate
             ? Math.round(
-                (parseISO(endDate).getTime() -
-                  parseISO(startDate).getTime()) /
+                (parseISO(endDate).getTime() - parseISO(startDate).getTime()) /
                   86400000,
               )
             : 0;
@@ -687,7 +692,10 @@ export function OccurrenceEditor({
                 {/* Name (optional) */}
                 <div>
                   <Label className="text-xs">
-                    Name <span className="font-normal text-muted-foreground">(optional)</span>
+                    Name{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
                   </Label>
                   <Input
                     className="mt-1"

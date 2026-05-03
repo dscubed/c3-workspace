@@ -7,7 +7,7 @@ import { useAuthStore } from "@c3/auth";
 import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AvatarStack } from "@/components/shared/AvatarStack";
+import { AvatarStack } from "@c3/ui";
 import type { AvatarProfile } from "@/lib/types/events";
 
 interface InstagramPost {

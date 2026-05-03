@@ -98,7 +98,7 @@ function buildPatchBody(
     g.startsWith("section:"),
   );
   if (sectionGroups.length > 0) {
-    const sectionTypes = sectionGroups.map((g) => g.split(":")[1]);
+    const sectionTypes = sectionGroups.map((g) => g.split(":")[1]!);
     const existingTypes = new Set<string>(sections.map((s) => s.type));
 
     // Sections still present → upsert

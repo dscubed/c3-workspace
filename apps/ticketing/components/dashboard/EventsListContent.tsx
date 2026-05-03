@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { useAuthStore } from "@c3/auth";
 import { useIntersection } from "@/lib/hooks/useIntersection";
 import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { fetcher } from "@/lib/fetcher";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,16 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   CalendarDays,
-  Check,
   Loader2,
   MoreHorizontal,
   Pencil,
   Trash2,
   UserMinus,
-  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,199 +36,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EventDisplayCard } from "@/components/dashboard/EventDisplayCard";
-import { formatDateTBA } from "@/components/shared/utils";
-import type { EventCardDetails } from "@/lib/types/events";
+import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
+import type { EventCardDetails } from "@c3/types";
+import { Invite, RequestCard } from "./event/RequestCard";
 
 type EventTab = "all" | "published" | "draft" | "requests";
 const PAGE_SIZE = 20;
-
-interface InviteEvent {
-  id: string;
-  name: string | null;
-  start: string | null;
-  status: string;
-  event_images: { url: string; sort_order: number }[] | null;
-}
-
-interface InvitePerson {
-  id: string;
-  first_name: string;
-  last_name: string | null;
-  avatar_url: string | null;
-}
-
-interface Invite {
-  id: string;
-  event_id: string;
-  status: string;
-  created_at: string;
-  events: InviteEvent | null;
-  inviter: InvitePerson | null;
-  invitee: InvitePerson | null;
-}
 
 export interface EventsListContentProps {
   clubId: string;
   clubName?: string;
   headerAction?: React.ReactNode;
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}
-
-/* ── Request card ── */
-function RequestCard({
-  invite,
-  direction,
-  onAction,
-}: {
-  invite: Invite;
-  direction: "incoming" | "outgoing";
-  onAction: (id: string, action: "accept" | "decline" | "cancel") => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const event = invite.events;
-  const thumbnail =
-    event?.event_images?.sort((a, b) => a.sort_order - b.sort_order)[0]?.url ??
-    null;
-  const primaryPerson =
-    direction === "incoming" ? invite.inviter : invite.invitee;
-  const senderPerson = direction === "outgoing" ? invite.inviter : null;
-
-  const act = async (action: "accept" | "decline" | "cancel") => {
-    setBusy(true);
-    await onAction(invite.id, action);
-    setBusy(false);
-  };
-
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white">
-      {/* Event thumbnail */}
-      <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-        {thumbnail ? (
-          <Image
-            src={thumbnail}
-            alt={event?.name ?? ""}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-gray-300" />
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {event?.name ?? "Untitled Event"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {formatDateTBA(event?.start ?? null)}
-        </p>
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {primaryPerson && (
-            <>
-              <Avatar className="h-4 w-4 shrink-0">
-                {primaryPerson.avatar_url && (
-                  <AvatarImage
-                    src={primaryPerson.avatar_url}
-                    alt={primaryPerson.first_name}
-                  />
-                )}
-                <AvatarFallback className="text-[8px] bg-purple-100 text-purple-700">
-                  {primaryPerson.first_name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs text-muted-foreground truncate">
-                {direction === "incoming" ? "from" : "to"}{" "}
-                <span className="font-medium text-foreground">
-                  {primaryPerson.first_name} {primaryPerson.last_name ?? ""}
-                </span>
-              </p>
-            </>
-          )}
-          {senderPerson && (
-            <>
-              <span className="text-muted-foreground/40 text-xs shrink-0">
-                ·
-              </span>
-              <Avatar className="h-4 w-4 shrink-0">
-                {senderPerson.avatar_url && (
-                  <AvatarImage
-                    src={senderPerson.avatar_url}
-                    alt={senderPerson.first_name}
-                  />
-                )}
-                <AvatarFallback className="text-[8px] bg-purple-100 text-purple-700">
-                  {senderPerson.first_name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs text-muted-foreground truncate">
-                sent by{" "}
-                <span className="font-medium text-foreground">
-                  {senderPerson.first_name} {senderPerson.last_name ?? ""}
-                </span>
-              </p>
-            </>
-          )}
-          <span className="text-muted-foreground/40 text-xs shrink-0">·</span>
-          <p className="text-xs text-muted-foreground shrink-0">
-            {timeAgo(invite.created_at)}
-          </p>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        {direction === "incoming" ? (
-          <>
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
-              disabled={busy}
-              onClick={() => act("accept")}
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              disabled={busy}
-              onClick={() => act("decline")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs text-muted-foreground"
-            disabled={busy}
-            onClick={() => act("cancel")}
-          >
-            Cancel
-          </Button>
-        )}
-      </div>
-    </div>
-  );
 }
 
 export function EventsListContent({
@@ -246,23 +62,10 @@ export function EventsListContent({
   const isOwner = isOrg && user?.id === clubId;
   const isClubAdmin = clubs.some((c) => c.club_id === clubId);
 
-  const [events, setEvents] = useState<EventCardDetails[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const hasFetchedOnce = useRef(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-  const cursorRef = useRef<string | null>(null);
   const [tab, setTab] = useState<EventTab>("all");
-
-  /* ── Requests state ── */
-  const [incoming, setIncoming] = useState<Invite[]>([]);
-  const [outgoing, setOutgoing] = useState<Invite[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsTab, setRequestsTab] = useState<"incoming" | "outgoing">(
     "incoming",
   );
-
-  /* ── Delete state ── */
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     eventId: string;
@@ -274,91 +77,79 @@ export function EventsListContent({
     rootMargin: "200px",
   });
 
-  /* ── Fetch events ── */
-  const fetchPage = useCallback(
-    async (cursor: string | null, replace: boolean) => {
-      if (replace && !hasFetchedOnce.current) setInitialLoading(true);
-      if (!replace) setLoadingMore(true);
-
-      try {
-        const params = new URLSearchParams({
-          limit: String(PAGE_SIZE),
-          club_id: clubId,
-        });
-        if (tab !== "all" && tab !== "requests") params.set("status", tab);
-        if (cursor) params.set("cursor", cursor);
-
-        const res = await fetch(`/api/events?${params}`);
-        if (!res.ok) throw new Error("Failed to fetch events");
-
-        const json = await res.json();
-        const items: EventCardDetails[] = json.data ?? [];
-        setHasMore(json.hasMore ?? false);
-        cursorRef.current = json.nextCursor ?? null;
-
-        if (replace) setEvents(items);
-        else setEvents((prev) => [...prev, ...items]);
-      } catch (err) {
-        console.error("Failed to fetch events:", err);
-      } finally {
-        hasFetchedOnce.current = true;
-        setInitialLoading(false);
-        setLoadingMore(false);
-      }
+  /* ── Events (infinite scroll, cursor-based) ── */
+  const {
+    data: eventsPages,
+    isLoading: initialLoading,
+    isValidating,
+    size,
+    setSize,
+    mutate: mutateEvents,
+  } = useSWRInfinite<{
+    data: EventCardDetails[];
+    hasMore: boolean;
+    nextCursor: string | null;
+  }>(
+    (pageIndex, prevData) => {
+      if (tab === "requests") return null;
+      if (prevData && !prevData.hasMore) return null;
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        club_id: clubId,
+      });
+      if (tab !== "all") params.set("status", tab);
+      if (pageIndex > 0 && prevData?.nextCursor)
+        params.set("cursor", prevData.nextCursor);
+      return `/api/events?${params}`;
     },
-    [tab, clubId],
+    fetcher,
+    { revalidateOnFocus: true, revalidateFirstPage: false },
   );
 
-  /* ── Fetch requests ── */
-  const fetchRequests = useCallback(async () => {
-    setRequestsLoading(true);
-    try {
-      const [inRes, outRes] = await Promise.all([
-        fetch("/api/invites?direction=incoming&status=pending"),
-        fetch("/api/invites?direction=outgoing"),
-      ]);
-      const [inJson, outJson] = await Promise.all([
-        inRes.json(),
-        outRes.json(),
-      ]);
-      setIncoming(inJson.data ?? []);
-      setOutgoing(outJson.data ?? []);
-    } catch {
-      /* silent */
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, []);
-
+  // Reset to page 1 when tab or clubId changes
   useEffect(() => {
-    if (tab === "requests") {
-      fetchRequests();
-      return;
-    }
-    hasFetchedOnce.current = false;
-    cursorRef.current = null;
-    setEvents([]);
-    fetchPage(null, true);
-  }, [tab, clubId, fetchPage, fetchRequests]);
+    setSize(1);
+  }, [tab, clubId, setSize]);
 
-  useEffect(() => {
-    if (isIntersecting && hasMore && !loadingMore && !initialLoading) {
-      fetchPage(cursorRef.current, false);
-    }
-  }, [isIntersecting, hasMore, loadingMore, initialLoading, fetchPage]);
+  const events: EventCardDetails[] = useMemo(
+    () => eventsPages?.flatMap((p) => p.data ?? []) ?? [],
+    [eventsPages],
+  );
+  const lastPage = eventsPages?.[eventsPages.length - 1];
+  const hasMore = lastPage?.hasMore ?? false;
+  const hasFetchedOnce = eventsPages !== undefined;
+  const loadingMore =
+    isValidating && !initialLoading && size > (eventsPages?.length ?? 0);
 
+  // Trigger next page on intersection
   useEffect(() => {
-    const onFocus = () => {
-      if (tab === "requests") {
-        fetchRequests();
-        return;
-      }
-      cursorRef.current = null;
-      fetchPage(null, true);
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchPage, fetchRequests, tab]);
+    if (isIntersecting && hasMore && !isValidating) {
+      setSize((s) => s + 1);
+    }
+  }, [isIntersecting, hasMore, isValidating, setSize]);
+
+  /* ── Requests (SWR, only fetched when tab === "requests") ── */
+  const {
+    data: incomingData,
+    isLoading: incomingLoading,
+    mutate: mutateIncoming,
+  } = useSWR<{ data: Invite[] }>(
+    tab === "requests"
+      ? "/api/invites?direction=incoming&status=pending"
+      : null,
+    fetcher,
+  );
+  const {
+    data: outgoingData,
+    isLoading: outgoingLoading,
+    mutate: mutateOutgoing,
+  } = useSWR<{ data: Invite[] }>(
+    tab === "requests" ? "/api/invites?direction=outgoing" : null,
+    fetcher,
+  );
+  const incoming: Invite[] = incomingData?.data ?? [];
+  const outgoing: Invite[] = outgoingData?.data ?? [];
+  const requestsLoading = incomingLoading || outgoingLoading;
 
   /* ── Remove self as collaborator ── */
   const handleRemoveSelf = async (eventId: string) => {
@@ -368,7 +159,14 @@ export function EventsListContent({
       });
       if (res.ok) {
         toast.success("Removed from event");
-        setEvents((prev) => prev.filter((e) => e.id !== eventId));
+        await mutateEvents(
+          (pages) =>
+            pages?.map((p) => ({
+              ...p,
+              data: p.data.filter((e) => e.id !== eventId),
+            })),
+          false,
+        );
       } else {
         toast.error("Failed to remove");
       }
@@ -386,9 +184,16 @@ export function EventsListContent({
       });
       if (res.ok) {
         toast.success("Event deleted");
-        setEvents((prev) => prev.filter((e) => e.id !== deleteConfirm.eventId));
+        await mutateEvents(
+          (pages) =>
+            pages?.map((p) => ({
+              ...p,
+              data: p.data.filter((e) => e.id !== deleteConfirm.eventId),
+            })),
+          false,
+        );
       } else {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         toast.error(err.error || "Failed to delete event");
       }
     } catch {
@@ -408,8 +213,11 @@ export function EventsListContent({
       if (action === "cancel") {
         const res = await fetch(`/api/invites/${id}`, { method: "DELETE" });
         if (res.ok) {
-          setOutgoing((prev) => prev.filter((i) => i.id !== id));
           toast.success("Invite cancelled");
+          await mutateOutgoing(
+            (prev) => ({ data: (prev?.data ?? []).filter((i) => i.id !== id) }),
+            false,
+          );
         } else {
           toast.error("Failed to cancel invite");
         }
@@ -420,9 +228,12 @@ export function EventsListContent({
           body: JSON.stringify({ action }),
         });
         if (res.ok) {
-          setIncoming((prev) => prev.filter((i) => i.id !== id));
           toast.success(
             action === "accept" ? "Invite accepted" : "Invite declined",
+          );
+          await mutateIncoming(
+            (prev) => ({ data: (prev?.data ?? []).filter((i) => i.id !== id) }),
+            false,
           );
         } else {
           toast.error("Failed to update invite");
@@ -568,7 +379,7 @@ export function EventsListContent({
             </div>
           )}
         </>
-      ) : initialLoading && !hasFetchedOnce.current ? (
+      ) : initialLoading && !hasFetchedOnce ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex gap-4">
@@ -643,6 +454,7 @@ export function EventsListContent({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 }
+                onClick={() => router.push(`/events/${event.id}/edit`)}
               />
             ))}
           </div>

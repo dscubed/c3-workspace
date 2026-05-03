@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { useAuthStore } from "@c3/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { formatDateTBA } from "../shared/utils";
+import { fetcher } from "@/lib/fetcher";
 
 /* ── Types ── */
 
@@ -75,70 +77,34 @@ interface NotificationsFeedProps {
 export function NotificationsFeed({ mode }: NotificationsFeedProps) {
   const { user } = useAuthStore();
 
-  /* ── Collab invites ── */
-  const [collabInvites, setCollabInvites] = useState<CollabInvite[]>([]);
-  const [collabLoading, setCollabLoading] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
-  const hasFetchedCollab = useRef(false);
-
-  /* ── Club admin invites (user mode only) ── */
-  const [adminInvites, setAdminInvites] = useState<ClubAdminInvite[]>([]);
-  const [adminLoading, setAdminLoading] = useState(false);
   const [adminRespondingTo, setAdminRespondingTo] = useState<string | null>(
     null,
   );
-  const hasFetchedAdmin = useRef(false);
 
-  const fetchCollabInvites = useCallback(async () => {
-    if (!user) return;
-    if (!hasFetchedCollab.current) setCollabLoading(true);
-    try {
-      const res = await fetch("/api/invites?status=pending");
-      if (res.ok) {
-        const { data } = await res.json();
-        setCollabInvites(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch collab invites:", err);
-    } finally {
-      hasFetchedCollab.current = true;
-      setCollabLoading(false);
-    }
-  }, [user]);
+  /* SWR handles loading, caching, and revalidateOnFocus automatically */
+  const {
+    data: collabData,
+    isLoading: collabLoading,
+    mutate: mutateCollab,
+  } = useSWR<{ data: CollabInvite[] }>(
+    user ? "/api/invites?status=pending" : null,
+    fetcher,
+  );
 
-  const fetchAdminInvites = useCallback(async () => {
-    if (!user) return;
-    if (!hasFetchedAdmin.current) setAdminLoading(true);
-    try {
-      const res = await fetch("/api/clubs/my-invites");
-      if (res.ok) {
-        const { data } = await res.json();
-        setAdminInvites(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch admin invites:", err);
-    } finally {
-      hasFetchedAdmin.current = true;
-      setAdminLoading(false);
-    }
-  }, [user]);
+  const {
+    data: adminData,
+    isLoading: adminLoading,
+    mutate: mutateAdmin,
+  } = useSWR<{ data: ClubAdminInvite[] }>(
+    user && mode === "user" ? "/api/clubs/my-invites" : null,
+    fetcher,
+  );
 
-  useEffect(() => {
-    fetchCollabInvites();
-    if (mode === "user") fetchAdminInvites();
-  }, [fetchCollabInvites, fetchAdminInvites, mode]);
-
-  /* Re-fetch silently on window focus */
-  useEffect(() => {
-    const onFocus = () => {
-      fetchCollabInvites();
-      if (mode === "user") fetchAdminInvites();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchCollabInvites, fetchAdminInvites, mode]);
-
-  /* ── Respond to collab invite ── */
+  const collabInvites = collabData?.data ?? [];
+  const adminInvites = adminData?.data ?? [];
+  const isLoading = collabLoading || (mode === "user" && adminLoading);
+  const totalCount = collabInvites.length + adminInvites.length;
   const handleCollabResponse = async (
     inviteId: string,
     action: "accept" | "decline",
@@ -154,9 +120,14 @@ export function NotificationsFeed({ mode }: NotificationsFeedProps) {
         toast.success(
           action === "accept" ? "Invite accepted!" : "Invite declined.",
         );
-        setCollabInvites((prev) => prev.filter((i) => i.id !== inviteId));
+        await mutateCollab(
+          (prev) => ({
+            data: (prev?.data ?? []).filter((i) => i.id !== inviteId),
+          }),
+          false,
+        );
       } else {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         toast.error(err.error || "Failed to respond");
       }
     } catch {
@@ -184,9 +155,14 @@ export function NotificationsFeed({ mode }: NotificationsFeedProps) {
             ? "You are now a club admin!"
             : "Admin invite declined.",
         );
-        setAdminInvites((prev) => prev.filter((i) => i.id !== inviteId));
+        await mutateAdmin(
+          (prev) => ({
+            data: (prev?.data ?? []).filter((i) => i.id !== inviteId),
+          }),
+          false,
+        );
       } else {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         toast.error(err.error || "Failed to respond");
       }
     } catch {
@@ -195,11 +171,6 @@ export function NotificationsFeed({ mode }: NotificationsFeedProps) {
       setAdminRespondingTo(null);
     }
   };
-
-  const isLoading =
-    (collabLoading && !hasFetchedCollab.current) ||
-    (adminLoading && !hasFetchedAdmin.current);
-  const totalCount = collabInvites.length + adminInvites.length;
 
   if (isLoading) {
     return (
@@ -318,17 +289,24 @@ export function NotificationsFeed({ mode }: NotificationsFeedProps) {
         return (
           <Card key={`collab-${invite.id}`} className="overflow-hidden">
             <div className="flex gap-3 p-4">
-              {(event.event_images as {url:string; sort_order:number}[] | undefined)?.[0]?.url && (
-                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md">
-                  <Image
-                    src={(event.event_images as {url:string; sort_order:number}[])[0].url}
-                    alt={event.name ?? "Event"}
-                    width={96}
-                    height={64}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              )}
+              {(() => {
+                const imgUrl = (
+                  event.event_images as
+                    | { url: string; sort_order: number }[]
+                    | undefined
+                )?.[0]?.url;
+                return imgUrl ? (
+                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md">
+                    <Image
+                      src={imgUrl}
+                      alt={event.name ?? "Event"}
+                      width={96}
+                      height={64}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : null;
+              })()}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium leading-tight">
                   {event.name || "Untitled Event"}

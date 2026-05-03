@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { fetchEvent, type FetchedEventData } from "@/lib/api/fetchEvent";
+import useSWR from "swr";
+import { fetchEvent } from "@/lib/api/fetchEvent";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import type {
   ThemeAccent,
@@ -21,6 +22,7 @@ import {
   EventEditorContext,
   type EventEditorContextValue,
 } from "@/components/events/shared/EventEditorContext";
+import { CheckoutContext } from "./CheckoutContext";
 import { EditorToolbox } from "@/components/events/shared/EditorToolbox";
 import { useAuthStore } from "@c3/auth";
 import { useEventRealtime } from "@/lib/hooks/useEventRealtime";
@@ -34,7 +36,6 @@ import { toast } from "sonner";
 import { CheckoutEditor } from "./CheckoutEditor";
 import { CheckoutPreview } from "./CheckoutPreview";
 
-/* ── Accent → solid colour ── */
 const ACCENT_SOLID_MAP: Record<
   Exclude<ThemeAccent, "none" | "custom">,
   string
@@ -55,8 +56,6 @@ function getAccentColor(
   return ACCENT_SOLID_MAP[accent];
 }
 
-/* ── Component ── */
-
 interface CheckoutFormProps {
   eventId: string;
   mode: "edit" | "preview";
@@ -65,12 +64,10 @@ interface CheckoutFormProps {
 export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
-  const [eventData, setEventData] = useState<FetchedEventData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [previewMode, setPreviewMode] = useState(mode === "preview");
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
 
-  /* ── Ticket selection (preview mode) ── */
+  /* ── Ticket selection ── */
   const [selectedTierId, setSelectedTierId] = useState<string>("");
   const [quantity, _setQuantity] = useState(1);
   const [activeTicketTab, setActiveTicketTab] = useState("ticket-0");
@@ -83,7 +80,7 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     [],
   );
 
-  /* ── Attendee data (hook) ── */
+  /* ── Attendee data ── */
   const {
     user,
     attendeeData,
@@ -93,35 +90,28 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     fillingMyData,
   } = useAttendeeData();
 
-  console.log(attendeeData)
+  console.log(attendeeData);
   const isEditing = !previewMode;
 
-  /* ── Load event data ── */
-  useEffect(() => {
-    fetchEvent(eventId)
-      .then((result) => setEventData(result))
-      .catch((err) => {
-        console.error("Failed to load event:", err);
+  /* ── Load event data via SWR ── */
+  const { data: eventData, mutate: mutateEvent, isLoading } = useSWR(
+    `/api/events/${eventId}`,
+    () => fetchEvent(eventId),
+    {
+      revalidateOnFocus: false,
+      onError: () => {
         toast.error("Failed to load event");
         router.push("/");
-      })
-      .finally(() => setLoading(false));
-  }, [eventId, router]);
-
-  const handlePaymentStart = async () => {
-    await createCheckoutSession(eventId, tmpPriceId, attendeeData, fields, quantity);
-  }
+      },
+    },
+  );
 
   /* ── Realtime sync ── */
   const onRemoteChange = useCallback(
     (groups: FieldGroup[]) => {
-      if (groups.length > 0) {
-        fetchEvent(eventId)
-          .then((result) => setEventData(result))
-          .catch(() => { });
-      }
+      if (groups.length > 0) mutateEvent();
     },
-    [eventId],
+    [mutateEvent],
   );
 
   const { broadcast, collaborators } = useEventRealtime({
@@ -132,7 +122,7 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     onRemoteChange,
   });
 
-  /* ── Ticketing (shared hook) ── */
+  /* ── Ticketing ── */
   const {
     ticketingEnabled,
     ticketingChanging,
@@ -144,7 +134,7 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     pricingCount: eventData?.formData.pricing?.length ?? 0,
   });
 
-  /* ── Checkout fields (hook) ── */
+  /* ── Checkout fields ── */
   const {
     fields,
     addField,
@@ -156,17 +146,12 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     dndSensors,
     fieldIds,
     handleFieldDragEnd,
-  } = useCheckoutFields({
-    eventId,
-    mode,
-    broadcast,
-  });
+  } = useCheckoutFields({ eventId, mode, broadcast });
 
-  /* ── Initialize ticket selection when data loads ── */
+  /* ── Derived values ── */
   const defaultTierId = eventData?.formData.pricing?.[0]?.id ?? "";
   const effectiveSelectedTierId = selectedTierId || defaultTierId;
 
-  /* ── Theme ── */
   const theme: EventTheme = useMemo(
     () =>
       eventData?.formData.theme ?? {
@@ -185,7 +170,15 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     [theme.accent, theme.accentCustom, isDark],
   );
 
-  /* ── Editor context (only used when mode="edit") ── */
+  const pricing = eventData?.formData.pricing ?? [];
+  const thumbnailUrl =
+    eventData?.carouselImages?.[0]?.url ??
+    eventData?.formData.imageUrls?.[0] ??
+    null;
+  const selectedTier =
+    pricing.find((t) => t.id === effectiveSelectedTierId) ?? pricing[0] ?? null;
+
+  /* ── Editor context (edit mode only) ── */
   const editorContext: EventEditorContextValue | null = useMemo(() => {
     if (mode !== "edit" || !eventData) return null;
     return {
@@ -198,7 +191,7 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
       isEditing: !previewMode,
       toolbarCollapsed,
       setToolbarCollapsed,
-      markDirty: () => { },
+      markDirty: () => {},
       flush: flushFields,
       isAutoSaving: savingFields,
       lastSavedAt,
@@ -211,27 +204,27 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
       ticketingEnabled,
       ticketingChanging,
       handleBack: () => router.replace(`/events/${eventId}/edit`),
-      handlePublish: () => { },
-      handleUnpublish: () => { },
+      handlePublish: () => {},
+      handleUnpublish: () => {},
       enableTicketing: handleEnableTicketing,
       disableTicketing: handleDisableTicketing,
       theme,
-      setTheme: () => { },
-      setThemeOpen: () => { },
+      setTheme: () => {},
+      setThemeOpen: () => {},
       colors,
       isDark,
       hasName: !!eventData.formData.name,
       form: eventData.formData as EventFormData,
-      setForm: () => { },
-      updateField: () => { },
+      setForm: () => {},
+      updateField: () => {},
       carouselImages: eventData.carouselImages ?? [],
       hostsData: [],
-      setHostsData: () => { },
+      setHostsData: () => {},
       creatorProfile: (profile ?? {}) as ClubProfile,
       collaborators,
       getFieldLock: () => ({ locked: false }),
-      handleFieldFocus: () => { },
-      handleFieldBlur: () => { },
+      handleFieldFocus: () => {},
+      handleFieldBlur: () => {},
     };
   }, [
     mode,
@@ -254,7 +247,71 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     collaborators,
   ]);
 
-  if (loading) {
+  /* ── Checkout context (always provided) ── */
+  const checkoutContext = useMemo(
+    () => ({
+      layout: theme.layout,
+      isDark,
+      colors,
+      accentColor,
+      ticketingEnabled,
+      ticketingChanging,
+      handleEnableTicketing,
+      pricingCount: pricing.length,
+      fields,
+      addField,
+      updateField,
+      removeField,
+      dndSensors,
+      fieldIds,
+      handleFieldDragEnd,
+      user,
+      fillingMyData,
+      getFieldValue,
+      setFieldValue,
+      handleBuyForMyself,
+      pricing,
+      selectedTier,
+      effectiveSelectedTierId,
+      setSelectedTierId,
+      thumbnailUrl,
+      quantity,
+      setQuantity,
+      activeTicketTab,
+      setActiveTicketTab,
+    }),
+    [
+      theme.layout,
+      isDark,
+      colors,
+      accentColor,
+      ticketingEnabled,
+      ticketingChanging,
+      handleEnableTicketing,
+      pricing,
+      fields,
+      addField,
+      updateField,
+      removeField,
+      dndSensors,
+      fieldIds,
+      handleFieldDragEnd,
+      user,
+      fillingMyData,
+      getFieldValue,
+      setFieldValue,
+      handleBuyForMyself,
+      selectedTier,
+      effectiveSelectedTierId,
+      thumbnailUrl,
+      quantity,
+      setQuantity,
+      activeTicketTab,
+      setActiveTicketTab,
+    ],
+  );
+
+  if (isLoading || !eventData) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -262,24 +319,17 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     );
   }
 
-  if (!eventData) return null;
-
-  const pricing = eventData.formData.pricing ?? [];
-  const thumbnailUrl =
-    eventData.carouselImages?.[0]?.url ??
-    eventData.formData.imageUrls?.[0] ??
-    null;
-  const selectedTier =
-    pricing.find((t) => t.id === effectiveSelectedTierId) ?? pricing[0] ?? null;
-
   const pageBgClass = colors.pageBg;
   const pageTextClass = colors.text;
   const solidBg =
     theme.layout === "card" && theme.bgColor ? theme.bgColor : undefined;
 
+  // TODO remove this once we have dynamic price ids set up
+  const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL";
 
-  // TODO remove this once we have dynamic price ids set up I'm just using this to test a single
-  const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL"
+  const handlePaymentStart = async () => {
+    await createCheckoutSession(eventId, tmpPriceId, attendeeData, fields, quantity);
+  };
 
   const content = (
     <div
@@ -288,7 +338,6 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     >
       {mode !== "preview" && <EditorToolbox />}
 
-      {/* Customer View — transparent fixed back button floating over gradient */}
       {mode === "preview" && (
         <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2 sm:px-6">
           <Button
@@ -308,7 +357,6 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
         </div>
       )}
 
-      {/* Accent gradient — starts from very top in preview mode */}
       <div style={accentGradient ? { background: accentGradient } : undefined}>
         <div
           className={cn(
@@ -317,10 +365,8 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
             pageTextClass,
           )}
         >
-          {/* Padding for toolbox (edit mode only) */}
           {mode !== "preview" && <div className="h-14" />}
 
-          {/* Title */}
           <div className="mb-2">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Checkout
@@ -332,52 +378,9 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
             )}
           </div>
 
-          {/* Edit mode: enable ticketing prompt OR field editor */}
-          {isEditing && (
-            <CheckoutEditor
-              layout={theme.layout}
-              isDark={isDark}
-              colors={colors}
-              accentColor={accentColor}
-              ticketingEnabled={ticketingEnabled}
-              ticketingChanging={ticketingChanging}
-              handleEnableTicketing={handleEnableTicketing}
-              pricingCount={pricing.length}
-              fields={fields}
-              addField={addField}
-              updateField={updateField}
-              removeField={removeField}
-              dndSensors={dndSensors}
-              fieldIds={fieldIds}
-              handleFieldDragEnd={handleFieldDragEnd}
-            />
-          )}
+          {isEditing && <CheckoutEditor />}
+          {!isEditing && <CheckoutPreview />}
 
-          {/* Customer view: ticket selection + attendee forms */}
-          {!isEditing && (
-            <CheckoutPreview
-              layout={theme.layout}
-              isDark={isDark}
-              colors={colors}
-              fields={fields}
-              user={user}
-              fillingMyData={fillingMyData}
-              getFieldValue={getFieldValue}
-              setFieldValue={setFieldValue}
-              handleBuyForMyself={handleBuyForMyself}
-              pricing={pricing}
-              selectedTier={selectedTier}
-              effectiveSelectedTierId={effectiveSelectedTierId}
-              setSelectedTierId={setSelectedTierId}
-              thumbnailUrl={thumbnailUrl}
-              quantity={quantity}
-              setQuantity={setQuantity}
-              activeTicketTab={activeTicketTab}
-              setActiveTicketTab={setActiveTicketTab}
-            />
-          )}
-
-          {/* Payment — show once ticketing is enabled or in preview mode */}
           {(ticketingEnabled || mode === "preview") && (
             <div className="mt-8">
               <SectionWrapper
@@ -401,13 +404,19 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     </div>
   );
 
+  const withCheckout = (
+    <CheckoutContext.Provider value={checkoutContext}>
+      {content}
+    </CheckoutContext.Provider>
+  );
+
   if (editorContext) {
     return (
       <EventEditorContext.Provider value={editorContext}>
-        {content}
+        {withCheckout}
       </EventEditorContext.Provider>
     );
   }
 
-  return content;
+  return withCheckout;
 }

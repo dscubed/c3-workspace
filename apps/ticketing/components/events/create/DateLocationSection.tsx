@@ -169,7 +169,12 @@ interface AddVenuePanelProps {
   hideTba?: boolean;
 }
 
-function AddVenuePanel({ onAdd, onCancel, editingVenue, hideTba }: AddVenuePanelProps) {
+function AddVenuePanel({
+  onAdd,
+  onCancel,
+  editingVenue,
+  hideTba,
+}: AddVenuePanelProps) {
   const [venueType, setVenueType] = useState<LocationType>(
     editingVenue?.type === "tba" && hideTba
       ? "physical"
@@ -357,7 +362,8 @@ function AddVenuePanel({ onAdd, onCancel, editingVenue, hideTba }: AddVenuePanel
 
 export function DateLocationSection() {
   const { form, setForm, markDirty } = useEventEditor();
-  const { timezone, occurrences, locationType, location, onlineLink, venues } = form;
+  const { timezone, occurrences, locationType, location, onlineLink, venues } =
+    form;
 
   const onTimezoneChange = (tz: string) => {
     setForm((prev) => ({ ...prev, timezone: tz }));
@@ -415,7 +421,9 @@ export function DateLocationSection() {
       const d = parseISO(first.startDate);
       const dateStr = format(d, "EEE do MMM yyyy");
       const timeStr = formatTime12(first.startTime);
-      const label = first.name ? `${first.name} — ${dateStr}` : `${dateStr}, ${timeStr}`;
+      const label = first.name
+        ? `${first.name} — ${dateStr}`
+        : `${dateStr}, ${timeStr}`;
       const rest = sorted.length - 1;
       return `${label}${rest > 0 ? ` + ${rest} more` : ""}`;
     } catch {
@@ -518,10 +526,7 @@ export function DateLocationSection() {
         {/* Timezone */}
         <div>
           <Label className="text-xs text-muted-foreground">Timezone</Label>
-          <Select
-            value={timezone}
-            onValueChange={onTimezoneChange}
-          >
+          <Select value={timezone} onValueChange={onTimezoneChange}>
             <SelectTrigger className="mt-1 w-full sm:w-72">
               <SelectValue />
             </SelectTrigger>

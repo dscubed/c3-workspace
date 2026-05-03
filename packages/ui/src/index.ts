@@ -11,6 +11,7 @@ export * from "./components/switch";
 export * from "./components/slider";
 export * from "./components/separator";
 export * from "./components/avatar";
+export * from "./components/avatar-stack";
 export * from "./components/skeleton";
 export * from "./components/tabs";
 export * from "./components/dialog";

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThemeAccent } from "@/components/events/shared/types";
 import { useEditorTheme } from "@/components/events/shared/EventEditorContext";
+import { fetcher } from "@/lib/fetcher";
 import { TooltipContent, TooltipTrigger, Tooltip } from "../ui/tooltip";
 import { toast } from "sonner";
 
@@ -84,45 +85,17 @@ export function TicketingButton({
   const hasTiers = hasTiersProp ?? (ctx?.form ? ctx.form.pricing.length > 0 : true);
   const router = useRouter();
 
-  // Track our own state only if null is provided
-  const [fetchedTicketingEnabled, setFetchedTicketingEnabled] = useState<
-    boolean | null
-  >(null);
-  const [didFetch, setDidFetch] = useState(false);
+  const { data: ticketingData } = useSWR(
+    ticketingEnabled === null ? `/api/events/${eventId}/ticketing` : null,
+    fetcher<{ data: { ticketing: { enabled: boolean } | null } }>,
+  );
 
-  useEffect(() => {
-    // If the prop is explicitly set, we do not need to fetch.
-    if (ticketingEnabled !== null) {
-      return;
-    }
-
-    if (didFetch) return;
-
-    // Only fetch if not provided via props
-    let isMounted = true;
-    fetch(`/api/events/${eventId}/ticketing`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (isMounted) {
-          setFetchedTicketingEnabled(!!json.data?.ticketing?.enabled);
-          setDidFetch(true);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setFetchedTicketingEnabled(false);
-          setDidFetch(true);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [eventId, ticketingEnabled, didFetch]);
-
-  // Use the prop if valid, otherwise fallback to the fetched state
   const finalTicketingEnabled =
-    ticketingEnabled !== null ? ticketingEnabled : fetchedTicketingEnabled;
+    ticketingEnabled !== null
+      ? ticketingEnabled
+      : ticketingData
+        ? !!ticketingData.data?.ticketing?.enabled
+        : null;
   if (finalTicketingEnabled === null && mode === "edit") {
     // We only show a loading state if we're in edit mode.
     return null;

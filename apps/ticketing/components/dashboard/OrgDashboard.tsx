@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { useAuthStore } from "@c3/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,8 +20,9 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { EventDisplayCard } from "./EventDisplayCard";
-import type { EventCardDetails } from "@/lib/types/events";
+import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
+import type { EventCardDetails } from "@c3/types";
+import { fetcher } from "@/lib/fetcher";
 
 /* ── Types ── */
 
@@ -66,93 +68,34 @@ export function OrgDashboardContent({
 }: OrgDashboardContentProps) {
   const router = useRouter();
 
-  /* ── Admins state ── */
-  const [admins, setAdmins] = useState<AdminRow[]>([]);
-  const [adminsLoading, setAdminsLoading] = useState(false);
-  const [adminCount, setAdminCount] = useState(0);
-  const hasFetchedAdmins = useRef(false);
+  /* ── Admins ── */
+  const { data: adminsData, isLoading: adminsLoading } = useSWR<{
+    data: AdminRow[];
+  }>(`/api/clubs/${clubId}/admins`, fetcher);
+  const allAdmins = (adminsData?.data ?? []).filter(
+    (a) => a.status === "accepted" || a.status === "pending",
+  );
+  const adminCount = allAdmins.length;
+  const admins = allAdmins.slice(0, ADMIN_PREVIEW);
 
-  /* ── Events state ── */
-  const [events, setEvents] = useState<EventCardDetails[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const hasFetchedEvents = useRef(false);
-
-  /* ── Fetch admins ── */
-  const fetchAdmins = useCallback(async () => {
-    if (!hasFetchedAdmins.current) setAdminsLoading(true);
-    try {
-      const res = await fetch(`/api/clubs/${clubId}/admins`);
-      if (res.ok) {
-        const { data } = await res.json();
-        const active = (data ?? []).filter(
-          (a: AdminRow) => a.status === "accepted" || a.status === "pending",
-        );
-        setAdminCount(active.length);
-        setAdmins(active.slice(0, ADMIN_PREVIEW));
-      }
-    } catch (err) {
-      console.error("Failed to fetch admins:", err);
-    } finally {
-      hasFetchedAdmins.current = true;
-      setAdminsLoading(false);
-    }
-  }, [clubId]);
-
-  useEffect(() => {
-    hasFetchedAdmins.current = false;
-    fetchAdmins();
-  }, [fetchAdmins]);
-
-  /* ── Fetch events ── */
-  const fetchEvents = useCallback(async () => {
-    if (!hasFetchedEvents.current) setEventsLoading(true);
-    try {
-      /* Try recent edits first */
-      const recentParams = new URLSearchParams({
-        recent: "true",
-        limit: String(EVENT_PREVIEW),
-      });
-      const recentRes = await fetch(`/api/events?${recentParams}`);
-      if (recentRes.ok) {
-        const { data } = await recentRes.json();
-        if ((data ?? []).length > 0) {
-          setEvents(data);
-          return;
-        }
-      }
-
-      /* Fallback: by club_id */
-      const params = new URLSearchParams({
-        club_id: clubId,
-        limit: String(EVENT_PREVIEW),
-      });
-      const res = await fetch(`/api/events?${params}`);
-      if (res.ok) {
-        const { data } = await res.json();
-        setEvents(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch events:", err);
-    } finally {
-      hasFetchedEvents.current = true;
-      setEventsLoading(false);
-    }
-  }, [clubId]);
-
-  useEffect(() => {
-    hasFetchedEvents.current = false;
-    fetchEvents();
-  }, [fetchEvents]);
-
-  /* Re-fetch silently on window focus */
-  useEffect(() => {
-    const onFocus = () => {
-      fetchAdmins();
-      fetchEvents();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchAdmins, fetchEvents]);
+  /* ── Events (try recent first, fall back to club_id) ── */
+  const { data: recentData, isLoading: recentLoading } = useSWR<{
+    data: EventCardDetails[];
+  }>(`/api/events?recent=true&limit=${EVENT_PREVIEW}`, fetcher);
+  const hasRecentEvents = (recentData?.data ?? []).length > 0;
+  const { data: clubEventsData, isLoading: clubEventsLoading } = useSWR<{
+    data: EventCardDetails[];
+  }>(
+    recentData !== undefined && !hasRecentEvents
+      ? `/api/events?club_id=${clubId}&limit=${EVENT_PREVIEW}`
+      : null,
+    fetcher,
+  );
+  const eventsLoading =
+    recentLoading || (!hasRecentEvents && clubEventsLoading);
+  const events: EventCardDetails[] = hasRecentEvents
+    ? (recentData?.data ?? [])
+    : (clubEventsData?.data ?? []);
 
   return (
     <>
@@ -162,7 +105,7 @@ export function OrgDashboardContent({
       {/* ── Club Admins ── */}
       <Separator />
       <div className="space-y-3">
-        {adminsLoading && !hasFetchedAdmins.current ? (
+        {adminsLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
@@ -235,7 +178,7 @@ export function OrgDashboardContent({
             {/* Right: stats */}
             <Card>
               <CardContent className="p-4 space-y-4">
-                <div className="flex items-center justify-between min-h-[32px]">
+                <div className="flex items-center justify-between min-h-8">
                   <h2 className="text-sm font-semibold">Club Stats</h2>
                   <p className="text-sm text-muted-foreground">
                     Coming Soon...
@@ -251,7 +194,7 @@ export function OrgDashboardContent({
                   <span className="text-sm font-semibold">{adminCount}</span>
                 </div>
                 <Separator />
-                <div className="flex items-center justify-between min-h-[32px]">
+                <div className="flex items-center justify-between min-h-8">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
@@ -299,7 +242,7 @@ export function OrgDashboardContent({
           )}
         </div>
 
-        {eventsLoading && !hasFetchedEvents.current ? (
+        {eventsLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
@@ -318,7 +261,11 @@ export function OrgDashboardContent({
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             {events.map((event) => (
-              <EventDisplayCard key={event.id} event={event} />
+              <EventDisplayCard
+                key={event.id}
+                event={event}
+                onClick={() => router.push(`/events/${event.id}/edit`)}
+              />
             ))}
           </div>
         )}

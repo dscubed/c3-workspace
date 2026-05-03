@@ -1,8 +1,9 @@
 "use client";
 
 import { useAuthStore } from "@c3/auth";
-import { EventDisplayCard } from "@/components/dashboard/EventDisplayCard";
+import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
 import type { EventCardDetails } from "@/lib/types/events";
+import { useRouter } from "next/navigation";
 
 const mockUpcoming: EventCardDetails[] = [
   {
@@ -46,6 +47,7 @@ const mockUpcoming: EventCardDetails[] = [
 export default function DashboardHomePage() {
   const { profile } = useAuthStore();
   const firstName = profile?.first_name ?? "there";
+  const router = useRouter();
 
   const sorted = [...mockUpcoming].sort((a, b) => {
     if (a.status === "live") return -1;
@@ -67,7 +69,11 @@ export default function DashboardHomePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         {sorted.map((event) => (
-          <EventDisplayCard key={event.id} event={event} />
+          <EventDisplayCard
+            key={event.id}
+            event={event}
+            onClick={() => router.push(`/events/${event.id}/edit`)}
+          />
         ))}
       </div>
     </div>

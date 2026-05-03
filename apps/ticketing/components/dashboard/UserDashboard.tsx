@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { useAuthStore } from "@c3/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 
 /* ── Types ── */
-import { EventCardDetails } from "@/lib/types/events";
-import { EventDisplayCard } from "./EventDisplayCard";
+import type { EventCardDetails } from "@c3/types";
+import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
+import { fetcher } from "@/lib/fetcher";
 
 interface ClubProfile {
   id: string;
@@ -43,73 +44,15 @@ export function UserDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  /* ── Clubs state ── */
-  const [clubs, setClubs] = useState<ClubAdminRow[]>([]);
-  const [clubsLoading, setClubsLoading] = useState(true);
-  const hasFetchedClubs = useRef(false);
+  const { data: clubsData, isLoading: clubsLoading } = useSWR<{
+    data: ClubAdminRow[];
+  }>(user ? "/api/clubs/my-clubs" : null, fetcher);
+  const clubs: ClubAdminRow[] = clubsData?.data ?? [];
 
-  /* ── Recent events (aggregated across all clubs) ── */
-  const [recentEvents, setRecentEvents] = useState<EventCardDetails[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const hasFetchedEvents = useRef(false);
-
-  /* ── Fetch clubs ── */
-  const fetchClubs = useCallback(async () => {
-    if (!user) return;
-    if (!hasFetchedClubs.current) setClubsLoading(true);
-    try {
-      const res = await fetch("/api/clubs/my-clubs");
-      if (res.ok) {
-        const { data } = await res.json();
-        setClubs(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch clubs:", err);
-    } finally {
-      hasFetchedClubs.current = true;
-      setClubsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchClubs();
-  }, [fetchClubs]);
-
-  /* ── Fetch recent events across all clubs ── */
-  const fetchRecentEvents = useCallback(async () => {
-    if (!user) return;
-    if (!hasFetchedEvents.current) setEventsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        recent: "true",
-        limit: String(PREVIEW_COUNT),
-      });
-      const res = await fetch(`/api/events?${params}`);
-      if (res.ok) {
-        const { data } = await res.json();
-        setRecentEvents(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch recent events:", err);
-    } finally {
-      hasFetchedEvents.current = true;
-      setEventsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchRecentEvents();
-  }, [fetchRecentEvents]);
-
-  /* Re-fetch silently on window focus */
-  useEffect(() => {
-    const onFocus = () => {
-      fetchClubs();
-      fetchRecentEvents();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchClubs, fetchRecentEvents]);
+  const { data: eventsData, isLoading: eventsLoading } = useSWR<{
+    data: EventCardDetails[];
+  }>(user ? `/api/events?recent=true&limit=${PREVIEW_COUNT}` : null, fetcher);
+  const recentEvents: EventCardDetails[] = eventsData?.data ?? [];
 
   return (
     <div className="space-y-8">
@@ -165,7 +108,7 @@ export function UserDashboard() {
       </div>
 
       {/* ── Manage Clubs ── */}
-      {clubsLoading && !hasFetchedClubs.current ? (
+      {clubsLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -210,7 +153,7 @@ export function UserDashboard() {
 
       {/* ── Recent Events (across all clubs) ── */}
       <div className="space-y-3">
-        {eventsLoading && !hasFetchedEvents.current ? (
+        {eventsLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
@@ -229,7 +172,11 @@ export function UserDashboard() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             {recentEvents.map((event) => (
-              <EventDisplayCard key={event.id} event={event} />
+              <EventDisplayCard
+                key={event.id}
+                event={event}
+                onClick={() => router.push(`/events/${event.id}`)}
+              />
             ))}
           </div>
         )}

@@ -17,11 +17,9 @@ import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { TicketFieldCard } from "@/components/events/checkout/TicketFieldCard";
 import { AddFieldButton } from "@/components/events/checkout/AddFieldButton";
 import { CHECKOUT_PRESET_FIELDS } from "@/lib/types/ticketing";
-import type { TicketingFieldDraft, TicketingFieldType } from "@/lib/types/ticketing";
-import type { ThemeColors, ThemeLayout } from "@/components/events/shared/types";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { TicketingFieldDraft } from "@/lib/types/ticketing";
+import { useCheckoutContext } from "./CheckoutContext";
 
-/* ── Sortable wrapper for DnD ── */
 function SortableFieldWrapper({
   id,
   children,
@@ -52,49 +50,25 @@ function SortableFieldWrapper({
   );
 }
 
-interface CheckoutEditorProps {
-  // Theme information
-  layout: ThemeLayout;
-  isDark: boolean;
-  colors: ThemeColors;
-  accentColor: string | undefined;
-  /* ticketing state */
-  ticketingEnabled: boolean;
-  ticketingChanging: boolean;
-  handleEnableTicketing: () => void;
-  pricingCount: number;
-  /* field CRUD */
-  fields: TicketingFieldDraft[];
-  addField: (type: TicketingFieldType) => void;
-  updateField: (id: string, updated: TicketingFieldDraft) => void;
-  removeField: (id: string) => void;
-  /* DnD */
-  dndSensors: ReturnType<typeof import("@dnd-kit/core").useSensors>;
-  fieldIds: string[];
-  handleFieldDragEnd: (event: DragEndEvent) => void;
-}
+export function CheckoutEditor() {
+  const {
+    layout,
+    isDark,
+    colors,
+    accentColor,
+    ticketingEnabled,
+    ticketingChanging,
+    handleEnableTicketing,
+    pricingCount,
+    fields,
+    addField,
+    updateField,
+    removeField,
+    dndSensors,
+    fieldIds,
+    handleFieldDragEnd,
+  } = useCheckoutContext();
 
-/**
- * Admin view for editing checkout fields. 
- */
-export function CheckoutEditor({
-  layout,
-  isDark,
-  colors,
-  accentColor,
-  ticketingEnabled,
-  ticketingChanging,
-  handleEnableTicketing,
-  pricingCount,
-  fields,
-  addField,
-  updateField,
-  removeField,
-  dndSensors,
-  fieldIds,
-  handleFieldDragEnd,
-}: CheckoutEditorProps) {
-  /* If ticketing is not enabled on the event */
   if (!ticketingEnabled) {
     return (
       <Card className="mt-6 flex flex-col items-center gap-4 p-8 text-center">
@@ -122,16 +96,13 @@ export function CheckoutEditor({
           onClick={handleEnableTicketing}
           disabled={ticketingChanging || pricingCount === 0}
         >
-          {ticketingChanging && (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          )}
+          {ticketingChanging && <Loader2 className="h-4 w-4 animate-spin" />}
           Enable Ticketing
         </Button>
       </Card>
     );
   }
 
-  /* Edit mode: flat layout with preset fields + DnD custom fields */
   return (
     <div className="mt-8 space-y-8">
       <SectionWrapper title="Checkout Info" layout={layout} isDark={isDark}>
@@ -177,7 +148,7 @@ export function CheckoutEditor({
                 items={fieldIds}
                 strategy={verticalListSortingStrategy}
               >
-                {fields.map((field, i) => (
+                {fields.map((field: TicketingFieldDraft, i: number) => (
                   <SortableFieldWrapper key={field.id} id={field.id}>
                     {(dragHandleProps) => (
                       <TicketFieldCard

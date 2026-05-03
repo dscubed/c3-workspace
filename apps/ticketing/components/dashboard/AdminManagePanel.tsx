@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
+import { fetcher } from "@/lib/fetcher";
 import { useAuthStore } from "@c3/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -62,19 +65,17 @@ export function AdminManagePanel({ clubId }: AdminManagePanelProps) {
   const { user } = useAuthStore();
 
   /* ── Admins list ── */
-  const [admins, setAdmins] = useState<ClubAdmin[]>([]);
-  const [adminsLoading, setAdminsLoading] = useState(true);
-  const hasFetchedAdmins = useRef(false);
+  const {
+    data: adminsData,
+    isLoading: adminsLoading,
+    mutate: mutateAdmins,
+  } = useSWR<{ data: ClubAdmin[] }>(`/api/clubs/${clubId}/admins`, fetcher);
+  const admins: ClubAdmin[] = adminsData?.data ?? [];
 
   /* ── Search state ── */
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const fetchingRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   /* ── Invite state ── */
@@ -88,95 +89,44 @@ export function AdminManagePanel({ clubId }: AdminManagePanelProps) {
   }>({ open: false, userId: "", name: "" });
   const [removing, setRemoving] = useState(false);
 
-  /* ── Fetch admins (SWR: only spinner on first load) ── */
-  const fetchAdmins = useCallback(async () => {
-    if (!hasFetchedAdmins.current) setAdminsLoading(true);
-    try {
-      const res = await fetch(`/api/clubs/${clubId}/admins`);
-      if (res.ok) {
-        const { data } = await res.json();
-        setAdmins(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch admins:", err);
-    } finally {
-      hasFetchedAdmins.current = true;
-      setAdminsLoading(false);
-    }
-  }, [clubId]);
-
-  useEffect(() => {
-    fetchAdmins();
-  }, [fetchAdmins]);
-
   /* ── Debounced search ── */
   useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(0);
-      setSearchResults([]);
-      setHasMore(true);
-    }, 300);
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  /* ── Search users ── */
-  const searchUsers = useCallback(
-    async (pageNum: number, searchTerm: string) => {
-      if (fetchingRef.current || !searchTerm.trim()) return;
-      fetchingRef.current = true;
-      setSearchLoading(true);
-      try {
-        const params = new URLSearchParams({
-          table: "profiles",
-          select: "id,first_name,last_name,avatar_url,account_type",
-          limit: String(PAGE_SIZE),
-          offset: String(pageNum * PAGE_SIZE),
-          search: searchTerm,
-        });
+  /* ── Search users (SWR infinite) ── */
+  const {
+    data: searchPages,
+    isLoading: searchLoading,
+    isValidating: searchValidating,
+    setSize: setSearchSize,
+  } = useSWRInfinite<{ data: UserProfile[] }>((pageIndex) => {
+    if (!debouncedSearch.trim()) return null;
+    const params = new URLSearchParams({
+      table: "profiles",
+      select: "id,first_name,last_name,avatar_url,account_type",
+      limit: String(PAGE_SIZE),
+      offset: String(pageIndex * PAGE_SIZE),
+      search: debouncedSearch,
+    });
+    return `/api/profiles/fetch?${params}`;
+  }, fetcher);
 
-        const res = await fetch(`/api/profiles/fetch?${params}`);
-        if (!res.ok) return;
-        const { data } = await res.json();
-        const results = (data ?? []) as UserProfile[];
-
-        // Filter out organisations and self
-        const filtered = results.filter(
-          (r) => r.account_type !== "organisation" && r.id !== clubId,
-        );
-
-        if (pageNum === 0) {
-          setSearchResults(filtered);
-        } else {
-          setSearchResults((prev) => {
-            const ids = new Set(prev.map((p) => p.id));
-            return [...prev, ...filtered.filter((p) => !ids.has(p.id))];
-          });
-        }
-        setHasMore(results.length === PAGE_SIZE);
-      } catch (err) {
-        console.error("Failed to search users:", err);
-      } finally {
-        setSearchLoading(false);
-        fetchingRef.current = false;
-      }
-    },
-    [clubId],
+  const rawResults: UserProfile[] =
+    searchPages?.flatMap((p) => p.data ?? []) ?? [];
+  const searchResults = rawResults.filter(
+    (r) => r.account_type !== "organisation" && r.id !== clubId,
   );
-
-  useEffect(() => {
-    if (debouncedSearch.trim()) {
-      searchUsers(page, debouncedSearch);
-    } else {
-      setSearchResults([]);
-    }
-  }, [page, debouncedSearch, searchUsers]);
+  const lastSearchPage = searchPages?.[searchPages.length - 1];
+  const hasMore = (lastSearchPage?.data?.length ?? 0) === PAGE_SIZE;
+  const searchFetching = searchLoading || searchValidating;
 
   const handleScroll = () => {
-    if (!listRef.current || fetchingRef.current || !hasMore) return;
+    if (!listRef.current || searchFetching || !hasMore) return;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     if (scrollHeight - scrollTop - clientHeight < 40) {
-      setPage((p) => p + 1);
+      setSearchSize((s) => s + 1);
     }
   };
 
@@ -191,7 +141,7 @@ export function AdminManagePanel({ clubId }: AdminManagePanelProps) {
       });
       if (res.ok) {
         toast.success("Admin invite sent");
-        fetchAdmins();
+        void mutateAdmins();
         // Clear search
         setSearch("");
         setSearchOpen(false);
@@ -217,8 +167,13 @@ export function AdminManagePanel({ clubId }: AdminManagePanelProps) {
       });
       if (res.ok) {
         toast.success("Admin removed");
-        setAdmins((prev) =>
-          prev.filter((a) => a.user_id !== removeConfirm.userId),
+        void mutateAdmins(
+          (prev) => ({
+            data: (prev?.data ?? []).filter(
+              (a) => a.user_id !== removeConfirm.userId,
+            ),
+          }),
+          false,
         );
       } else {
         const err = await res.json();

@@ -13,77 +13,26 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { TicketForm } from "./TicketForm";
-import type { TicketingFieldDraft } from "@/lib/types/ticketing";
-import type {
-  ThemeColors,
-  ThemeLayout,
-  TicketTier,
-} from "@/components/events/shared/types";
-import type { User } from "@supabase/supabase-js";
-
-interface CheckoutPreviewProps {
-  // Theme information
-  layout: ThemeLayout;
-  isDark: boolean;
-  colors: ThemeColors;
-  fields: TicketingFieldDraft[];
-  user: User | null;
-  fillingMyData: boolean;
-  getFieldValue: (ticketIndex: number, fieldKey: string) => string;
-  setFieldValue: (ticketIndex: number, fieldKey: string, value: string) => void;
-  handleBuyForMyself: (ticketIndex: number) => void;
-  /* ticket selection */
-  pricing: TicketTier[];
-  selectedTier: TicketTier | null;
-  effectiveSelectedTierId: string;
-  setSelectedTierId: (id: string) => void;
-  thumbnailUrl: string | null;
-  quantity: number;
-  setQuantity: (update: number | ((q: number) => number)) => void;
-  activeTicketTab: string;
-  setActiveTicketTab: (tab: string) => void;
-}
+import { useCheckoutContext } from "./CheckoutContext";
 
 const FEE_PER_TICKET = 0.75;
 
-/**
- * What the custom will see in the checkout page.
- */
-export function CheckoutPreview({
-  layout,
-  isDark,
-  colors,
-  fields,
-  user,
-  fillingMyData,
-  getFieldValue,
-  setFieldValue,
-  handleBuyForMyself,
-  pricing,
-  selectedTier,
-  effectiveSelectedTierId,
-  setSelectedTierId,
-  thumbnailUrl,
-  quantity,
-  setQuantity,
-  activeTicketTab,
-  setActiveTicketTab,
-}: CheckoutPreviewProps) {
-  const ticketFormProps = {
-    layout,
-    isDark,
+export function CheckoutPreview() {
+  const {
     colors,
-    fields,
-    user,
-    fillingMyData,
-    getFieldValue,
-    setFieldValue,
-    handleBuyForMyself,
-  };
+    pricing,
+    selectedTier,
+    effectiveSelectedTierId,
+    setSelectedTierId,
+    thumbnailUrl,
+    quantity,
+    setQuantity,
+    activeTicketTab,
+    setActiveTicketTab,
+  } = useCheckoutContext();
 
   return (
     <>
-      {/* Ticket Selection Banner */}
       {pricing.length > 0 && selectedTier && (
         <div
           className={cn(
@@ -138,7 +87,6 @@ export function CheckoutPreview({
                 ? `$${selectedTier.price.toFixed(2)}`
                 : "Free"}
             </p>
-            {/* Additional processing fee label */}
             {selectedTier.price > 0 && (
               <p className={cn("text-xs", colors.textMuted)}>
                 + ${FEE_PER_TICKET.toFixed(2)} fee
@@ -182,7 +130,6 @@ export function CheckoutPreview({
         </div>
       )}
 
-      {/* Per-ticket forms */}
       {quantity > 1 ? (
         <Tabs
           value={activeTicketTab}
@@ -199,13 +146,13 @@ export function CheckoutPreview({
 
           {Array.from({ length: quantity }, (_, i) => (
             <TabsContent key={i} value={`ticket-${i}`}>
-              <TicketForm ticketIndex={i} {...ticketFormProps} />
+              <TicketForm ticketIndex={i} />
             </TabsContent>
           ))}
         </Tabs>
       ) : (
         <div className="mt-8">
-          <TicketForm ticketIndex={0} {...ticketFormProps} />
+          <TicketForm ticketIndex={0} />
         </div>
       )}
     </>

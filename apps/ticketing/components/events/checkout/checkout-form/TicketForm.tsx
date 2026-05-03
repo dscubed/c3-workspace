@@ -8,35 +8,25 @@ import { cn } from "@/lib/utils";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { TicketFieldPreview } from "@/components/events/checkout/TicketFieldPreview";
 import { CHECKOUT_PRESET_FIELDS } from "@/lib/types/ticketing";
-import type { TicketingFieldDraft } from "@/lib/types/ticketing";
-import type { ThemeColors, ThemeLayout } from "@/components/events/shared/types";
-import type { User } from "@supabase/supabase-js";
+import { useCheckoutContext } from "./CheckoutContext";
 
 interface TicketFormProps {
   ticketIndex: number;
-  layout: ThemeLayout;
-  isDark: boolean;
-  colors: ThemeColors;
-  fields: TicketingFieldDraft[];
-  user: User | null;
-  fillingMyData: boolean;
-  getFieldValue: (ticketIndex: number, fieldKey: string) => string;
-  setFieldValue: (ticketIndex: number, fieldKey: string, value: string) => void;
-  handleBuyForMyself: (ticketIndex: number) => void;
 }
 
-export function TicketForm({
-  ticketIndex,
-  layout,
-  isDark,
-  colors,
-  fields,
-  user,
-  fillingMyData,
-  getFieldValue,
-  setFieldValue,
-  handleBuyForMyself,
-}: TicketFormProps) {
+export function TicketForm({ ticketIndex }: TicketFormProps) {
+  const {
+    layout,
+    isDark,
+    colors,
+    fields,
+    user,
+    fillingMyData,
+    getFieldValue,
+    setFieldValue,
+    handleBuyForMyself,
+  } = useCheckoutContext();
+
   return (
     <div className="space-y-8">
       <SectionWrapper
@@ -101,9 +91,7 @@ export function TicketForm({
                 field={field}
                 colors={colors}
                 value={getFieldValue(ticketIndex, field.id)}
-                onChange={(val) =>
-                  setFieldValue(ticketIndex, field.id, val)
-                }
+                onChange={(val) => setFieldValue(ticketIndex, field.id, val)}
               />
             ))}
           </div>
