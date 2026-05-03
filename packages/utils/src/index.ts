@@ -3,6 +3,14 @@ import { twMerge } from "tailwind-merge";
 
 export * from "./event";
 
+/** Generic SWR-compatible fetcher. Unwraps `{ data }` and throws on error. */
+export async function fetcher<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error ?? "Request failed");
+  return body.data as T;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

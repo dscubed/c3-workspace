@@ -1,23 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import { useClubStore } from "@c3/auth";
 import { Plus, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockEvents } from "@/lib/mock-data";
-import { EventDisplayCard } from "@/components/dashboard/EventDisplayCard";
-import type { EventCardDetails } from "@/lib/types/events";
+import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
+import { EventDisplayCardSkeleton } from "@c3/ui";
+import type { EventCardDetails } from "@c3/types";
+import { fetcher } from "@c3/utils";
+import useSWR from "swr";
 
 type FilterType = "all" | "upcoming" | "past" | "draft" | "live";
 
 export default function EventsPage() {
   const router = useRouter();
+  const { activeClubId } = useClubStore();
   const [filter, setFilter] = useState<FilterType>("all");
-  const events = mockEvents as any[] as EventCardDetails[];
+  const { data: events, isLoading } = useSWR<EventCardDetails[]>(
+    activeClubId ? `/api/events?club_id=${activeClubId}` : null,
+    fetcher,
+  );
+
+  const showSkeleton = !activeClubId || isLoading;
 
   const filtered =
-    filter === "all" ? events : events.filter((e) => e.status === filter);
+    filter === "all"
+      ? (events ?? [])
+      : (events ?? []).filter((e) => e.status === filter);
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -46,7 +57,13 @@ export default function EventsPage() {
       </Tabs>
 
       {/* Event cards grid */}
-      {filtered.length === 0 ? (
+      {showSkeleton ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <EventDisplayCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="rounded-lg border bg-white overflow-hidden">
           <div className="flex flex-col items-center gap-4 py-16 text-center px-6">
             <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
@@ -63,7 +80,11 @@ export default function EventsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {filtered.map((event) => (
-            <EventDisplayCard key={event.id} event={event} />
+            <EventDisplayCard
+              key={event.id}
+              event={event}
+              onClick={() => router.push(`/dashboard/events/${event.id}`)}
+            />
           ))}
         </div>
       )}

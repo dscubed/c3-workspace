@@ -9,18 +9,20 @@
     "./middleware": "./src/middleware.ts",
     "./admin": "./src/admin.ts",
     "./profiles": "./src/profileFetch.ts",
-    "./club-admin": "./src/clubAdmin.ts"
+    "./club-admin": "./src/clubAdmin.ts",
+    "./events": "./src/events.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.105.0",
-    "@supabase/ssr": "^0.10.2"
+    "@c3/types": "workspace:*",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.105.0"
   },
   "devDependencies": {
     "@c3/tsconfig": "workspace:*",
-    "typescript": "^5",
-    "next": "^16.2.4"
+    "next": "^16.2.4",
+    "typescript": "^5"
   }
 }

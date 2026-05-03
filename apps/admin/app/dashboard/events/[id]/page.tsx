@@ -3,18 +3,17 @@
 import { use, useState } from "react";
 import { ArrowLeft, Download, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@c3/utils";
-import { mockEvents, mockAttendees } from "@/lib/mock-data";
-
-// TODO: implement — returning mock data directly
-function getEvent(id: string) {
-  return mockEvents.find((e) => e.id === id) ?? null;
-}
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn, fetcher } from "@c3/utils";
+import { useClubStore } from "@c3/auth";
+import { mockAttendees } from "@/lib/mock-data";
+import type { EventCardDetails } from "@c3/types";
+import useSWR from "swr";
 
 const statusColors: Record<string, string> = {
+  live: "bg-green-100 text-green-700 border-green-200",
   upcoming: "bg-blue-100 text-blue-700 border-blue-200",
   past: "bg-gray-100 text-gray-600 border-gray-200",
   draft: "bg-amber-100 text-amber-700 border-amber-200",
@@ -27,25 +26,51 @@ export default function EventDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const event = getEvent(id);
+  const { activeClubId } = useClubStore();
   const [showScreen, setShowScreen] = useState(false);
 
-  if (!event) {
+  const { data: events, isLoading } = useSWR<EventCardDetails[]>(
+    activeClubId ? `/api/events?club_id=${activeClubId}` : null,
+    fetcher,
+  );
+
+  const showSkeleton = !activeClubId || isLoading;
+  const event = events?.find((e) => e.id === id) ?? null;
+
+  const checkedInCount = mockAttendees.filter((a) => a.checkedIn).length;
+
+  if (showSkeleton) {
     return (
-      <div className="p-8">
-        <Link
-          href="/dashboard/events"
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="size-4" />
-          Back to Events
-        </Link>
-        <p className="text-muted-foreground">Event not found.</p>
+      <div className="p-4 md:p-8 space-y-6">
+        <Skeleton className="h-4 w-32" />
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     );
   }
 
-  const checkedInCount = mockAttendees.filter((a) => a.checkedIn).length;
+  if (!event) {
+    return (
+      <div className="p-8">
+        <button
+          onClick={() => router.push("/dashboard/events")}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+        >
+          <ArrowLeft className="size-4" />
+          Back to Events
+        </button>
+        <p className="text-muted-foreground">Event not found.</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -73,27 +98,19 @@ export default function EventDetailPage({
           </p>
         </div>
 
-        {/* Description */}
-        <p className="text-muted-foreground">
-          Join us for an amazing event where members can network, learn, and
-          grow together. Refreshments provided. All are welcome.
-        </p>
-
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Total Registrations</p>
-            <p className="text-3xl font-bold mt-1">{event.registrations}</p>
+            <p className="text-3xl font-bold mt-1">—</p>
           </div>
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Tickets Sold</p>
-            <p className="text-3xl font-bold mt-1">{event.ticketsSold}</p>
+            <p className="text-3xl font-bold mt-1">—</p>
           </div>
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Revenue</p>
-            <p className="text-3xl font-bold mt-1">
-              ${event.revenue.toLocaleString()}
-            </p>
+            <p className="text-3xl font-bold mt-1">—</p>
           </div>
         </div>
 

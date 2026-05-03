@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAuthStore } from "@c3/auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { UserAvatar } from "@c3/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +16,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Loader2, Mail, Trash2, UserPlus, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Mail,
+  Trash2,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-AU", {
@@ -52,9 +61,11 @@ interface AdminsTableProps {
 export function AdminsTable({ clubId }: AdminsTableProps) {
   const { user } = useAuthStore();
 
-  const [admins, setAdmins] = useState<ClubAdmin[]>([]);
-  const [loading, setLoading] = useState(true);
-  const hasFetched = useRef(false);
+  const {
+    data: admins,
+    isLoading,
+    mutate,
+  } = useSWR<ClubAdmin[]>(`/api/clubs/${clubId}/admins`, fetcher);
 
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -66,27 +77,6 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
     name: string;
   }>({ open: false, userId: "", name: "" });
   const [removing, setRemoving] = useState(false);
-
-  const fetchAdmins = useCallback(async () => {
-    if (!hasFetched.current) setLoading(true);
-    try {
-      const res = await fetch(`/api/clubs/${clubId}/admins`);
-      if (res.ok) {
-        const { data } = await res.json();
-        setAdmins(data ?? []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch admins:", err);
-    } finally {
-      hasFetched.current = true;
-      setLoading(false);
-    }
-  }, [clubId]);
-
-  useEffect(() => {
-    hasFetched.current = false;
-    fetchAdmins();
-  }, [fetchAdmins]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +93,7 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
         toast.success("Invite sent");
         setEmail("");
         setShowInvite(false);
-        fetchAdmins();
+        mutate();
       } else {
         toast.error(json.error || "Failed to send invite");
       }
@@ -124,7 +114,7 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
       });
       if (res.ok) {
         toast.success("Admin removed");
-        setAdmins((prev) => prev.filter((a) => a.user_id !== removeConfirm.userId));
+        mutate();
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to remove admin");
@@ -137,7 +127,7 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
     }
   };
 
-  const activeAdmins = admins.filter(
+  const activeAdmins = (admins ?? []).filter(
     (a) => a.status === "accepted" || a.status === "pending",
   );
 
@@ -146,7 +136,9 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
       {/* Section header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Club Admins</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            Committee Members
+          </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {activeAdmins.length === 0
               ? "No admins yet"
@@ -180,19 +172,25 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
             />
           </div>
           <Button type="submit" size="sm" disabled={sending || !email.trim()}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Invite"}
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Send Invite"
+            )}
           </Button>
         </form>
       )}
 
       {/* Admins table */}
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : activeAdmins.length === 0 ? (
         <div className="rounded-lg border border-dashed py-10 text-center">
-          <p className="text-sm text-muted-foreground">No admins — invite someone above.</p>
+          <p className="text-sm text-muted-foreground">
+            No admins — invite someone above.
+          </p>
         </div>
       ) : (
         <div className="rounded-lg border overflow-hidden">
@@ -200,13 +198,10 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">
-                  Member
+                  Name
                 </th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">
                   Role
-                </th>
-                <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">
-                  Status
                 </th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">
                   Added
@@ -227,37 +222,23 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <Avatar className="h-7 w-7 shrink-0">
-                          {p?.avatar_url && (
-                            <AvatarImage src={p.avatar_url} alt={p.first_name} />
-                          )}
-                          <AvatarFallback className="text-[10px]">
-                            {p?.first_name?.charAt(0).toUpperCase() ?? "?"}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          avatarUrl={p?.avatar_url}
+                          name={name}
+                          size="sm"
+                        />
                         <span className="font-medium truncate">{name}</span>
+                        {admin.status === "pending" ? (
+                          <Clock className="h-3 w-3 text-yellow-600" />
+                        ) : admin.status === "accepted" ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        ) : admin.status === "rejected" ? (
+                          <XCircle className="h-3 w-3 text-red-600" />
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground capitalize">
                       {admin.role}
-                    </td>
-                    <td className="px-4 py-3">
-                      {admin.status === "accepted" ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Active
-                        </span>
-                      ) : admin.status === "pending" ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                          <Clock className="h-3.5 w-3.5" />
-                          Pending
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <XCircle className="h-3.5 w-3.5" />
-                          {admin.status}
-                        </span>
-                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {fmtDate(admin.created_at)}
@@ -267,7 +248,11 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
                         <button
                           className="text-muted-foreground hover:text-destructive transition-colors"
                           onClick={() =>
-                            setRemoveConfirm({ open: true, userId: admin.user_id, name })
+                            setRemoveConfirm({
+                              open: true,
+                              userId: admin.user_id,
+                              name,
+                            })
                           }
                         >
                           <Trash2 className="h-4 w-4" />
@@ -294,8 +279,11 @@ export function AdminsTable({ clubId }: AdminsTableProps) {
             <AlertDialogTitle>Remove admin</AlertDialogTitle>
             <AlertDialogDescription>
               Remove{" "}
-              <span className="font-medium text-foreground">{removeConfirm.name}</span>{" "}
-              as an admin? They&apos;ll lose access to manage this club&apos;s events.
+              <span className="font-medium text-foreground">
+                {removeConfirm.name}
+              </span>{" "}
+              as an admin? They&apos;ll lose access to manage this club&apos;s
+              events.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

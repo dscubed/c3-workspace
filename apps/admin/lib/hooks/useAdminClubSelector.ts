@@ -1,23 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuthStore } from "@c3/auth";
-
-export interface ClubProfile {
-  id: string;
-  first_name: string;
-  last_name: string | null;
-  avatar_url: string | null;
-}
-
-export interface ClubAdminRow {
-  id: string;
-  club_id: string;
-  role: string;
-  status: string;
-  created_at: string;
-  club: ClubProfile | null;
-}
+import { useAuthStore, useClubStore } from "@c3/auth";
+import type { ClubAdminRow } from "@c3/auth";
 
 export interface UseClubSelectorReturn {
   clubs: ClubAdminRow[];
@@ -27,52 +11,21 @@ export interface UseClubSelectorReturn {
   refetchClubs: () => void;
 }
 
-export function useAdminClubSelector(
-  initialClubId?: string | null,
-): UseClubSelectorReturn {
+/** Thin compatibility shim — state now lives in @c3/auth's useClubStore. */
+export function useAdminClubSelector(): UseClubSelectorReturn {
   const { user } = useAuthStore();
+  const { clubs, activeClubId, clubsLoading, setActiveClubId } = useClubStore();
 
-  const [clubs, setClubs] = useState<ClubAdminRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedClubId, setSelectedClubId] = useState<string | null>(
-    initialClubId ?? null,
-  );
-  const hasFetched = useRef(false);
+  void user; // auth gate handled by AuthProvider
 
-  const fetchClubs = useCallback(async () => {
-    if (!user) return;
-    if (!hasFetched.current) setLoading(true);
-    try {
-      const res = await fetch("/api/clubs/my-clubs");
-      if (res.ok) {
-        const { data } = await res.json();
-        const rows: ClubAdminRow[] = data ?? [];
-        setClubs(rows);
-        if (rows.length > 0 && !selectedClubId) {
-          if (initialClubId && rows.some((r) => r.club_id === initialClubId)) {
-            setSelectedClubId(initialClubId);
-          } else {
-            setSelectedClubId(rows[0].club_id);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch clubs:", err);
-    } finally {
-      hasFetched.current = true;
-      setLoading(false);
-    }
-  }, [user, selectedClubId, initialClubId]);
-
-  useEffect(() => {
-    fetchClubs();
-  }, [fetchClubs]);
-
-  useEffect(() => {
-    const onFocus = () => fetchClubs();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchClubs]);
-
-  return { clubs, loading, selectedClubId, setSelectedClubId, refetchClubs: fetchClubs };
+  return {
+    clubs,
+    loading: clubsLoading,
+    selectedClubId: activeClubId,
+    setSelectedClubId: (id) => setActiveClubId(id),
+    refetchClubs: () => {}, // revalidation driven by AuthProvider / focus handled there
+  };
 }
+
+// Keep this so old imports of the hook still resolve without changes.
+export { useClubStore } from "@c3/auth";

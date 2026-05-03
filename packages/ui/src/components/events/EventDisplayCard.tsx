@@ -18,7 +18,7 @@ export function EventDisplayCard({
   return (
     <div className="relative flex gap-4 group">
       {/* Square thumbnail */}
-      <div className="w-[110px] shrink-0 cursor-pointer" onClick={onClick}>
+      <div className="shrink-0 cursor-pointer" style={{ width: 112, height: 112 }} onClick={onClick}>
         <EventThumbnail event={event} />
       </div>
 

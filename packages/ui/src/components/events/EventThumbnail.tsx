@@ -4,7 +4,7 @@ import { EventCardDetails } from "@c3/types";
 
 export function EventThumbnail({ event }: { event: EventCardDetails }) {
   return (
-    <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center shrink-0">
+    <div className="relative rounded-xl overflow-hidden flex items-center justify-center" style={{ width: "100%", height: "100%", background: "linear-gradient(to bottom right, #f3e8ff, #e9d5ff)" }}>
       {event.thumbnail ? (
         <Image
           src={event.thumbnail}
@@ -25,6 +25,16 @@ export function EventThumbnail({ event }: { event: EventCardDetails }) {
         <span className="absolute top-2 right-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-green-500/90 text-white px-2 py-0.5 rounded-md backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
           Live
+        </span>
+      )}
+      {event.status === "upcoming" && (
+        <span className="absolute top-2 right-2 text-[10px] font-semibold uppercase tracking-wide bg-blue-500/90 text-white px-2 py-0.5 rounded-md backdrop-blur-sm">
+          Upcoming
+        </span>
+      )}
+      {event.status === "past" && (
+        <span className="absolute top-2 right-2 text-[10px] font-semibold uppercase tracking-wide bg-gray-500/90 text-white px-2 py-0.5 rounded-md backdrop-blur-sm">
+          Past
         </span>
       )}
     </div>

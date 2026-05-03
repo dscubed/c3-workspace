@@ -51,7 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
         setProfile(profile);
         setClubs(clubs);
-        if (clubs.length > 0) setActiveClubId(clubs[0].club_id);
+        const [firstClub] = clubs;
+        if (firstClub) setActiveClubId(firstClub.club_id);
       }
       setLoading(false);
       setClubsLoading(false);
@@ -69,7 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
         setProfile(profile);
         setClubs(clubs);
-        if (clubs.length > 0) setActiveClubId(clubs[0].club_id);
+        const [firstClub] = clubs;
+        if (firstClub) setActiveClubId(firstClub.club_id);
       } else {
         setProfile(null);
         setClubs([]);
@@ -79,7 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, setProfile, setLoading, setClubs, setActiveClubId, setClubsLoading]);
+  }, [
+    setUser,
+    setProfile,
+    setLoading,
+    setClubs,
+    setActiveClubId,
+    setClubsLoading,
+  ]);
 
   return <>{children}</>;
 }

@@ -10,3 +10,4 @@ export {
   checkEventPermission,
   type EventPermission,
 } from "./clubAdmin";
+export { fetchClubEventCards } from "./events";

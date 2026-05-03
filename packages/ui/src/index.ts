@@ -1,3 +1,6 @@
+// shared components
+export * from "./components/user-avatar";
+
 // shadcn primitives
 export * from "./components/button";
 export * from "./components/badge";
@@ -30,3 +33,6 @@ export * from "./components/toaster";
 export * from "./components/app-sidebar";
 export { default as LogoAnimated } from "./components/logo/LogoAnimated";
 export { default as Logo } from "./components/logo/Logo";
+
+// event components
+export { EventDisplayCardSkeleton } from "./components/events/EventDisplayCardSkeleton";

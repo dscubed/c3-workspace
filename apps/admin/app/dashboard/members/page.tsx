@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
+import { useClubStore } from "@c3/auth";
 import { fetcher } from "@/lib/fetcher";
 import { ProductConfig } from "@/components/dashboard/members/member";
 import { MembersList } from "@/components/dashboard/members/MembersList";
 
 export default function MembersPage() {
-  const { selectedClubId } = useAdminClubSelector();
+  const { activeClubId: selectedClubId } = useClubStore();
 
   const {
     data: product,

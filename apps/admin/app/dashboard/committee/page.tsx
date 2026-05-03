@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { UserPlus } from "lucide-react";
+import { useState } from "react";
+import useSWR from "swr";
+import { UserPlus, ClockFading, CircleCheck, CircleX } from "lucide-react";
 import { useClubStore } from "@c3/auth";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@c3/ui";
+import { fetcher } from "@/lib/fetcher";
 
 interface AdminMember {
   id: string;
@@ -42,35 +45,20 @@ interface AdminMember {
 
 export default function CommitteePage() {
   const { activeClubId } = useClubStore();
-  const [committee, setCommittee] = useState<AdminMember[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const {
+    data: committee,
+    isLoading,
+    mutate,
+  } = useSWR<AdminMember[]>(
+    activeClubId ? `/api/clubs/${activeClubId}/admins` : null,
+    fetcher,
+  );
+
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("admin");
   const [open, setOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
-
-  useEffect(() => {
-    if (!activeClubId) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchAdmins = async () => {
-      try {
-        const res = await fetch(`/api/clubs/${activeClubId}/admins`);
-        if (!res.ok) throw new Error("Failed to fetch admins");
-        const { data } = await res.json();
-        setCommittee(data || []);
-      } catch (error) {
-        console.error("Error fetching admins:", error);
-        setCommittee([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAdmins();
-  }, [activeClubId]);
 
   const handleSendInvite = async () => {
     if (!inviteEmail || !activeClubId) return;
@@ -91,22 +79,18 @@ export default function CommitteePage() {
       setInviteEmail("");
       setInviteRole("admin");
       setOpen(false);
-
-      const adminRes = await fetch(`/api/clubs/${activeClubId}/admins`);
-      if (adminRes.ok) {
-        const { data } = await adminRes.json();
-        setCommittee(data || []);
-      }
+      mutate();
     } catch (error) {
-      console.error("Error sending invite:", error);
-      alert(error instanceof Error ? error.message : "Failed to send invite");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send invite",
+      );
     } finally {
       setInviting(false);
     }
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="p-4 md:p-8 w-full max-w-6xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Committee</h1>
@@ -173,9 +157,6 @@ export default function CommitteePage() {
                 Role
               </th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                 Date Joined
               </th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">
@@ -184,19 +165,19 @@ export default function CommitteePage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   Loading admins...
                 </td>
               </tr>
-            ) : committee.length === 0 ? (
+            ) : !committee || committee.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No admins found. Invite your first committee member!
@@ -210,14 +191,6 @@ export default function CommitteePage() {
                 ]
                   .filter(Boolean)
                   .join(" ");
-                const initials = [
-                  member.profiles.first_name?.[0],
-                  member.profiles.last_name?.[0],
-                ]
-                  .filter(Boolean)
-                  .join("")
-                  .toUpperCase();
-
                 return (
                   <tr
                     key={member.id}
@@ -225,16 +198,19 @@ export default function CommitteePage() {
                   >
                     <td className="px-4 py-3 font-medium">
                       <div className="flex items-center gap-3">
-                        <Avatar size="sm">
-                          {member.profiles.avatar_url && (
-                            <AvatarImage
-                              src={member.profiles.avatar_url}
-                              alt={fullName}
-                            />
-                          )}
-                          <AvatarFallback>{initials || "?"}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          avatarUrl={member.profiles.avatar_url}
+                          name={fullName}
+                          size="sm"
+                        />
                         <span>{fullName}</span>
+                        {member.status === "accepted" ? (
+                          <CircleCheck className="size-4 text-purple-600 shrink-0" />
+                        ) : member.status === "pending" ? (
+                          <ClockFading className="size-4 text-muted-foreground shrink-0" />
+                        ) : (
+                          <CircleX className="size-4 text-red-500 shrink-0" />
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -249,26 +225,6 @@ export default function CommitteePage() {
                         }
                       >
                         {member.role}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={
-                          member.status === "accepted" ? "default" : "outline"
-                        }
-                        className={
-                          member.status === "accepted"
-                            ? "bg-green-100 text-green-700 border-green-300"
-                            : member.status === "pending"
-                              ? "bg-amber-100 text-amber-700 border-amber-300"
-                              : "bg-red-100 text-red-700 border-red-300"
-                        }
-                      >
-                        {member.status === "accepted"
-                          ? "Accepted"
-                          : member.status === "pending"
-                            ? "Pending"
-                            : "Declined"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">

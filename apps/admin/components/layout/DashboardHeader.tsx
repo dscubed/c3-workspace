@@ -3,9 +3,7 @@
 import Image from "next/image";
 import { Check, ChevronDown } from "lucide-react";
 import { useClubStore } from "@c3/auth";
-import { useAuthStore } from "@c3/auth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,14 +39,9 @@ function ClubAvatar({
 
 export function DashboardHeader() {
   const { clubs, activeClubId, setActiveClubId, clubsLoading } = useClubStore();
-  const { user, profile, loading } = useAuthStore();
 
   const activeClub = clubs.find((c) => c.club_id === activeClubId);
   const multipleClubs = clubs.length > 1;
-
-  const initials = profile?.first_name
-    ? profile.first_name.charAt(0).toUpperCase()
-    : (user?.email?.charAt(0).toUpperCase() ?? "?");
 
   const clubContent = clubsLoading ? (
     <div className="flex items-center gap-2.5">
