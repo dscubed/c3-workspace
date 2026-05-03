@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
-    "./provider": "./src/provider.tsx"
+    "./provider": "./src/provider.tsx",
+    "./sso": "./src/sso.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
@@ -20,6 +21,7 @@
     "@c3/tsconfig": "workspace:*",
     "typescript": "^5",
     "react": "^19.2.4",
-    "@types/react": "^19"
+    "@types/react": "^19",
+    "@types/node": "^22"
   }
 }
