@@ -36,3 +36,6 @@ export { default as Logo } from "./components/logo/Logo";
 
 // event components
 export { EventDisplayCardSkeleton } from "./components/events/EventDisplayCardSkeleton";
+
+// club selector
+export { ClubSelectorDropdown } from "./components/club-selector-dropdown";

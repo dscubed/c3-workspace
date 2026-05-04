@@ -1,10 +1,8 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@c3/auth";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
+import { useRouter } from "next/navigation";
+import { useAuthStore, useClubStore } from "@c3/auth";
 import { Button } from "@/components/ui/button";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -39,22 +37,13 @@ function DashboardEventsSkeleton() {
 
 function DashboardEventsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialClubId = searchParams.get("club_id");
   const { user, loading: authLoading, isOrganisation } = useAuthStore();
   const isOrg = isOrganisation();
+  const { activeClubId, clubsLoading } = useClubStore();
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  /* Shared club selector hook (non-org only) */
-  const {
-    clubs,
-    loading: clubsLoading,
-    selectedClubId,
-    setSelectedClubId,
-  } = useAdminClubSelector(initialClubId);
-
-  /* Effective club ID: org → own ID; non-org → selected club */
-  const effectiveClubId = isOrg ? (user?.id ?? null) : selectedClubId;
+  /* Effective club ID: org → own ID; non-org → active club from store */
+  const effectiveClubId = isOrg ? (user?.id ?? null) : activeClubId;
 
   /* Redirect unauthenticated users */
   if (!authLoading && !user) {
@@ -93,15 +82,6 @@ function DashboardEventsContent() {
         onOpenChange={setCreateModalOpen}
         {...(effectiveClubId ? { clubId: effectiveClubId } : {})}
       />
-
-      {/* Club selector (non-org users) */}
-      {!isOrg && (
-        <AdminClubSelector
-          clubs={clubs}
-          selectedClubId={selectedClubId}
-          onSelect={setSelectedClubId}
-        />
-      )}
 
       {/* Events content */}
       {effectiveClubId ? (

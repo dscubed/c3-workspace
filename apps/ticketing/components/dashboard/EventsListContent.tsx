@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
-import { useAuthStore } from "@c3/auth";
+import { useAuthStore, useClubStore } from "@c3/auth";
 import { useIntersection } from "@/lib/hooks/useIntersection";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -57,7 +56,7 @@ export function EventsListContent({
   const router = useRouter();
   const { user, isOrganisation } = useAuthStore();
 
-  const { clubs } = useAdminClubSelector();
+  const { clubs } = useClubStore();
   const isOrg = user ? isOrganisation() : false;
   const isOwner = isOrg && user?.id === clubId;
   const isClubAdmin = clubs.some((c) => c.club_id === clubId);

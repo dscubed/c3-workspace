@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Instagram, ChevronLeft, ChevronRight, MapPin, X } from "lucide-react";
 import { useAuthStore } from "@c3/auth";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
+import { useClubStore } from "@c3/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarStack } from "@c3/ui";
 import type { AvatarProfile } from "@/lib/types/events";
@@ -370,13 +369,8 @@ function PostCard({
 export default function InstagramPage() {
   const { user, isOrganisation } = useAuthStore();
   const isOrg = isOrganisation();
-  const {
-    clubs,
-    selectedClubId,
-    setSelectedClubId,
-    loading: clubsLoading,
-  } = useAdminClubSelector();
-  const effectiveClubId = isOrg ? (user?.id ?? null) : selectedClubId;
+  const { activeClubId, clubsLoading } = useClubStore();
+  const effectiveClubId = isOrg ? (user?.id ?? null) : activeClubId;
 
   const { posts, slugToProfile, isLoading } =
     useInstagramPosts(effectiveClubId);
@@ -398,13 +392,6 @@ export default function InstagramPage() {
             </span>
           )}
         </div>
-        {!isOrg && (
-          <AdminClubSelector
-            clubs={clubs}
-            selectedClubId={selectedClubId}
-            onSelect={setSelectedClubId}
-          />
-        )}
       </div>
 
       {isSpinning ? (

@@ -1,10 +1,8 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@c3/auth";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
+import { useRouter } from "next/navigation";
+import { useAuthStore, useClubStore } from "@c3/auth";
 import { OrgDashboardContent } from "@/components/dashboard/OrgDashboard";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
 import { Button } from "@/components/ui/button";
@@ -25,7 +23,6 @@ function ManageSkeleton() {
           <Skeleton className="h-8 w-32 rounded-md" />
         </div>
       </div>
-      <Skeleton className="h-10 w-full rounded-md" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-40 w-full rounded-xl" />
@@ -37,17 +34,8 @@ function ManageSkeleton() {
 
 function ManageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialClubId = searchParams.get("club_id");
   const { user, loading: authLoading } = useAuthStore();
-
-  /* Shared club selector hook */
-  const {
-    clubs,
-    loading: clubsLoading,
-    selectedClubId,
-    setSelectedClubId,
-  } = useAdminClubSelector(initialClubId);
+  const { clubs, clubsLoading, activeClubId } = useClubStore();
 
   /* ── Modal ── */
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -98,13 +86,13 @@ function ManageContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {selectedClubId && (
+          {activeClubId && (
             <Button
               variant="outline"
               size="sm"
               className="gap-1.5"
               onClick={() =>
-                router.push(`/dashboard/club?club_id=${selectedClubId}`)
+                router.push(`/dashboard/club?club_id=${activeClubId}`)
               }
             >
               <Settings className="h-3.5 w-3.5" />
@@ -121,23 +109,16 @@ function ManageContent() {
       <CreateEventModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        clubId={selectedClubId || undefined}
-      />
-
-      {/* ── Club selector ── */}
-      <AdminClubSelector
-        clubs={clubs}
-        selectedClubId={selectedClubId}
-        onSelect={setSelectedClubId}
+        clubId={activeClubId || undefined}
       />
 
       {/* ── Dashboard content (admins + events) ── */}
-      {selectedClubId && (
+      {activeClubId && (
         <OrgDashboardContent
-          clubId={selectedClubId}
+          clubId={activeClubId}
           notificationMode="user"
-          eventsHref={`/dashboard/events?club_id=${selectedClubId}`}
-          clubHref={`/dashboard/club?club_id=${selectedClubId}`}
+          eventsHref={`/dashboard/events?club_id=${activeClubId}`}
+          clubHref={`/dashboard/club?club_id=${activeClubId}`}
         />
       )}
     </div>

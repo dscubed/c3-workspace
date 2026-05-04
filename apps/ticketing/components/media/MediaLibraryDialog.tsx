@@ -18,9 +18,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { useAuthStore } from "@c3/auth";
+import { useAuthStore, useClubStore } from "@c3/auth";
 
 /* ── Types ── */
 
@@ -114,27 +112,15 @@ export function MediaLibraryDialog({
   /* Auth — determine whether this user is an organisation (they ARE the club) */
   const { user, isOrganisation } = useAuthStore();
   const isOrg = isOrganisation();
-
-  /*
-   * Club selector — only used when:
-   *   - no clubId prop is provided (not org-dashboard context), AND
-   *   - the user is NOT an organisation account
-   */
-  const {
-    clubs: adminClubs,
-    loading: clubsLoading,
-    selectedClubId: selectedInstagramClubId,
-    setSelectedClubId: setSelectedInstagramClubId,
-  } = useAdminClubSelector();
+  const { activeClubId, clubsLoading } = useClubStore();
 
   /*
    * Resolve the effective club ID for Instagram fetching:
    *   1. explicit clubId prop (org dashboard)
    *   2. org account → own user ID
-   *   3. user account → selected club from AdminClubSelector
+   *   3. user account → active club from store (set via navbar selector)
    */
-  const effectiveClubId =
-    clubId ?? (isOrg ? (user?.id ?? null) : selectedInstagramClubId);
+  const effectiveClubId = clubId ?? (isOrg ? (user?.id ?? null) : activeClubId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -482,31 +468,6 @@ export function MediaLibraryDialog({
           {/* Instagram tab */}
           <TabsContent value="instagram">
             {/* Club selector — only shown for 'user' accounts without a clubId prop */}
-            {!clubId && !isOrg && (
-              <div className="pb-3">
-                {clubsLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading clubs…
-                  </div>
-                ) : adminClubs.length > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground shrink-0">
-                      Club:
-                    </span>
-                    <AdminClubSelector
-                      clubs={adminClubs}
-                      selectedClubId={selectedInstagramClubId}
-                      onSelect={(val) => {
-                        setSelectedInstagramClubId(val);
-                        setInstagramImages([]);
-                        fetchInstagramImages(val);
-                      }}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            )}
 
             {instagramLoading ? (
               <div className="flex justify-center py-12">

@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@c3/auth";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
+import { useClubStore } from "@c3/auth";
 import { AdminManagePanel } from "@/components/dashboard/AdminManagePanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ function ClubManagementContent() {
   const queryClubId = searchParams.get("club_id");
   const clubId = isOrg ? (user?.id ?? null) : queryClubId;
 
-  const { clubs, loading: clubsLoading } = useAdminClubSelector();
+  const { clubs, clubsLoading } = useClubStore();
   const isVerified = isOrg || clubs.some((r) => r.club_id === queryClubId);
 
   if (authLoading || (!isOrg && clubsLoading))

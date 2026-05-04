@@ -2,9 +2,7 @@
 
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@c3/auth";
-import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
-import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
+import { useAuthStore, useClubStore } from "@c3/auth";
 import { MediaTab, VALID_TABS } from "@/components/dashboard/media/types";
 import { MediaTabContext } from "@/components/dashboard/media/MediaTabContext";
 import { InstagramTabContent } from "@/components/dashboard/media/instagram/InstagramTabContent";
@@ -16,8 +14,8 @@ function MediaPageContent() {
   const searchParams = useSearchParams();
   const { user, isOrganisation } = useAuthStore();
   const isOrg = isOrganisation();
-  const { clubs, selectedClubId, setSelectedClubId } = useAdminClubSelector();
-  const effectiveClubId = isOrg ? (user?.id ?? null) : selectedClubId;
+  const { activeClubId } = useClubStore();
+  const effectiveClubId = isOrg ? (user?.id ?? null) : activeClubId;
 
   const rawTab = searchParams.get("tab") as MediaTab | null;
   const active = rawTab && VALID_TABS.includes(rawTab) ? rawTab : "images";
@@ -33,13 +31,6 @@ function MediaPageContent() {
       <div className="p-4 sm:p-8 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Media</h1>
-          {!isOrg && (
-            <AdminClubSelector
-              clubs={clubs}
-              selectedClubId={selectedClubId}
-              onSelect={setSelectedClubId}
-            />
-          )}
         </div>
 
         {active === "instagram" ? (
