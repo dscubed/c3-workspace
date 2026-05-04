@@ -11,6 +11,7 @@ import {
 import { CalendarDays } from "lucide-react";
 import type { DateTimeData, OccurrenceFormData, Venue } from "../shared/types";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 import { VenueAccordionItem, VenueInlineList } from "./VenueDetail";
 import {
   formatDateFull,
@@ -27,7 +28,7 @@ export function EventDetailModal({
   open,
   onOpenChange,
 }: EventDetailModalProps) {
-  const { form } = useEventEditor();
+  const { form } = useEventForm();
   const venues: Venue[] = form.venues;
   const occurrences: OccurrenceFormData[] = form.occurrences;
 

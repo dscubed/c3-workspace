@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionWrapper } from "../preview/SectionWrapper";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +23,8 @@ export function EventDescriptionField({
   locked,
   lockedBy,
 }: EventDescriptionFieldProps) {
-  const { isDark, viewMode: mode, form, updateField } = useEventEditor();
+  const { isDark, viewMode: mode } = useEventEditor();
+  const { form, updateField } = useEventForm();
   const value = form.description;
   const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

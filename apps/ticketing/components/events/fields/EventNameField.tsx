@@ -3,9 +3,11 @@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 
 export function EventNameField() {
-  const { viewMode: mode, form, updateField, colors } = useEventEditor();
+  const { viewMode: mode, colors } = useEventEditor();
+  const { form, updateField } = useEventForm();
   const className = colors.text;
 
   if (mode === "preview") {

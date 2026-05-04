@@ -4,13 +4,15 @@ import { useMemo } from "react";
 import { ImageCarousel } from "../create/ImageCarousel";
 import { ImageCarouselPreview } from "../preview/ImageCarouselPreview";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 
 interface EventImageFieldProps {
   onEditClick?: () => void;
 }
 
 export function EventImageField({ onEditClick }: EventImageFieldProps) {
-  const { viewMode: mode, carouselImages } = useEventEditor();
+  const { viewMode: mode } = useEventEditor();
+  const { carouselImages } = useEventForm();
   const urls = useMemo(
     () => carouselImages.filter((i) => i.url && !i.uploading).map((i) => i.url),
     [carouselImages],
@@ -21,6 +23,9 @@ export function EventImageField({ onEditClick }: EventImageFieldProps) {
   }
 
   return (
-    <ImageCarousel images={carouselImages} onEditClick={onEditClick ?? (() => {})} />
+    <ImageCarousel
+      images={carouselImages}
+      onEditClick={onEditClick ?? (() => {})}
+    />
   );
 }

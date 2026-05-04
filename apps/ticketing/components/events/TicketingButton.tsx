@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThemeAccent } from "@/components/events/shared/types";
 import { useEditorTheme } from "@/components/events/shared/EventEditorContext";
+import { useContext } from "react";
+import { EventFormContext } from "@/components/events/shared/EventFormContext";
 import { fetcher } from "@/lib/fetcher";
 import { TooltipContent, TooltipTrigger, Tooltip } from "../ui/tooltip";
 import { toast } from "sonner";
@@ -78,11 +80,13 @@ export function TicketingButton({
   ticketingEnabled = null,
 }: TicketingButtonProps) {
   const ctx = useEditorTheme();
+  const formCtx = useContext(EventFormContext);
   const mode = modeProp ?? ctx?.viewMode ?? "preview";
   const accent = accentProp ?? ctx?.theme.accent ?? "none";
   const accentCustom = accentCustomProp ?? ctx?.theme.accentCustom;
   const isDark = isDarkProp ?? ctx?.isDark ?? false;
-  const hasTiers = hasTiersProp ?? (ctx?.form ? ctx.form.pricing.length > 0 : true);
+  const hasTiers =
+    hasTiersProp ?? (formCtx ? formCtx.form.pricing.length > 0 : true);
   const router = useRouter();
 
   const { data: ticketingData } = useSWR(

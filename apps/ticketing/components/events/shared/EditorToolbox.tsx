@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEventEditor, LastSavedLabel } from "./EventEditorContext";
+import { useEventForm } from "./EventFormContext";
+import { useEventCollab } from "./EventCollabContext";
 import { SettingsModal } from "./toolbox/SettingsModal";
 import { NavUserMenu } from "@/components/auth/NavUserMenu";
 import { Separator } from "@/components/ui/separator";
@@ -22,22 +24,21 @@ export function EditorToolbox() {
   const {
     eventId,
     isDark,
-    toolbarCollapsed,
-    setToolbarCollapsed,
     handleBack,
-    flush,
     isAutoSaving,
     lastSavedAt,
-    collaborators,
     previewMode,
     setPreviewMode,
     ticketingEnabled,
   } = useEventEditor();
+  const { flush } = useEventForm();
+  const { collaborators } = useEventCollab();
 
   const router = useRouter();
   const pathname = usePathname();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
 
   const collaboratorCount = collaborators.size;
 

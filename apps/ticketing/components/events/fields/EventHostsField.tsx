@@ -4,6 +4,7 @@ import { HostsDialog } from "../create/HostsDialog";
 import { HostsDisplay } from "../preview/HostsDisplay";
 import { Users } from "lucide-react";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 
 interface EventHostsFieldProps {
   /** Callback after invites are sent */
@@ -11,16 +12,9 @@ interface EventHostsFieldProps {
 }
 
 export function EventHostsField({ onInvitesSent }: EventHostsFieldProps) {
-  const {
-    viewMode: mode,
-    form,
-    updateField,
-    hostsData,
-    setHostsData,
-    creatorProfile,
-    eventId,
-    draftSaved,
-  } = useEventEditor();
+  const { viewMode: mode, eventId, draftSaved } = useEventEditor();
+  const { form, updateField, hostsData, setHostsData, creatorProfile } =
+    useEventForm();
 
   const value = { ids: form.hostIds, data: hostsData };
 

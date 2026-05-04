@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import EventForm from "@/components/events/EventForm";
+import EventForm from "@/components/event-form/EventForm";
 import { fetchEvent, type FetchedEventData } from "@/lib/api/fetchEvent";
 
 /**

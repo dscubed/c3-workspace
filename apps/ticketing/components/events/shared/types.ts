@@ -11,19 +11,28 @@ export interface PreviewInputProps<T> {
   value: T;
 }
 
-/* ── Shared event types ── */
+/* ── Schema-derived event types ─────────────────────────────────────
+ * These types are the authoritative source-of-truth definitions.
+ * They live in lib/schemas/event.ts (Zod schemas) and are re-exported
+ * here so all app code can import from this single location.
+ * ────────────────────────────────────────────────────────────────── */
+import type { ThemeMode, ThemeAccent, EventTheme } from "@/lib/schemas/event";
 
-export type LocationType = "physical" | "custom" | "online" | "tba";
+export type {
+  LocationType,
+  OccurrenceFormData,
+  LocationData,
+  Venue,
+  TicketTier,
+  EventLink,
+  ThemeMode,
+  ThemeLayout,
+  ThemeAccent,
+  EventTheme,
+  EventFormData,
+} from "@/lib/schemas/event";
 
-export interface OccurrenceFormData {
-  id: string; // nanoid for new, DB UUID for existing
-  name?: string; // optional label e.g. "Pitch Day", "Competition Day 1"
-  startDate: string; // YYYY-MM-DD
-  startTime: string; // HH:MM
-  endDate: string; // YYYY-MM-DD
-  endTime: string; // HH:MM
-  venueIds?: string[]; // references to Venue.id
-}
+/* ── UI-only types (not part of form data schema) ── */
 
 export interface DateTimeData {
   startDate: string; // YYYY-MM-DD
@@ -35,48 +44,10 @@ export interface DateTimeData {
   extraOccurrences?: number;
 }
 
-export interface LocationData {
-  displayName: string;
-  address: string;
-  /** Latitude from geocoding — present when selected from search results */
-  lat?: number;
-  /** Longitude from geocoding — present when selected from search results */
-  lon?: number;
-}
-
-/** A named venue that an event can use. Events support multiple venues. */
-export interface Venue {
-  id: string; // nanoid for new, DB UUID for existing
-  type: LocationType;
-  location: LocationData; // displayName, address, lat, lon
-  onlineLink?: string; // for online venues
-}
-
 export interface ClubProfile {
   id: string;
   first_name: string;
   avatar_url: string | null;
-}
-
-/** A single ticket tier with settings and optional sale window. */
-export interface TicketTier {
-  id: string;
-  memberVerification?: boolean;
-  name: string; // Required ticket name (e.g. "General Admission", "VIP", etc.)
-  price: number; // 0 = free
-  quantity?: number | null; // Optional max number of tickets sold for this tier (null = unlimited)
-  /** Offer window start — if set, end must also be set and end > start */
-  offerStartDate?: string; // YYYY-MM-DD
-  offerStartTime?: string; // HH:MM
-  offerEndDate?: string; // YYYY-MM-DD
-  offerEndTime?: string; // HH:MM
-}
-
-/** A single event link (e.g. website, social, registration). */
-export interface EventLink {
-  id: string;
-  url: string;
-  title: string; // optional display title — empty string = show URL only
 }
 
 /** Composite value for the hosts form input (ids + cached profile objects). */
@@ -94,28 +65,10 @@ export interface CarouselImage {
   uploading?: boolean;
 }
 
-/* ── Event page theme ── */
-
-export type ThemeMode = "light" | "dark" | "adaptive";
-export type ThemeLayout = "card" | "classic";
-export type ThemeAccent =
-  | "none"
-  | "yellow"
-  | "cyan"
-  | "purple"
-  | "orange"
-  | "green"
-  | "custom";
-
-export interface EventTheme {
-  mode: ThemeMode;
-  layout: ThemeLayout;
-  accent: ThemeAccent;
-  /** Hex colour used when accent === "custom" */
-  accentCustom?: string;
-  /** Solid background colour (card layout only). */
-  bgColor?: string;
-}
+/* ── Theme constants and utilities ─────────────────────────────────
+ * These are UI utilities, not form schema. They live here since they
+ * depend on ThemeMode/ThemeAccent/ThemeColors which are all UI concerns.
+ * ────────────────────────────────────────────────────────────────── */
 
 export const DEFAULT_THEME: EventTheme = {
   mode: "adaptive",
@@ -236,39 +189,4 @@ export function getThemeColors(mode: ThemeMode): ThemeColors {
     separator: "",
     isDark: false,
   };
-}
-
-export interface EventFormData {
-  name: string;
-  description: string;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  timezone: string;
-  location: LocationData;
-  isOnline: boolean;
-  /** Location type: physical (map), custom (manual), online (link), tba (unset) */
-  locationType: LocationType;
-  /** Meeting URL for online events */
-  onlineLink: string;
-  /** Multiple venues for this event. Occurrences can reference these by id. */
-  venues: Venue[];
-  /** Whether this event has multiple occurrences */
-  isRecurring: boolean;
-  /** Individual occurrences for recurring events */
-  occurrences: OccurrenceFormData[];
-  category: string;
-  tags: string[];
-  hostIds: string[];
-  /** URLs of carousel images (already uploaded to storage). */
-  imageUrls: string[];
-  /** Ticket pricing tiers — empty array means "Free". */
-  pricing: TicketTier[];
-  /** Total event capacity across all tiers (null = unlimited). */
-  eventCapacity?: number | null;
-  /** External links (website, socials, etc.). */
-  links: EventLink[];
-  /** Page appearance customization. */
-  theme: EventTheme;
 }

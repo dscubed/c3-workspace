@@ -1,15 +1,21 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import type {
-  EventTheme,
-  ThemeColors,
-  EventFormData,
-  CarouselImage,
-  ClubProfile,
-} from "./types";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import { useRouter } from "next/navigation";
+import type { EventTheme, ThemeColors } from "./types";
+import type { ChecklistRefMap } from "@/components/event-form/EventChecklist";
 import type { FieldGroup } from "@/lib/api/patchEvent";
-import type { CollaboratorPresence } from "@/lib/hooks/useEventRealtime";
+import { useEventForm } from "./EventFormContext";
+import { useEventPublish } from "@/lib/hooks/useEventPublish";
+import { useEventTicketing } from "@/lib/hooks/useEventTicketing";
 
 /* ── Context value ── */
 
@@ -20,62 +26,46 @@ export interface EventEditorContextValue {
   initialUrlSlug: string | null;
 
   /* ── View ── */
+  isVisitorPreview: boolean;
   previewMode: boolean;
   setPreviewMode: React.Dispatch<React.SetStateAction<boolean>>;
   viewMode: "edit" | "preview";
   isEditing: boolean;
-  toolbarCollapsed: boolean;
-  setToolbarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 
-  /* ── Auto-save ── */
-  markDirty: (...groups: FieldGroup[]) => void;
-  flush: () => Promise<void>;
+  /* ── Theme ── */
+  theme: EventTheme;
+  setTheme: (t: EventTheme) => void;
+  colors: ThemeColors;
+  isDark: boolean;
+
+  /* ── Auto-save status ── */
   isAutoSaving: boolean;
   lastSavedAt: Date | null;
+  draftSaved: boolean;
+
+  /* ── Derived flags ── */
+  hasName: boolean;
 
   /* ── Event status ── */
   eventStatus: "draft" | "published" | "archived";
   savingPublish: boolean;
-  draftSaved: boolean;
-
-  /* ── Ticketing ── */
-  ticketingEnabled: boolean;
-  ticketingChanging: boolean;
 
   /* ── Actions ── */
   handleBack: () => void;
   handlePublish: () => void;
   handleUnpublish: () => void;
+
+  /* ── Ticketing ── */
+  ticketingEnabled: boolean;
+  ticketingChanging: boolean;
   enableTicketing: () => void;
   disableTicketing: () => void;
 
-  /* ── Theme ── */
-  theme: EventTheme;
-  setTheme: (t: EventTheme) => void;
-  setThemeOpen: (open: boolean) => void;
-  colors: ThemeColors;
-  isDark: boolean;
-
-  /* ── Derived form flags ── */
-  hasName: boolean;
-
-  /* ── Form state (accessible by field components) ── */
-  form: EventFormData;
-  setForm: React.Dispatch<React.SetStateAction<EventFormData>>;
-  updateField: <K extends keyof EventFormData>(
-    key: K,
-    value: EventFormData[K],
-  ) => void;
-  carouselImages: CarouselImage[];
-  hostsData: ClubProfile[];
-  setHostsData: React.Dispatch<React.SetStateAction<ClubProfile[]>>;
-  creatorProfile: ClubProfile;
-
-  /* ── Collaboration ── */
-  collaborators: Map<string, CollaboratorPresence>;
-  getFieldLock: (group: FieldGroup) => { locked: boolean; lockedBy?: string };
-  handleFieldFocus: (field: FieldGroup) => void;
-  handleFieldBlur: (e: React.FocusEvent<HTMLDivElement>) => void;
+  /* ── Cross-component refs ── */
+  /** Registered by EventDetailsForm during render so TicketingButton can open pricing modal. */
+  openPricingModalRef: React.MutableRefObject<() => void>;
+  /** Populated by sub-components during render; EventChecklist reads for scroll-to. */
+  checklistRefsRef: React.MutableRefObject<Partial<ChecklistRefMap>>;
 }
 
 const EventEditorContext = createContext<EventEditorContextValue | null>(null);
@@ -100,6 +90,146 @@ export function useEditorTheme() {
 }
 
 export { EventEditorContext };
+
+/* ── Provider ── */
+
+interface EventEditorProviderProps {
+  eventId?: string;
+  initialStatus?: "draft" | "published" | "archived";
+  initialTicketingEnabled?: boolean;
+  initialUrlSlug?: string | null;
+  isVisitorPreview?: boolean;
+  children: React.ReactNode;
+}
+
+export function EventEditorProvider({
+  eventId,
+  initialStatus = "draft",
+  initialTicketingEnabled = false,
+  initialUrlSlug = null,
+  isVisitorPreview = false,
+  children,
+}: EventEditorProviderProps) {
+  const router = useRouter();
+  const {
+    form,
+    carouselImages,
+    sections,
+    draftSaved,
+    isAutoSaving,
+    lastSavedAt,
+    flush,
+    broadcastRef,
+    theme,
+    setTheme,
+    colors,
+    isDark,
+    accentGradient,
+  } = useEventForm();
+
+  const [previewMode, setPreviewMode] = useState(isVisitorPreview);
+  const viewMode = previewMode ? "preview" : "edit";
+  const isEditing = !previewMode;
+
+  const openPricingModalRef = useRef<() => void>(() => {});
+  const checklistRefsRef = useRef<Partial<ChecklistRefMap>>({});
+
+  /** Stable broadcast wrapper that delegates to broadcastRef set by collab */
+  const broadcast = useCallback(
+    (groups: FieldGroup[]) => broadcastRef.current(groups),
+    [broadcastRef],
+  );
+
+  const { eventStatus, savingPublish, handlePublish, handleUnpublish } =
+    useEventPublish({
+      eventId,
+      form,
+      carouselImages,
+      sections,
+      draftSaved,
+      setDraftSaved: () => {},
+      broadcast,
+      initialStatus,
+    });
+
+  const {
+    ticketingEnabled,
+    ticketingChanging,
+    enableTicketing,
+    disableTicketing,
+  } = useEventTicketing({
+    eventId,
+    initialEnabled: initialTicketingEnabled,
+    pricingCount: (form.pricing ?? []).length,
+  });
+
+  const handleBack = useCallback(async () => {
+    await flush();
+    router.back();
+  }, [flush, router]);
+
+  const value: EventEditorContextValue = useMemo(
+    () => ({
+      eventId,
+      mode: "edit",
+      initialUrlSlug,
+      isVisitorPreview,
+      previewMode,
+      setPreviewMode,
+      viewMode,
+      isEditing,
+      theme,
+      setTheme,
+      colors,
+      isDark,
+      hasName: !!form.name,
+      isAutoSaving,
+      lastSavedAt,
+      draftSaved,
+      eventStatus,
+      savingPublish,
+      handleBack,
+      handlePublish,
+      handleUnpublish,
+      ticketingEnabled,
+      ticketingChanging,
+      enableTicketing,
+      disableTicketing,
+      openPricingModalRef,
+      checklistRefsRef,
+    }),
+    [
+      eventId,
+      initialUrlSlug,
+      previewMode,
+      viewMode,
+      isEditing,
+      theme,
+      setTheme,
+      colors,
+      isDark,
+      form.name,
+      isAutoSaving,
+      lastSavedAt,
+      draftSaved,
+      eventStatus,
+      savingPublish,
+      handleBack,
+      handlePublish,
+      handleUnpublish,
+      ticketingEnabled,
+      ticketingChanging,
+      enableTicketing,
+      disableTicketing,
+    ],
+  );
+
+  return (
+    <EventEditorContext.Provider value={value}>
+      {children}
+    </EventEditorContext.Provider>
+  );
+}
 
 /* ── Shared helper: relative "last saved" label ── */
 

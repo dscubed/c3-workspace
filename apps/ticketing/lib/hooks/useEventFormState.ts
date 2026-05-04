@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { nanoid } from "nanoid";
 import type {
   EventFormData,
@@ -13,8 +13,8 @@ import {
   getThemeColors,
   getAccentGradient,
 } from "@/components/events/shared/types";
+import { FIELD_TO_GROUP } from "@/lib/schemas/event";
 import type { SectionData } from "@/components/events/sections/types";
-import type { FieldGroup } from "@/lib/api/patchEvent";
 import type { FetchedEventData } from "@/lib/api/fetchEvent";
 import { useDocumentDark } from "./useDocumentDark";
 
@@ -30,6 +30,7 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
   const initialCarouselImages = data?.carouselImages;
   const initialHostsData = data?.hostsData;
   const initialSections = data?.sections;
+
   /* ── Form data ── */
   const [form, setForm] = useState<EventFormData>({
     name: initialData?.name ?? "",
@@ -59,12 +60,12 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
     category: initialData?.category ?? "",
     tags: initialData?.tags ?? [],
     hostIds: initialData?.hostIds ?? [],
-    imageUrls: initialData?.imageUrls ?? [],
+    imageUrls: [], // always derived from carouselImages — see below
     pricing: initialData?.pricing ?? [],
     eventCapacity: initialData?.eventCapacity ?? null,
     links: initialData?.links ?? [],
     theme: initialData?.theme ?? { ...DEFAULT_THEME },
-  } as EventFormData);
+  });
 
   const [hostsData, setHostsData] = useState<ClubProfile[]>(
     initialHostsData ?? [],
@@ -84,79 +85,50 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
   );
 
   /* ── Theme ── */
-  const [theme, setTheme] = useState<EventTheme>(
-    initialData?.theme ?? { ...DEFAULT_THEME },
-  );
+  /**
+   * `setTheme` writes directly into form.theme — no separate state, no useEffect.
+   * Callers that also need to mark the field dirty (e.g. EventForm) should call
+   * markDirty("theme") after setTheme.
+   */
+  const setTheme = (t: EventTheme) =>
+    setForm((prev) => ({ ...prev, theme: t }));
 
-  /* Sync image URLs into form */
-  useEffect(() => {
-    const urls = carouselImages
-      .filter((i) => i.url && !i.uploading)
-      .map((i) => i.url);
-    setForm((prev) => ({ ...prev, imageUrls: urls }));
-  }, [carouselImages]);
+  /* ── imageUrls derived from carouselImages (no useEffect needed) ── */
+  const imageUrls = carouselImages
+    .filter((i) => i.url && !i.uploading)
+    .map((i) => i.url);
 
-  /* Sync theme into form */
-  useEffect(() => {
-    setForm((prev) => ({ ...prev, theme }));
-  }, [theme]);
+  // Merge derived imageUrls into form so consumers always get a consistent view.
+  const formWithImages: EventFormData = { ...form, imageUrls };
 
   /* ── Derived theme values ── */
-  const colors = useMemo(() => getThemeColors(theme.mode), [theme.mode]);
+  const colors = useMemo(
+    () => getThemeColors(form.theme.mode),
+    [form.theme.mode],
+  );
   const isDark = colors.isDark;
   useDocumentDark(isDark);
 
   const accentGradient = useMemo(
-    () => getAccentGradient(theme.accent, isDark, theme.accentCustom),
-    [theme.accent, theme.accentCustom, isDark],
+    () => getAccentGradient(form.theme.accent, isDark, form.theme.accentCustom),
+    [form.theme.accent, form.theme.accentCustom, isDark],
   );
 
-  /* ── Field → FieldGroup map ── */
-  const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = useMemo(
-    () => ({
-      name: "event",
-      description: "event",
-      startDate: "event",
-      startTime: "event",
-      endDate: "event",
-      endTime: "event",
-      timezone: "event",
-      isOnline: "event",
-      isRecurring: "event",
-      locationType: "location",
-      onlineLink: "location",
-      venues: "location",
-      category: "event",
-      tags: "event",
-      location: "location",
-      occurrences: "occurrences",
-      imageUrls: "images",
-      hostIds: "hosts",
-      pricing: "pricing",
-      eventCapacity: "pricing",
-      links: "links",
-      theme: "theme",
-    }),
-    [],
-  );
-
-  /* ── Refs for auto-save to read latest state ── */
-  const formRef = useRef<EventFormData>(form);
+  /* ── Refs for auto-save to read latest state without closures ── */
+  const formRef = useRef<EventFormData>(formWithImages);
   const carouselImagesRef = useRef<CarouselImage[]>(carouselImages);
   const sectionsRef = useRef<SectionData[]>(sections);
 
+  // Keep refs in sync after every render so auto-save callbacks always
+  // read the latest state without stale closures.
   useEffect(() => {
-    formRef.current = form;
-  }, [form]);
-  useEffect(() => {
+    formRef.current = formWithImages;
     carouselImagesRef.current = carouselImages;
-  }, [carouselImages]);
-  useEffect(() => {
     sectionsRef.current = sections;
-  }, [sections]);
+  });
 
   return {
-    form,
+    form: formWithImages,
     setForm,
     hostsData,
     setHostsData,
@@ -164,7 +136,7 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
     setSections,
     carouselImages,
     setCarouselImages,
-    theme,
+    theme: form.theme,
     setTheme,
     colors,
     isDark,

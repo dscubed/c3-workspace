@@ -22,6 +22,14 @@ import {
   EventEditorContext,
   type EventEditorContextValue,
 } from "@/components/events/shared/EventEditorContext";
+import {
+  EventFormContext,
+  type EventFormContextValue,
+} from "@/components/events/shared/EventFormContext";
+import {
+  EventCollabContext,
+  type EventCollabContextValue,
+} from "@/components/events/shared/EventCollabContext";
 import { CheckoutContext } from "./CheckoutContext";
 import { EditorToolbox } from "@/components/events/shared/EditorToolbox";
 import { useAuthStore } from "@c3/auth";
@@ -65,7 +73,6 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const [previewMode, setPreviewMode] = useState(mode === "preview");
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
 
   /* ── Ticket selection ── */
   const [selectedTierId, setSelectedTierId] = useState<string>("");
@@ -94,17 +101,17 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
   const isEditing = !previewMode;
 
   /* ── Load event data via SWR ── */
-  const { data: eventData, mutate: mutateEvent, isLoading } = useSWR(
-    `/api/events/${eventId}`,
-    () => fetchEvent(eventId),
-    {
-      revalidateOnFocus: false,
-      onError: () => {
-        toast.error("Failed to load event");
-        router.push("/");
-      },
+  const {
+    data: eventData,
+    mutate: mutateEvent,
+    isLoading,
+  } = useSWR(`/api/events/${eventId}`, () => fetchEvent(eventId), {
+    revalidateOnFocus: false,
+    onError: () => {
+      toast.error("Failed to load event");
+      router.push("/");
     },
-  );
+  });
 
   /* ── Realtime sync ── */
   const onRemoteChange = useCallback(
@@ -178,7 +185,7 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
   const selectedTier =
     pricing.find((t) => t.id === effectiveSelectedTierId) ?? pricing[0] ?? null;
 
-  /* ── Editor context (edit mode only) ── */
+  /* ── Editor context stubs (edit mode only, read-only view of event data) ── */
   const editorContext: EventEditorContextValue | null = useMemo(() => {
     if (mode !== "edit" || !eventData) return null;
     return {
@@ -189,49 +196,33 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
       setPreviewMode,
       viewMode: previewMode ? ("preview" as const) : ("edit" as const),
       isEditing: !previewMode,
-      toolbarCollapsed,
-      setToolbarCollapsed,
-      markDirty: () => {},
-      flush: flushFields,
+      theme,
+      setTheme: () => {},
+      colors,
+      isDark,
+      hasName: !!eventData.formData.name,
       isAutoSaving: savingFields,
       lastSavedAt,
+      draftSaved: true,
       eventStatus: (eventData.status ?? "draft") as
         | "draft"
         | "published"
         | "archived",
       savingPublish: false,
-      draftSaved: true,
-      ticketingEnabled,
-      ticketingChanging,
       handleBack: () => router.replace(`/events/${eventId}/edit`),
       handlePublish: () => {},
       handleUnpublish: () => {},
+      ticketingEnabled,
+      ticketingChanging,
       enableTicketing: handleEnableTicketing,
       disableTicketing: handleDisableTicketing,
-      theme,
-      setTheme: () => {},
-      setThemeOpen: () => {},
-      colors,
-      isDark,
-      hasName: !!eventData.formData.name,
-      form: eventData.formData as EventFormData,
-      setForm: () => {},
-      updateField: () => {},
-      carouselImages: eventData.carouselImages ?? [],
-      hostsData: [],
-      setHostsData: () => {},
-      creatorProfile: (profile ?? {}) as ClubProfile,
-      collaborators,
-      getFieldLock: () => ({ locked: false }),
-      handleFieldFocus: () => {},
-      handleFieldBlur: () => {},
+      openPricingModalRef: { current: () => {} },
+      checklistRefsRef: { current: {} },
     };
   }, [
     mode,
     eventId,
     previewMode,
-    toolbarCollapsed,
-    flushFields,
     savingFields,
     lastSavedAt,
     ticketingEnabled,
@@ -243,9 +234,36 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     colors,
     isDark,
     eventData,
-    profile,
-    collaborators,
   ]);
+
+  const formContext: EventFormContextValue | null = useMemo(() => {
+    if (mode !== "edit" || !eventData) return null;
+    return {
+      form: eventData.formData as EventFormData,
+      setForm: () => {},
+      updateField: () => {},
+      carouselImages: eventData.carouselImages ?? [],
+      updateImages: () => {},
+      hostsData: [],
+      setHostsData: () => {},
+      creatorProfile: (profile ?? {}) as ClubProfile,
+      sections: [],
+      setSections: () => {},
+      markDirty: () => {},
+      flush: flushFields,
+    };
+  }, [mode, eventData, profile, flushFields]);
+
+  const collabContext: EventCollabContextValue | null = useMemo(() => {
+    if (mode !== "edit") return null;
+    return {
+      collaborators,
+      getFieldLock: () => ({ locked: false }),
+      handleFieldFocus: () => {},
+      handleFieldBlur: () => {},
+      clearFocus: () => {},
+    };
+  }, [mode, collaborators]);
 
   /* ── Checkout context (always provided) ── */
   const checkoutContext = useMemo(
@@ -328,7 +346,13 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
   const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL";
 
   const handlePaymentStart = async () => {
-    await createCheckoutSession(eventId, tmpPriceId, attendeeData, fields, quantity);
+    await createCheckoutSession(
+      eventId,
+      tmpPriceId,
+      attendeeData,
+      fields,
+      quantity,
+    );
   };
 
   const content = (
@@ -410,10 +434,14 @@ export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
     </CheckoutContext.Provider>
   );
 
-  if (editorContext) {
+  if (editorContext && formContext && collabContext) {
     return (
       <EventEditorContext.Provider value={editorContext}>
-        {withCheckout}
+        <EventCollabContext.Provider value={collabContext}>
+          <EventFormContext.Provider value={formContext}>
+            {withCheckout}
+          </EventFormContext.Provider>
+        </EventCollabContext.Provider>
       </EventEditorContext.Provider>
     );
   }

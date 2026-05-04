@@ -1,5 +1,6 @@
 export { CategoryPill, TagPill } from "./EventPills";
 export { HostAvatarStack } from "./HostAvatarStack";
+export { EventFormProviders } from "./EventFormProviders";
 export type {
   EditInputProps,
   PreviewInputProps,

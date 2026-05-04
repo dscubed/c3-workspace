@@ -7,7 +7,7 @@ import {
 } from "@/lib/api/fetchEventServer";
 import { supabaseAdmin } from "@c3/supabase/admin";
 import { TicketingButton } from "@/components/events/TicketingButton";
-import EventForm from "@/components/events/EventForm";
+import EventForm from "@/components/event-form/EventForm";
 import type { ThemeAccent } from "@/components/events/shared/types";
 
 /**

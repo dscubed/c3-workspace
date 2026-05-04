@@ -12,9 +12,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { EventFormData } from "./shared/types";
-import type { SectionData, FAQSectionData } from "./sections";
-import { useEditorTheme } from "./shared/EventEditorContext";
+import type { EventFormData } from "../events/shared/types";
+import type { SectionData, FAQSectionData } from "../events/sections";
+import {
+  useEditorTheme,
+  useEventEditor,
+} from "../events/shared/EventEditorContext";
 
 interface ChecklistItem {
   id: string;
@@ -74,24 +77,19 @@ export interface EventChecklistProps {
   form: EventFormData;
   sections: SectionData[];
   hasExistingThumbnail?: boolean;
-  /** Refs to scroll to when clicking a task */
-  elementRefs?: ChecklistRefMap;
-  /** Externally-managed set of dismissed item ids */
-  dismissed: Set<string>;
-  onDismissChange: (dismissed: Set<string>) => void;
 }
 
 export function EventChecklist({
   form,
   sections,
   hasExistingThumbnail,
-  elementRefs,
-  dismissed,
-  onDismissChange,
 }: EventChecklistProps) {
   const ctx = useEditorTheme();
+  const editorCtx = useEventEditor();
   const isDark = ctx?.isDark;
+  const checklistRefsRef = editorCtx?.checklistRefsRef;
   const [collapsed, setCollapsed] = useState(true);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const effectiveForm = useMemo(
     () =>
@@ -120,18 +118,18 @@ export function EventChecklist({
   const dismiss = (id: string) => {
     const next = new Set(dismissed);
     next.add(id);
-    onDismissChange(next);
+    setDismissed(next);
   };
 
   const undismiss = (id: string) => {
     const next = new Set(dismissed);
     next.delete(id);
-    onDismissChange(next);
+    setDismissed(next);
   };
 
   const scrollToElement = useCallback(
     (id: string) => {
-      const ref = elementRefs?.[id];
+      const ref = checklistRefsRef?.current?.[id];
       if (!ref?.current) return;
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
       // Quick pop animation
@@ -139,7 +137,8 @@ export function EventChecklist({
       ref.current.style.transform = "scale(1.03)";
       setTimeout(() => {
         if (ref.current) {
-          ref.current.style.transform = "scale(1)";
+          ref.current.style.transition = "";
+          ref.current.style.transform = "";
           setTimeout(() => {
             if (ref.current) {
               ref.current.style.transition = "";
@@ -149,7 +148,8 @@ export function EventChecklist({
         }
       }, 300);
     },
-    [elementRefs],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   return (

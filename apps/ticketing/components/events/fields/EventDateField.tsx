@@ -1,10 +1,10 @@
 "use client";
 
-import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 import { DateDisplay } from "../preview/DateDisplay";
 
 export function EventDateField() {
-  const { form } = useEventEditor();
+  const { form } = useEventForm();
   return (
     <DateDisplay
       value={{

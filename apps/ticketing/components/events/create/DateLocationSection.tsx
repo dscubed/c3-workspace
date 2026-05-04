@@ -34,6 +34,7 @@ import type {
   Venue,
 } from "../shared/types";
 import { useEventEditor } from "../shared/EventEditorContext";
+import { useEventForm } from "../shared/EventFormContext";
 
 /* ── Timezone helpers ── */
 const POPULAR_TIMEZONES = [
@@ -361,7 +362,7 @@ function AddVenuePanel({
    ══════════════════════════════════════════════════ */
 
 export function DateLocationSection() {
-  const { form, setForm, markDirty } = useEventEditor();
+  const { form, setForm, markDirty } = useEventForm();
   const { timezone, occurrences, locationType, location, onlineLink, venues } =
     form;
 

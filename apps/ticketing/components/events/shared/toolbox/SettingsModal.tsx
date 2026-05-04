@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useEventEditor } from "../EventEditorContext";
+import { useEventForm } from "../EventFormContext";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import { AlertDialogDescription } from "@/components/ui/alert-dialog";
 import { AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { AlertDialogContent } from "@/components/ui/alert-dialog";
 import { AlertDialog } from "@/components/ui/alert-dialog";
+import { ThemeDialog } from "@/components/events/create/ThemeDialog";
 
 export function SettingsModal({
   settingsOpen,
@@ -25,7 +27,8 @@ export function SettingsModal({
   const {
     eventId,
     initialUrlSlug,
-    setThemeOpen,
+    theme,
+    setTheme,
     eventStatus,
     hasName,
     ticketingEnabled,
@@ -36,6 +39,9 @@ export function SettingsModal({
     handlePublish,
     handleUnpublish,
   } = useEventEditor();
+  const { markDirty } = useEventForm();
+
+  const [themeOpen, setThemeOpen] = useState(false);
 
   // Slug State
   const [urlSlug, setUrlSlug] = useState(initialUrlSlug || "");
@@ -339,6 +345,17 @@ export function SettingsModal({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Theme dialog — owned here so themeOpen state stays local */}
+      <ThemeDialog
+        open={themeOpen}
+        onOpenChange={setThemeOpen}
+        theme={theme}
+        onConfirm={(t) => {
+          setTheme(t);
+          markDirty("theme");
+        }}
+      />
     </>
   );
 }

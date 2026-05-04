@@ -14,7 +14,7 @@ import {
 import { ImagePlus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CarouselImage } from "../shared/types";
-import { AttentionBadge } from "../EventChecklist";
+import { AttentionBadge } from "../../event-form/EventChecklist";
 
 interface ImageCarouselProps {
   images: CarouselImage[];
