@@ -1,82 +1,49 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@c3/auth";
+import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { AdminManagePanel } from "@/components/dashboard/AdminManagePanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Shield, Users, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, Shield, Users } from "lucide-react";
+
+function ClubManagementSkeleton() {
+  return (
+    <>
+      <div className="mb-6 flex items-center gap-3">
+        <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-60" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-40 rounded-md" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+      </div>
+    </>
+  );
+}
 
 function ClubManagementContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, isOrganisation } = useAuthStore();
   const isOrg = !authLoading && !!user && isOrganisation();
-  const [verified, setVerified] = useState(false);
-  const hasFetched = useRef(false);
 
-  /*
-   * Determine the club ID to manage:
-   *  - Org accounts: always their own user.id (they ARE the club)
-   *  - Regular users (club admins): must provide ?club_id=xxx
-   */
-  const clubId = isOrg ? (user?.id ?? null) : searchParams.get("club_id");
+  const queryClubId = searchParams.get("club_id");
+  const clubId = isOrg ? (user?.id ?? null) : queryClubId;
 
-  /* Validate non-org users actually admin the club */
-  useEffect(() => {
-    console.log(
-      "[ClubManagementPage] useEffect — authLoading:",
-      authLoading,
-      "user:",
-      user,
-      "isOrg:",
-      isOrg,
-      "clubId:",
-      clubId,
-    );
-    if (authLoading || !user) {
-      router.replace("/");
-      return;
-    }
-    if (isOrg) return;
-    if (!clubId) {
-      router.replace("/");
-      return;
-    }
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/clubs/my-clubs");
-        if (!res.ok) {
-          router.replace("/");
-          return;
-        }
-        const { data } = await res.json();
-        const isAdmin = (data ?? []).some(
-          (r: { club_id: string }) => r.club_id === clubId,
-        );
-        if (!isAdmin) {
-          router.replace("/");
-          return;
-        }
-        setVerified(true);
-      } catch {
-        router.replace("/");
-      }
-    })();
-  }, [authLoading, user, isOrg, clubId, router]);
+  const { clubs, loading: clubsLoading } = useAdminClubSelector();
+  const isVerified = isOrg || clubs.some((r) => r.club_id === queryClubId);
 
-  if (authLoading || (!isOrg && !verified)) return null;
+  if (authLoading || (!isOrg && clubsLoading)) return <ClubManagementSkeleton />;
 
-  if (!user) {
-    router.replace("/");
-    return null;
-  }
-
-  if (!clubId) {
+  if (!user || !clubId || (!isOrg && !isVerified)) {
     router.replace("/");
     return null;
   }
@@ -142,13 +109,7 @@ function ClubManagementContent() {
 export default function ClubManagementPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <Suspense
-        fallback={
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        }
-      >
+      <Suspense fallback={<ClubManagementSkeleton />}>
         <ClubManagementContent />
       </Suspense>
     </div>

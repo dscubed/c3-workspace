@@ -7,8 +7,31 @@ import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
 import { Button } from "@/components/ui/button";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EventsListContent } from "@/components/dashboard/EventsListContent";
+
+function DashboardEventsSkeleton() {
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-7 w-32" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-32 rounded-md" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * DashboardEventsContent — page content that uses search params.
@@ -84,9 +107,7 @@ function DashboardEventsContent() {
       {effectiveClubId ? (
         <EventsListContent clubId={effectiveClubId} />
       ) : clubsLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <DashboardEventsSkeleton />
       ) : null}
     </div>
   );
@@ -98,15 +119,7 @@ function DashboardEventsContent() {
 
 export default function DashboardEventsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-5xl px-6 py-8">
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<DashboardEventsSkeleton />}>
       <DashboardEventsContent />
     </Suspense>
   );

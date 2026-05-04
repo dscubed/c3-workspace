@@ -9,7 +9,31 @@ import { OrgDashboardContent } from "@/components/dashboard/OrgDashboard";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Loader2, Plus, Settings } from "lucide-react";
+import { Building2, Plus, Settings } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function ManageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-32 rounded-md" />
+        </div>
+      </div>
+      <Skeleton className="h-10 w-full rounded-md" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ManageContent() {
   const router = useRouter();
@@ -36,11 +60,7 @@ function ManageContent() {
 
   /* Loading */
   if (clubsLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <ManageSkeleton />;
   }
 
   /* No clubs */
@@ -127,13 +147,7 @@ function ManageContent() {
 export default function DashboardManagePage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Suspense
-        fallback={
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        }
-      >
+      <Suspense fallback={<ManageSkeleton />}>
         <ManageContent />
       </Suspense>
     </div>

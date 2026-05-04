@@ -9,24 +9,8 @@ import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarStack } from "@c3/ui";
 import type { AvatarProfile } from "@/lib/types/events";
-
-interface InstagramPost {
-  id: string;
-  posted_by: string;
-  caption: string;
-  timestamp: number | null;
-  location: string | null;
-  images: string[];
-  collaborators: string[] | null;
-  fetched_at: string;
-}
-
-interface SlugProfile {
-  id: string;
-  first_name: string;
-  avatar_url: string | null;
-  slug: string;
-}
+import { useInstagramPosts } from "@/lib/hooks/useInstagramPosts";
+import type { InstagramPost, SlugProfile } from "@/lib/hooks/useInstagramPosts";
 
 function formatTs(ts: number | null) {
   if (!ts) return null;
@@ -391,31 +375,13 @@ export default function InstagramPage() {
   } = useAdminClubSelector();
   const effectiveClubId = isOrg ? (user?.id ?? null) : selectedClubId;
 
-  const [posts, setPosts] = useState<InstagramPost[]>([]);
-  const [slugToProfile, setSlugToProfile] = useState<
-    Record<string, SlugProfile>
-  >({});
-  const [loading, setLoading] = useState(false);
+  const { posts, slugToProfile, isLoading } = useInstagramPosts(effectiveClubId);
   const [lightbox, setLightbox] = useState<{
     postIdx: number;
     imgIdx: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (!effectiveClubId) return;
-    setLoading(true);
-    const params = new URLSearchParams({ club_id: effectiveClubId });
-    fetch(`/api/media/instagram/posts?${params}`)
-      .then((r) => r.json())
-      .then(({ data, slugToProfile: stp }) => {
-        setPosts(data || []);
-        setSlugToProfile(stp || {});
-      })
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [effectiveClubId]);
-
-  const isSpinning = clubsLoading || loading;
+  const isSpinning = clubsLoading || isLoading;
 
   return (
     <div className="p-4 sm:p-8 space-y-6">
