@@ -1,7 +1,6 @@
 {
   "extends": "@c3/tsconfig/nextjs.json",
   "compilerOptions": {
-    "noUncheckedIndexedAccess": false,
     "paths": {
       "@/*": ["./*"]
     }

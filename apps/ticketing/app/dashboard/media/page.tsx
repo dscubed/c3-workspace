@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -289,7 +289,7 @@ function StorageGrid({
   );
 }
 
-export default function MediaPage() {
+function MediaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isOrganisation } = useAuthStore();
@@ -575,5 +575,13 @@ export default function MediaPage() {
         onDismiss={(id) => setUploads((prev) => prev.filter((u) => u.id !== id))}
       />
     </div>
+  );
+}
+
+export default function MediaPage() {
+  return (
+    <Suspense>
+      <MediaPageContent />
+    </Suspense>
   );
 }

@@ -3,6 +3,7 @@
 // Re-export canonical section types from the shared package so app code can
 // import from either location.
 export { SECTION_TYPES } from "@c3/types";
+export type { SectionType, SectionData } from "@c3/types";
 
 import type { SectionType, SectionData } from "@c3/types";
 

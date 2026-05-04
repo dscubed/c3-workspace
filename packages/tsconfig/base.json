@@ -8,7 +8,6 @@
     "incremental": false,
     "isolatedModules": true,
     "moduleResolution": "Bundler",
-    "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,

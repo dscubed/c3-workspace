@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       .map((f) => ({
         name: f.name,
         url: `${SUPABASE_URL}/storage/v1/object/public/media/${folder}/${f.name}`,
-        created_at: f.created_at,
+        created_at: f.created_at ?? "",
       }));
 
     return NextResponse.json({ data: items });

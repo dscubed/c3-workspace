@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
           if (!referencedUrls.has(urlData.publicUrl)) {
             // Check if the file is older than 1 hour (grace period for in-progress uploads)
-            const createdAt = new Date(file.created_at);
+            const createdAt = new Date(file.created_at ?? "");
             const ageMs = Date.now() - createdAt.getTime();
             const ONE_HOUR = 60 * 60 * 1000;
 

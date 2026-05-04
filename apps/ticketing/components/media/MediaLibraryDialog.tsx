@@ -133,7 +133,8 @@ export function MediaLibraryDialog({
    *   2. org account → own user ID
    *   3. user account → selected club from AdminClubSelector
    */
-  const effectiveClubId = clubId ?? (isOrg ? (user?.id ?? null) : selectedInstagramClubId);
+  const effectiveClubId =
+    clubId ?? (isOrg ? (user?.id ?? null) : selectedInstagramClubId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -250,7 +251,7 @@ export function MediaLibraryDialog({
               url: supabase.storage
                 .from(BUCKET)
                 .getPublicUrl(`${folder}/${f.name}`).data.publicUrl,
-              created_at: f.created_at,
+              created_at: f.created_at ?? "",
             }));
           console.log("[MediaLib] listed", mapped.length, "files");
 
@@ -278,31 +279,34 @@ export function MediaLibraryDialog({
   );
 
   /* ── Fetch Instagram images via API (admin key, no RLS) ── */
-  const fetchInstagramImages = useCallback(async (forClubId?: string | null) => {
-    setInstagramLoading(true);
-    setInstagramFetched(false);
-    try {
-      const targetClub = forClubId ?? clubId ?? null;
-      const url = targetClub
-        ? `/api/media/instagram?club_id=${encodeURIComponent(targetClub)}`
-        : "/api/media/instagram";
-      const res = await fetch(url);
-      if (!res.ok) {
-        console.error("[MediaLib] Instagram fetch failed:", res.status);
+  const fetchInstagramImages = useCallback(
+    async (forClubId?: string | null) => {
+      setInstagramLoading(true);
+      setInstagramFetched(false);
+      try {
+        const targetClub = forClubId ?? clubId ?? null;
+        const url = targetClub
+          ? `/api/media/instagram?club_id=${encodeURIComponent(targetClub)}`
+          : "/api/media/instagram";
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error("[MediaLib] Instagram fetch failed:", res.status);
+          setInstagramImages([]);
+        } else {
+          const { data } = await res.json();
+          setInstagramImages(data ?? []);
+          setInstagramFetched(true);
+        }
+      } catch (err) {
+        console.error("[MediaLib] Instagram fetch exception:", err);
         setInstagramImages([]);
-      } else {
-        const { data } = await res.json();
-        setInstagramImages(data ?? []);
-        setInstagramFetched(true);
+      } finally {
+        setInstagramLoading(false);
       }
-    } catch (err) {
-      console.error("[MediaLib] Instagram fetch exception:", err);
-      setInstagramImages([]);
-    } finally {
-      setInstagramLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubId]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [clubId],
+  );
 
   /* ── Upload directly via Supabase client (no API proxy) ── */
   const handleUpload = useCallback(
@@ -487,7 +491,9 @@ export function MediaLibraryDialog({
                   </div>
                 ) : adminClubs.length > 0 ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground shrink-0">Club:</span>
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      Club:
+                    </span>
                     <AdminClubSelector
                       clubs={adminClubs}
                       selectedClubId={selectedInstagramClubId}
@@ -570,7 +576,6 @@ export function MediaLibraryDialog({
                             <div className="rounded-full bg-primary p-1">
                               <Check className="h-4 w-4 text-primary-foreground" />
                             </div>
-
                           </div>
                         )}
                       </div>

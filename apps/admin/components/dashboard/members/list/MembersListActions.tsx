@@ -1,5 +1,5 @@
 import { Download, Search } from "lucide-react";
-import { Member } from "../MembersList";
+import { Member } from "../member";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
