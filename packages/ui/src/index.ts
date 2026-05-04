@@ -39,3 +39,7 @@ export { EventDisplayCardSkeleton } from "./components/events/EventDisplayCardSk
 
 // club selector
 export { ClubSelectorDropdown } from "./components/club-selector-dropdown";
+
+// pill tabs
+export { PillTabs } from "./components/pill-tabs";
+export type { PillTab, PillTabsProps } from "./components/pill-tabs";

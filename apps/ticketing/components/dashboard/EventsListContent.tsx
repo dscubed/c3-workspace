@@ -7,7 +7,7 @@ import useSWRInfinite from "swr/infinite";
 import { useAuthStore, useClubStore } from "@c3/auth";
 import { useIntersection } from "@/lib/hooks/useIntersection";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { fetcher } from "@/lib/fetcher";
 import {
@@ -264,51 +264,77 @@ export function EventsListContent({
   return (
     <div className="space-y-4">
       {/* Header / Tabs */}
-      <div className="flex items-center justify-between">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as EventTab)}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="published">Published</TabsTrigger>
-            <TabsTrigger value="draft">Drafts</TabsTrigger>
-            <TabsTrigger value="requests">
-              Requests
-              {incoming.length > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-[#854ECB] text-white text-[10px] font-medium">
-                  {incoming.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          {(["all", "published", "draft", "requests"] as EventTab[]).map(
+            (t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150 inline-flex items-center gap-1",
+                  tab === t
+                    ? "bg-[#854ECB] text-white"
+                    : "bg-gray-100 text-muted-foreground hover:bg-gray-200 hover:text-black",
+                )}
+              >
+                {t === "all" && "All"}
+                {t === "published" && "Published"}
+                {t === "draft" && "Drafts"}
+                {t === "requests" && (
+                  <>
+                    Requests
+                    {incoming.length > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-white/30 text-[10px] font-medium">
+                        {incoming.length}
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            ),
+          )}
+        </div>
         {headerAction}
       </div>
 
       {/* Requests tab */}
       {tab === "requests" ? (
         <>
-          <Tabs
-            value={requestsTab}
-            onValueChange={(v) => setRequestsTab(v as "incoming" | "outgoing")}
-          >
-            <TabsList>
-              <TabsTrigger value="incoming">
-                Incoming
-                {incoming.length > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-[#854ECB] text-white text-[10px] font-medium">
-                    {incoming.length}
-                  </span>
+          <div className="flex items-center gap-2">
+            {(["incoming", "outgoing"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setRequestsTab(t)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150 inline-flex items-center gap-1",
+                  requestsTab === t
+                    ? "bg-[#854ECB] text-white"
+                    : "bg-gray-100 text-muted-foreground hover:bg-gray-200 hover:text-black",
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="outgoing">
-                Outgoing
-                {outgoing.length > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-gray-400 text-white text-[10px] font-medium">
-                    {outgoing.length}
-                  </span>
+              >
+                {t === "incoming" ? (
+                  <>
+                    Incoming
+                    {incoming.length > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-white/30 text-[10px] font-medium">
+                        {incoming.length}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Outgoing
+                    {outgoing.length > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-white/30 text-[10px] font-medium">
+                        {outgoing.length}
+                      </span>
+                    )}
+                  </>
                 )}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+              </button>
+            ))}
+          </div>
 
           {requestsLoading ? (
             <div className="space-y-3">

@@ -29,7 +29,10 @@ const InstagramPostSheet = dynamic(
   { ssr: false },
 );
 
-type SheetState = { type: "profile" | "event" | "instagram" | null; id: string | null };
+type SheetState = {
+  type: "profile" | "event" | "instagram" | null;
+  id: string | null;
+};
 
 interface SearchResult {
   id: string;
@@ -211,10 +214,7 @@ export default function SearchPageContent() {
         ).flatMap((type) =>
           filteredResults.filter((r) => r.type === type).slice(0, ALL_TAB_CAP),
         )
-      : filteredResults.slice(
-          (page - 1) * PAGE_SIZE,
-          page * PAGE_SIZE,
-        );
+      : filteredResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const totalPages =
     tab === "all"
@@ -252,16 +252,16 @@ export default function SearchPageContent() {
             className="flex-1 overflow-y-auto px-4 pb-6 py-2"
             style={{ scrollbarWidth: "thin" }}
           >
-            <div className="flex gap-6 mb-3 px-4 border-b border-muted/20">
+            <div className="flex items-center gap-2 flex-wrap mb-3">
               {TABS.map((t) => (
                 <button
                   key={t.value}
                   onClick={() => handleTabChange(t.value)}
                   className={cn(
-                    "py-1.5 text-sm transition-colors",
+                    "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150",
                     tab === t.value
-                      ? "text-foreground border-b-2 border-foreground"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-[#854ECB] text-white"
+                      : "bg-gray-100 text-muted-foreground hover:bg-gray-200 hover:text-black",
                   )}
                 >
                   {t.label}
@@ -291,15 +291,31 @@ export default function SearchPageContent() {
                     <div className="space-y-6 max-w-xl">
                       {(
                         [
-                          { label: "People",    type: "user",           tabValue: "people"    },
-                          { label: "Clubs",     type: "organisation",   tabValue: "clubs"     },
-                          { label: "Events",    type: "events",         tabValue: "events"    },
-                          { label: "Instagram", type: "instagram_post", tabValue: "instagram" },
+                          { label: "People", type: "user", tabValue: "people" },
+                          {
+                            label: "Clubs",
+                            type: "organisation",
+                            tabValue: "clubs",
+                          },
+                          {
+                            label: "Events",
+                            type: "events",
+                            tabValue: "events",
+                          },
+                          {
+                            label: "Instagram",
+                            type: "instagram_post",
+                            tabValue: "instagram",
+                          },
                         ] as const
                       ).map(({ label, type, tabValue }) => {
-                        const group = pageResults.filter((e) => e.type === type);
+                        const group = pageResults.filter(
+                          (e) => e.type === type,
+                        );
                         if (group.length === 0) return null;
-                        const totalForType = filteredResults.filter((e) => e.type === type).length;
+                        const totalForType = filteredResults.filter(
+                          (e) => e.type === type,
+                        ).length;
                         const hasMore = totalForType > ALL_TAB_CAP;
                         return (
                           <div key={type}>
@@ -320,11 +336,14 @@ export default function SearchPageContent() {
                               <button
                                 onClick={() => {
                                   handleTabChange(tabValue);
-                                  resultsTopRef.current?.scrollIntoView({ behavior: "smooth" });
+                                  resultsTopRef.current?.scrollIntoView({
+                                    behavior: "smooth",
+                                  });
                                 }}
                                 className="mt-2 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                               >
-                                View all {totalForType} {label.toLowerCase()} results →
+                                View all {totalForType} {label.toLowerCase()}{" "}
+                                results →
                               </button>
                             )}
                           </div>

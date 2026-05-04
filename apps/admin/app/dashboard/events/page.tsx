@@ -5,7 +5,7 @@ import { useClubStore } from "@c3/auth";
 import { Plus, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PillTabs } from "@c3/ui";
 import { EventDisplayCard } from "@c3/ui/components/events/EventDisplayCard";
 import { EventDisplayCardSkeleton } from "@c3/ui";
 import type { EventCardDetails } from "@c3/types";
@@ -46,15 +46,17 @@ export default function EventsPage() {
       </div>
 
       {/* Filter tabs */}
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="live">Live</TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="past">Past</TabsTrigger>
-          <TabsTrigger value="draft">Drafts</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <PillTabs
+        tabs={[
+          { label: "All", value: "all" },
+          { label: "Live", value: "live" },
+          { label: "Upcoming", value: "upcoming" },
+          { label: "Past", value: "past" },
+          { label: "Drafts", value: "draft" },
+        ]}
+        value={filter}
+        onValueChange={(v) => setFilter(v as FilterType)}
+      />
 
       {/* Event cards grid */}
       {showSkeleton ? (
