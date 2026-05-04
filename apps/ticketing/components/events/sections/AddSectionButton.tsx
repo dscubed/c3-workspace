@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { SECTION_TYPES, SECTION_META, type SectionType } from "./types";
+import { SECTION_TYPES, SECTION_META } from "./types";
+import type { SectionType } from "@c3/types";
 import { useEditorTheme } from "../shared/EventEditorContext";
 
 export const SECTION_ICON_MAP: Record<SectionType, React.ElementType> = {

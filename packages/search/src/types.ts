@@ -1,5 +1,17 @@
 // ─── Shared types for the search / embedding package ─────────────────────────
 
+import type { SectionData, SectionType } from "@c3/types";
+
+// Re-export so consumers can import section types from the search package too.
+export type { SectionData, SectionType };
+
+/**
+ * Alias kept for backwards-compat within this package.
+ * Adding a new value to SectionType in @c3/types will cause a compile error
+ * in renderSectionContent until a case is added to its switch statement.
+ */
+export type EventSectionType = SectionType;
+
 /**
  * A single piece of text ready to be embedded and stored in search_embeddings.
  * Produced by entity chunkers, consumed by embed functions.
@@ -80,9 +92,10 @@ export interface EventTicketTierRow {
 export interface EventSectionRow {
   id: string;
   event_id: string;
-  section_type: string;
+  section_type: EventSectionType;
   title: string | null;
-  content: unknown;
+  /** Typed content payload — shape is determined by section_type. */
+  content: SectionData | null;
   display_order: number | null;
 }
 

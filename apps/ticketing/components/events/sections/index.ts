@@ -9,11 +9,12 @@ export { SectionDragHandle } from "./SectionDragHandle";
 export {
   type SectionType,
   type SectionData,
-  type DragHandleProps,
   type FAQSectionData,
+  type FAQItem,
   type WhatToBringSectionData,
   type PanelistsSectionData,
   type CompaniesSectionData,
   type RefundPolicySectionData,
-  createBlankSection,
-} from "./types";
+} from "@c3/types";
+
+export { type DragHandleProps, createBlankSection } from "./types"; // Re-export for consumers who only import from this directory, to avoid having to import from two different paths

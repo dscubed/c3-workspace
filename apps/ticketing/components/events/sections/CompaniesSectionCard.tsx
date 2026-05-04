@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { CompaniesSectionData, Company } from "./types";
+import type { CompaniesSectionData, Company } from "@c3/types";
 import { useMemo, useState } from "react";
 import { MediaLibraryDialog } from "@/components/media/MediaLibraryDialog";
 import {

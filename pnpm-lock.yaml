@@ -537,6 +537,9 @@ importers:
       '@c3/supabase':
         specifier: workspace:*
         version: link:../supabase
+      '@c3/types':
+        specifier: workspace:*
+        version: link:../types
       '@supabase/supabase-js':
         specifier: ^2.105.0
         version: 2.105.1

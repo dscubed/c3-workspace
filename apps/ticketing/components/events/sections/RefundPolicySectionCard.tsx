@@ -2,7 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { RefundPolicySectionData } from "./types";
+import type { RefundPolicySectionData } from "@c3/types";
 
 interface RefundPolicySectionCardProps {
   data: RefundPolicySectionData;

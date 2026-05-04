@@ -7,7 +7,7 @@
     "./embed/event": "./src/embed/event.ts",
     "./embed/post": "./src/embed/post.ts",
     "./embed/profile": "./src/embed/profile.ts",
-    "./chunkers/event": "./src/chunkers/event.ts",
+    "./chunkers/event": "./src/chunkers/event/index.ts",
     "./chunkers/profile": "./src/chunkers/profile.ts",
     "./chunkers/instagram": "./src/chunkers/instagram.ts",
     "./embeddings": "./src/embeddings/openai.ts",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@c3/supabase": "workspace:*",
+    "@c3/types": "workspace:*",
     "@supabase/supabase-js": "^2.105.0",
     "openai": "^4.98.0"
   },

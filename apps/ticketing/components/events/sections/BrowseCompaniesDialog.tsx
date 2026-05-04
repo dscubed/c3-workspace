@@ -19,7 +19,7 @@ import {
   COMPANY_CATEGORIES,
   type CompanyCategory,
 } from "./company-logos";
-import type { Company } from "./types";
+import type { Company } from "@c3/types";
 
 interface BrowseCompaniesDialogProps {
   open: boolean;

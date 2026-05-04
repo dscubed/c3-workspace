@@ -1,62 +1,10 @@
 /* ── Section-card shared types ── */
 
-export const SECTION_TYPES = [
-  "faq",
-  "what-to-bring",
-  "panelists",
-  "companies",
-  "refund-policy",
-] as const;
+// Re-export canonical section types from the shared package so app code can
+// import from either location.
+export { SECTION_TYPES } from "@c3/types";
 
-export type SectionType = (typeof SECTION_TYPES)[number];
-
-export interface FAQItem {
-  question: string;
-  answer: string;
-}
-export interface FAQSectionData {
-  type: "faq";
-  items: FAQItem[];
-}
-
-export interface WhatToBringItem {
-  item: string;
-}
-export interface WhatToBringSectionData {
-  type: "what-to-bring";
-  items: WhatToBringItem[];
-}
-
-export interface Panelist {
-  name: string;
-  title: string;
-  imageUrl: string;
-}
-export interface PanelistsSectionData {
-  type: "panelists";
-  items: Panelist[];
-}
-
-export interface Company {
-  name: string;
-  logoUrl: string;
-}
-export interface CompaniesSectionData {
-  type: "companies";
-  items: Company[];
-}
-
-export interface RefundPolicySectionData {
-  type: "refund-policy";
-  text: string;
-}
-
-export type SectionData =
-  | FAQSectionData
-  | WhatToBringSectionData
-  | PanelistsSectionData
-  | CompaniesSectionData
-  | RefundPolicySectionData;
+import type { SectionType, SectionData } from "@c3/types";
 
 export const SECTION_META: Record<
   SectionType,
