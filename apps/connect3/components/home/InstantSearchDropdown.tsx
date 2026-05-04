@@ -123,18 +123,15 @@ export function InstantSearchDropdown({
       )}
 
       {results.map((result) => {
+        const key = `${result.result_type}:${result.id}`;
         const onClick = () => handleResultClick(result);
         if (result.result_type === "event")
-          return <EventRow key={result.id} result={result} onClick={onClick} />;
+          return <EventRow key={key} result={result} onClick={onClick} />;
         if (result.result_type === "instagram_post")
           return (
-            <InstagramPostRow
-              key={result.id}
-              result={result}
-              onClick={onClick}
-            />
+            <InstagramPostRow key={key} result={result} onClick={onClick} />
           );
-        return <ProfileRow key={result.id} result={result} onClick={onClick} />;
+        return <ProfileRow key={key} result={result} onClick={onClick} />;
       })}
 
       <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-t border-gray-50 mt-1">
