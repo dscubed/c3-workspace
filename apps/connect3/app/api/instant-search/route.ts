@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import OpenAI from "openai";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { vectorSearch } from "@c3/search";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
-const VECTOR_STORES = [
-  { id: process.env.OPENAI_USER_VECTOR_STORE_ID!, label: "users" },
-  { id: process.env.OPENAI_ORG_VECTOR_STORE_ID!, label: "clubs" },
-  { id: process.env.OPENAI_EVENTS_VECTOR_STORE_ID!, label: "events" },
-];
+const supabaseService = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!,
+);
 
 // RRF constant — 60 is standard; higher = less aggressive reranking
 const RRF_K = 60;
@@ -26,32 +24,26 @@ export interface InstantSearchResult {
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
 
-// Returns id → vector score (best score across all stores)
+// Returns id → vector score using pgvector
 async function getVectorScores(q: string): Promise<Map<string, number>> {
   const scoreMap = new Map<string, number>();
-  await Promise.all(
-    VECTOR_STORES.map(async (store) => {
-      try {
-        const res = await openai.vectorStores.search(store.id, {
-          query: q,
-          max_num_results: 20,
-          rewrite_query: true,
-          ranking_options: { score_threshold: 0.3 },
-        });
-        for (const r of res.data) {
-          const id = r.attributes?.id as string | undefined;
-          if (!id) continue;
-          const best = scoreMap.get(id) ?? 0;
-          if (r.score > best) scoreMap.set(id, r.score);
-        }
-      } catch (err) {
-        console.error(
-          `[instant-search] Vector store ${store.label} error:`,
-          err,
-        );
-      }
-    }),
-  );
+  try {
+    const results = await vectorSearch(
+      supabaseService,
+      process.env.OPENAI_API_KEY!,
+      q,
+      {
+        matchThreshold: 0.3,
+        matchCount: 20,
+      },
+    );
+    for (const r of results) {
+      const best = scoreMap.get(r.id) ?? 0;
+      if (r.similarity > best) scoreMap.set(r.id, r.similarity);
+    }
+  } catch (err) {
+    console.error("[instant-search] pgvector error:", err);
+  }
   return scoreMap;
 }
 

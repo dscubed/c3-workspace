@@ -24,8 +24,7 @@ export function SearchInput({
 
   const { results, isLoading } = useInstantSearch(value);
 
-  const showDropdown =
-    dropdownOpen && value.trim().length >= 2 && (isLoading || results.length > 0);
+  const showDropdown = dropdownOpen && value.trim().length >= 2;
 
   // Sync if defaultValue changes (e.g. navigating to /search?q=foo)
   useEffect(() => {
@@ -60,7 +59,10 @@ export function SearchInput({
   }, []);
 
   return (
-    <div ref={containerRef} className={cn("relative w-full max-w-3xl", className)}>
+    <div
+      ref={containerRef}
+      className={cn("relative w-full max-w-3xl", className)}
+    >
       <form onSubmit={handleSubmit}>
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-2.5 shadow-sm transition-colors">
           <input

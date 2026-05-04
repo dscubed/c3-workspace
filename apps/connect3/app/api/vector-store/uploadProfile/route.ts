@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+﻿import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api/auth-middleware";
-import { uploadProfileToVectorStore } from "@/lib/vectorStores/profile/upload";
+import { embedProfile } from "@c3/search";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,39 +71,30 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Process the upload synchronously
-      const fileId = await uploadProfileToVectorStore({
-        userId,
+      // Embed profile into pgvector search_embeddings table
+      const result = await embedProfile(
         supabase,
-      });
+        process.env.OPENAI_API_KEY!,
+        userId,
+      );
 
-      // Update profile with new file ID
-      const { error: fileIdUpdateError } = await supabase
-        .from("profiles")
-        .update({ openai_file_id: fileId, is_processing_upload: false })
-        .eq("id", userId);
-
-      if (fileIdUpdateError) {
-        console.error("Error updating profile with file ID:", fileIdUpdateError);
-        // Still reset the processing flag
-        await supabase
-          .from("profiles")
-          .update({ is_processing_upload: false })
-          .eq("id", userId);
-        
-        return NextResponse.json(
-          { error: "Failed to update profile with file ID" },
-          { status: 500 },
-        );
+      if (result.error) {
+        throw new Error(result.error);
       }
 
+      // Clear processing flag
+      await supabase
+        .from("profiles")
+        .update({ is_processing_upload: false })
+        .eq("id", userId);
+
       return NextResponse.json(
-        { message: "Profile uploaded successfully", fileId },
+        { message: "Profile embedded successfully", chunks: result.upserted },
         { status: 200 },
       );
     } catch (uploadError) {
-      console.error("Error uploading profile:", uploadError);
-      
+      console.error("Error embedding profile:", uploadError);
+
       // Reset the processing flag on error
       await supabase
         .from("profiles")
@@ -111,7 +102,12 @@ export async function POST(request: NextRequest) {
         .eq("id", userId);
 
       return NextResponse.json(
-        { error: uploadError instanceof Error ? uploadError.message : "Failed to upload profile" },
+        {
+          error:
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Failed to embed profile",
+        },
         { status: 500 },
       );
     }

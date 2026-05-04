@@ -1,5 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
+﻿import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api/auth-middleware";
 
@@ -8,19 +7,14 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ chunkId: string }> }
 ) {
   try {
-    // Authenticate the request
     const authResult = await authenticateRequest(request);
     if (authResult instanceof NextResponse) {
-      return authResult; // Return error response
+      return authResult;
     }
     const { user } = authResult;
     if (!user || !user.id) {
@@ -30,7 +24,6 @@ export async function DELETE(
       );
     }
 
-    // Await params before accessing properties
     const { chunkId } = await params;
 
     if (!chunkId) {
@@ -40,30 +33,12 @@ export async function DELETE(
       );
     }
 
-    // Get the chunk from database to get the OpenAI file ID
+    // Get the chunk from user_files to verify ownership
     const { data: chunk, error: fetchError } = await supabase
       .from("user_files")
-      .select("openai_file_id, user_id")
+      .select("user_id")
       .eq("id", chunkId)
       .single();
-
-    // Get vector store ID from environment variables
-    const userVectorStoreId = process.env.OPENAI_USER_VECTOR_STORE_ID;
-    const orgVectorStoreId = process.env.OPENAI_ORG_VECTOR_STORE_ID;
-
-    // Get user type from Supabase
-    const { data: userProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("account_type")
-      .eq("id", user.id)
-      .single();
-    if (profileError || !userProfile) {
-      console.error("Error fetching user profile:", profileError);
-      throw new Error("Failed to fetch user profile");
-    }
-
-    const isOrgUser = userProfile.account_type === "organisation";
-    const vectorStoreId = isOrgUser ? orgVectorStoreId : userVectorStoreId;
 
     if (fetchError || !chunk) {
       return NextResponse.json({ error: "Chunk not found" }, { status: 404 });
@@ -76,43 +51,35 @@ export async function DELETE(
       );
     }
 
-    // Delete from OpenAI Vector Store
-    try {
-      if (vectorStoreId && chunk.openai_file_id) {
-        // Remove from vector store
-        await openai.vectorStores.files.delete(chunk.openai_file_id, {
-          vector_store_id: vectorStoreId,
-        });
+    // Delete embeddings for this user from search_embeddings
+    const { error: embeddingsError } = await supabase
+      .from("search_embeddings")
+      .delete()
+      .eq("entity_id", user.id)
+      .eq("entity_type", "profile");
 
-        // Delete the file from OpenAI
-        await openai.files.delete(chunk.openai_file_id);
-      }
-    } catch (openaiError) {
-      console.error("Error deleting from OpenAI:", openaiError);
-      // Continue with database deletion even if OpenAI deletion fails
+    if (embeddingsError) {
+      console.error("Failed to delete search embeddings:", embeddingsError);
     }
 
-    // Delete from database
+    // Delete from user_files table
     const { error: deleteError } = await supabase
       .from("user_files")
       .delete()
       .eq("id", chunkId);
 
     if (deleteError) {
-      throw new Error(`Database deletion failed: ${deleteError.message}`);
+      return NextResponse.json(
+        { error: "Failed to delete chunk from database" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Chunk deleted successfully",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete process error:", error);
+    console.error("Error deleting chunk:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Internal Server Error",
-      },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

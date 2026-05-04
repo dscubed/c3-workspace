@@ -28,34 +28,6 @@ export function InstantSearchDropdown({
 
   const hasResults = results.length > 0;
 
-  if (!isLoading && !hasResults) {
-    return (
-      <div className="absolute top-full left-0 right-0 z-[200] bg-white rounded-2xl border border-gray-100 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.15)] overflow-hidden">
-        <div className="px-4 py-5 text-center text-sm text-muted-foreground">
-          No results for{" "}
-          <span className="font-medium text-foreground">
-            &quot;{query}&quot;
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-t border-gray-50">
-          <button
-            onClick={() => {
-              onDismiss();
-              router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-            }}
-            className="flex-1 text-left text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
-          >
-            Search for{" "}
-            <span className="font-medium text-foreground">
-              &quot;{query}&quot;
-            </span>{" "}
-            →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const TICKETING_URL =
     process.env.NEXT_PUBLIC_TICKETING_URL ?? "https://tix.connect3.app";
 
@@ -105,6 +77,42 @@ export function InstantSearchDropdown({
       setIsStartingChat(false);
     }
   };
+
+  if (!isLoading && !hasResults) {
+    return (
+      <div className="absolute top-full left-0 right-0 z-[200] bg-white rounded-2xl border border-gray-100 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className="px-4 py-5 text-center text-sm text-muted-foreground">
+          No results for{" "}
+          <span className="font-medium text-foreground">
+            &quot;{query}&quot;
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-t border-gray-50">
+          <button
+            onClick={() => {
+              onDismiss();
+              router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+            }}
+            className="flex-1 text-left text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
+          >
+            Search for{" "}
+            <span className="font-medium text-foreground">
+              &quot;{query}&quot;
+            </span>{" "}
+            →
+          </button>
+          <button
+            onClick={handleDeepDive}
+            disabled={isStartingChat}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-medium transition-colors disabled:opacity-50 flex-shrink-0"
+          >
+            <Sparkles className="w-3 h-3" />
+            {isStartingChat ? "Starting…" : "Ask AI instead"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute top-full left-0 right-0 z-[200] bg-white rounded-2xl border border-gray-100 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.15)] overflow-hidden">

@@ -19,8 +19,7 @@ export function HomeSearchBar({ className }: HomeSearchBarProps) {
 
   const { results, isLoading } = useInstantSearch(query);
 
-  const showDropdown =
-    dropdownOpen && query.trim().length >= 2 && (isLoading || results.length > 0);
+  const showDropdown = dropdownOpen && query.trim().length >= 2;
 
   // Close dropdown on outside click
   useEffect(() => {

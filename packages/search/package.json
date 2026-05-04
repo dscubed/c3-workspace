@@ -1,0 +1,31 @@
+{
+  "name": "@c3/search",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./embed/event": "./src/embed/event.ts",
+    "./embed/post": "./src/embed/post.ts",
+    "./embed/profile": "./src/embed/profile.ts",
+    "./chunkers/event": "./src/chunkers/event.ts",
+    "./chunkers/profile": "./src/chunkers/profile.ts",
+    "./chunkers/instagram": "./src/chunkers/instagram.ts",
+    "./embeddings": "./src/embeddings/openai.ts",
+    "./types": "./src/types.ts",
+    "./search": "./src/search/vector-search.ts",
+    "./search/hyde": "./src/search/hyde.ts",
+    "./search/crossencoder": "./src/search/crossencoder.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@c3/supabase": "workspace:*",
+    "@supabase/supabase-js": "^2.105.0",
+    "openai": "^4.98.0"
+  },
+  "devDependencies": {
+    "@c3/tsconfig": "workspace:*",
+    "typescript": "^5"
+  }
+}

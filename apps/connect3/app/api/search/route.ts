@@ -1,16 +1,8 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { createServiceClient } from "@/lib/supabase/service";
+import { vectorSearch } from "@c3/search";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
-const VECTOR_STORES = [
-  { id: process.env.OPENAI_USER_VECTOR_STORE_ID!, label: "users" },
-  { id: process.env.OPENAI_ORG_VECTOR_STORE_ID!, label: "clubs" },
-  { id: process.env.OPENAI_EVENTS_VECTOR_STORE_ID!, label: "events" },
-];
-
-// RRF constant â€” same as instant-search for consistency
+// RRF constant - same as instant-search for consistency
 const RRF_K = 60;
 
 interface VectorResult {
@@ -38,39 +30,31 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // --- Vector search across all stores ---
-    const vectorSearches = VECTOR_STORES.map(async (store) => {
+    const supabase = createServiceClient();
+
+    // --- pgvector search across all entity types ---
+    const pgVectorSearch = async (): Promise<VectorResult[]> => {
       try {
-        const results = await openai.vectorStores.search(store.id, {
-          query: q,
-          max_num_results: 20,
-          rewrite_query: true,
-          ranking_options: { score_threshold: 0.35 },
+        const results = await vectorSearch(supabase, process.env.OPENAI_API_KEY!, q, {
+          matchThreshold: 0.35,
+          matchCount: 60,
         });
 
-        return results.data
-          .map((r): VectorResult | null => {
-            if (!r.attributes) return null;
-            const id = r.attributes.id as string;
-            const type = r.attributes.type as string;
-            return {
-              id,
-              type,
-              score: Math.round(r.score * 1000) / 1000,
-              content: r.content.map((c) => c.text).join("\n"),
-            };
-          })
-          .filter((i): i is VectorResult => i !== null);
+        return results.map((r): VectorResult => ({
+          id: r.id,
+          type: r.type,
+          score: Math.round(r.similarity * 1000) / 1000,
+          content: r.snippet,
+        }));
       } catch (err) {
-        console.error(`[search] Error searching ${store.label}:`, err);
+        console.error("[search] Error in pgvector search:", err);
         return [];
       }
-    });
+    };
 
     // --- Instagram FTS ---
     const instagramSearch = async (): Promise<VectorResult[]> => {
       try {
-        const supabase = createServiceClient();
         const { data, error } = await supabase
           .from("instagram_posts")
           .select("id, caption")
@@ -95,7 +79,6 @@ export async function GET(req: NextRequest) {
     // --- Name-match boost ---
     const nameMatchSearch = async (): Promise<VectorResult[]> => {
       try {
-        const supabase = createServiceClient();
         const term = q.trim().toLowerCase();
 
         const [{ data: profiles }, { data: events }] = await Promise.all([
@@ -136,7 +119,6 @@ export async function GET(req: NextRequest) {
     // --- BM25 via instant_search_bm25 ---
     const bm25Search = async (): Promise<Bm25Result[]> => {
       try {
-        const supabase = createServiceClient();
         const { data, error } = await supabase.rpc("instant_search_bm25", {
           query_text: q.trim(),
           result_limit: 40,
@@ -150,19 +132,20 @@ export async function GET(req: NextRequest) {
     };
 
     // Run everything in parallel
-    const [bm25Results, ...otherResults] = await Promise.all([
-      bm25Search(),
-      ...vectorSearches,
-      instagramSearch(),
-      nameMatchSearch(),
-    ]);
+    const [bm25Results, vectorResults, instagramResults, nameResults] =
+      await Promise.all([
+        bm25Search(),
+        pgVectorSearch(),
+        instagramSearch(),
+        nameMatchSearch(),
+      ]);
 
-    const vectorResults = otherResults.flat();
+    const allVectorResults = [...vectorResults, ...instagramResults, ...nameResults];
 
     // Build ranked lists for RRF
     // Vector list: deduplicated by id, sorted by score
     const vectorDeduped = new Map<string, VectorResult>();
-    for (const r of vectorResults) {
+    for (const r of allVectorResults) {
       const existing = vectorDeduped.get(r.id);
       if (!existing || r.score > existing.score) vectorDeduped.set(r.id, r);
     }
@@ -189,9 +172,8 @@ export async function GET(req: NextRequest) {
         (vectorRank !== undefined ? 1 / (RRF_K + vectorRank) : 0) +
         (bm25Rank !== undefined ? 1 / (RRF_K + bm25Rank) : 0);
 
-      // Get the best content/type from whichever source has it
       const vectorEntry = vectorDeduped.get(id);
-      const bm25Entry = bm25Results[bm25Rank!];
+      const bm25Entry = bm25Rank !== undefined ? bm25Results[bm25Rank] : undefined;
 
       // Normalise result_type: BM25 uses "event", vector uses "events"
       const type =
