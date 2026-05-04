@@ -1,32 +1,22 @@
-import { useInstagramMedia } from "@/lib/hooks/useInstagramMedia";
-import { MediaTab } from "../types";
+import { useInstagramMedia } from "@/lib/hooks/dashboard/media/useInstagramMedia";
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@c3/ui/components/tabs";
 import { MediaGridSkeleton } from "../MediaGridSkeleton";
+import { MediaTabBar } from "../MediaTabBar";
 import { ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { IgLightbox } from "./IgLightbox";
 
 export function InstagramTabContent({
   effectiveClubId,
-  onChangeTab,
 }: {
   effectiveClubId: string | null;
-  onChangeTab: (tab: MediaTab) => void;
 }) {
   const { images, isLoading } = useInstagramMedia(effectiveClubId);
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   return (
     <>
-      <Tabs value="instagram" onValueChange={(v) => onChangeTab(v as MediaTab)}>
-        <TabsList>
-          <TabsTrigger value="images">Images</TabsTrigger>
-          <TabsTrigger value="companies">Companies</TabsTrigger>
-          <TabsTrigger value="panelists">Panelists</TabsTrigger>
-          <TabsTrigger value="instagram">Instagram</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <MediaTabBar />
 
       {isLoading ? (
         <MediaGridSkeleton />

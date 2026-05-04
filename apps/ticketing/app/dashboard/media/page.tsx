@@ -6,8 +6,10 @@ import { useAuthStore } from "@c3/auth";
 import { useAdminClubSelector } from "@/lib/hooks/useAdminClubSelector";
 import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
 import { MediaTab, VALID_TABS } from "@/components/dashboard/media/types";
+import { MediaTabContext } from "@/components/dashboard/media/MediaTabContext";
 import { InstagramTabContent } from "@/components/dashboard/media/instagram/InstagramTabContent";
 import { StorageTabContent } from "@/components/dashboard/media/storage/StorageTabContent";
+import type { StorageCategory } from "@/lib/hooks/dashboard/media/useMediaStorage";
 
 function MediaPageContent() {
   const router = useRouter();
@@ -27,32 +29,29 @@ function MediaPageContent() {
   };
 
   return (
-    <div className="p-4 sm:p-8 space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">Media</h1>
-        {!isOrg && (
-          <AdminClubSelector
-            clubs={clubs}
-            selectedClubId={selectedClubId}
-            onSelect={setSelectedClubId}
+    <MediaTabContext.Provider value={{ active, changeTab }}>
+      <div className="p-4 sm:p-8 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h1 className="text-2xl font-bold">Media</h1>
+          {!isOrg && (
+            <AdminClubSelector
+              clubs={clubs}
+              selectedClubId={selectedClubId}
+              onSelect={setSelectedClubId}
+            />
+          )}
+        </div>
+
+        {active === "instagram" ? (
+          <InstagramTabContent
+            key="instagram"
+            effectiveClubId={effectiveClubId}
           />
+        ) : (
+          <StorageTabContent key={active} active={active as StorageCategory} />
         )}
       </div>
-
-      {active === "instagram" ? (
-        <InstagramTabContent
-          key="instagram"
-          effectiveClubId={effectiveClubId}
-          onChangeTab={changeTab}
-        />
-      ) : (
-        <StorageTabContent
-          key={active}
-          active={active}
-          onChangeTab={changeTab}
-        />
-      )}
-    </div>
+    </MediaTabContext.Provider>
   );
 }
 

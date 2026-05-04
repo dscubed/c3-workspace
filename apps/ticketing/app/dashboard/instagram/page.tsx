@@ -9,8 +9,11 @@ import { AdminClubSelector } from "@/components/dashboard/AdminClubSelector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarStack } from "@c3/ui";
 import type { AvatarProfile } from "@/lib/types/events";
-import { useInstagramPosts } from "@/lib/hooks/useInstagramPosts";
-import type { InstagramPost, SlugProfile } from "@/lib/hooks/useInstagramPosts";
+import { useInstagramPosts } from "@/lib/hooks/dashboard/media/useInstagramPosts";
+import type {
+  InstagramPost,
+  SlugProfile,
+} from "@/lib/hooks/dashboard/media/useInstagramPosts";
 
 function formatTs(ts: number | null) {
   if (!ts) return null;
@@ -375,7 +378,8 @@ export default function InstagramPage() {
   } = useAdminClubSelector();
   const effectiveClubId = isOrg ? (user?.id ?? null) : selectedClubId;
 
-  const { posts, slugToProfile, isLoading } = useInstagramPosts(effectiveClubId);
+  const { posts, slugToProfile, isLoading } =
+    useInstagramPosts(effectiveClubId);
   const [lightbox, setLightbox] = useState<{
     postIdx: number;
     imgIdx: number;

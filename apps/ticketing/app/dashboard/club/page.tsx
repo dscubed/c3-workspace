@@ -41,7 +41,8 @@ function ClubManagementContent() {
   const { clubs, loading: clubsLoading } = useAdminClubSelector();
   const isVerified = isOrg || clubs.some((r) => r.club_id === queryClubId);
 
-  if (authLoading || (!isOrg && clubsLoading)) return <ClubManagementSkeleton />;
+  if (authLoading || (!isOrg && clubsLoading))
+    return <ClubManagementSkeleton />;
 
   if (!user || !clubId || (!isOrg && !isVerified)) {
     router.replace("/");

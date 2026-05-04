@@ -4,7 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import { Check, Image as ImageIcon, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { StorageCategory, StorageItem } from "@/lib/hooks/useMediaStorage";
+import type {
+  StorageCategory,
+  StorageItem,
+} from "@/lib/hooks/dashboard/media/useMediaStorage";
 
 const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
 const isVideo = (url: string) => /\.(mp4|webm|mov)$/i.test(url);

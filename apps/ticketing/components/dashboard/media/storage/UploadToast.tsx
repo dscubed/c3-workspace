@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UploadEntry } from "@/lib/hooks/useMediaUpload";
+import type { UploadEntry } from "@/lib/hooks/dashboard/media/useMediaUpload";
 
 interface UploadToastProps {
   entries: UploadEntry[];
