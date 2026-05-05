@@ -11,3 +11,8 @@ export {
   type EventPermission,
 } from "./clubAdmin";
 export { fetchClubEventCards } from "./events";
+export {
+  fetchUserRegistrations,
+  fetchEventRegistrations,
+  fetchUserRegisteredEventIds,
+} from "./registrations";

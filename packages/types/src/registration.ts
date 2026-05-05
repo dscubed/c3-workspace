@@ -28,6 +28,9 @@ export interface EventRegistration {
   email: string;
   first_name: string;
   last_name: string;
+  /** Always-present identity columns */
+  student_id: string | null;
+  course: string | null;
   /** Extra event-specific fields */
   custom_fields: CustomFields;
   qr_code_id: string;
@@ -45,3 +48,15 @@ export type AttendeeData = Record<
   number,
   Partial<AttendeeIdentity> & CustomFields
 >;
+
+/**
+ * A registration row joined with its parent event details.
+ * Returned by fetchUserRegistrations / fetchEventRegistrations.
+ */
+export interface RegistrationWithEvent extends EventRegistration {
+  event_name: string | null;
+  event_start: string | null;
+  event_status: string | null;
+  event_thumbnail: string | null;
+  event_venue: string | null;
+}

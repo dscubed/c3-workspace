@@ -1,16 +1,16 @@
 "use client";
 
 import { use, useState } from "react";
-import { ArrowLeft, Download, X } from "lucide-react";
+import { ArrowLeft, Download, X, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, fetcher } from "@c3/utils";
 import { useClubStore } from "@c3/auth";
-import { mockAttendees } from "@/lib/mock-data";
 import type { EventCardDetails } from "@c3/types";
 import useSWR from "swr";
+import { useEventRegistrations } from "@/lib/hooks/useEventRegistrations";
 
 const statusColors: Record<string, string> = {
   live: "bg-green-100 text-green-700 border-green-200",
@@ -37,7 +37,8 @@ export default function EventDetailPage({
   const showSkeleton = !activeClubId || isLoading;
   const event = events?.find((e) => e.id === id) ?? null;
 
-  const checkedInCount = mockAttendees.filter((a) => a.checkedIn).length;
+  const { registrations, isLoading: regLoading } = useEventRegistrations(id);
+  const checkedInCount = registrations.filter((r) => r.checked_in).length;
 
   if (showSkeleton) {
     return (
@@ -102,15 +103,23 @@ export default function EventDetailPage({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border bg-white p-5">
             <p className="text-sm text-muted-foreground">Total Registrations</p>
-            <p className="text-3xl font-bold mt-1">—</p>
+            <p className="text-3xl font-bold mt-1">
+              {regLoading ? "—" : registrations.length}
+            </p>
           </div>
           <div className="rounded-lg border bg-white p-5">
-            <p className="text-sm text-muted-foreground">Tickets Sold</p>
-            <p className="text-3xl font-bold mt-1">—</p>
+            <p className="text-sm text-muted-foreground">Checked In</p>
+            <p className="text-3xl font-bold mt-1">
+              {regLoading ? "—" : checkedInCount}
+            </p>
           </div>
           <div className="rounded-lg border bg-white p-5">
-            <p className="text-sm text-muted-foreground">Revenue</p>
-            <p className="text-3xl font-bold mt-1">—</p>
+            <p className="text-sm text-muted-foreground">Check-in Rate</p>
+            <p className="text-3xl font-bold mt-1">
+              {regLoading || registrations.length === 0
+                ? "—"
+                : `${Math.round((checkedInCount / registrations.length) * 100)}%`}
+            </p>
           </div>
         </div>
 
@@ -122,46 +131,112 @@ export default function EventDetailPage({
               variant="outline"
               size="sm"
               onClick={() => {
-                /* TODO */
+                /* TODO: CSV export */
               }}
             >
               <Download className="size-4" />
-              Export Attendees CSV
+              Export CSV
             </Button>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                  Name
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                  Check-in Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockAttendees.map((attendee) => (
-                <tr
-                  key={attendee.id}
-                  className="border-b last:border-0 hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3 font-medium">{attendee.name}</td>
-                  <td className="px-4 py-3">
-                    {attendee.checkedIn ? (
-                      <Badge className="bg-green-100 text-green-700 border-green-200">
-                        Checked In
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-600 border-gray-200">
-                        Not Checked In
-                      </Badge>
-                    )}
-                  </td>
-                </tr>
+
+          {regLoading ? (
+            <div className="divide-y">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-24 ml-auto" />
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : registrations.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              No registrations yet
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                      Name
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                      Email
+                    </th>
+                    {registrations[0] &&
+                      Object.keys(registrations[0].custom_fields ?? {}).map(
+                        (key) => (
+                          <th
+                            key={key}
+                            className="text-left px-4 py-3 font-medium text-muted-foreground"
+                          >
+                            {key
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </th>
+                        ),
+                      )}
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                      Status
+                    </th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {registrations.map((attendee) => (
+                    <tr
+                      key={attendee.id}
+                      className="border-b last:border-0 hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3 font-medium">
+                        {attendee.first_name} {attendee.last_name}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {attendee.email}
+                      </td>
+                      {Object.values(attendee.custom_fields ?? {}).map(
+                        (val, i) => (
+                          <td
+                            key={i}
+                            className="px-4 py-3 text-muted-foreground"
+                          >
+                            {String(val)}
+                          </td>
+                        ),
+                      )}
+                      <td className="px-4 py-3">
+                        {attendee.checked_in ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200">
+                            Checked In
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-600 border-gray-200">
+                            Not Checked In
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {!attendee.checked_in && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => {
+                              /* TODO: check-in route */
+                            }}
+                          >
+                            <UserCheck className="size-3.5" />
+                            Check In
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Event screen button */}

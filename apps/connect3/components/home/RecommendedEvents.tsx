@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, Globe, Camera, ArrowRight, Sparkles } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { useMyRegisteredEventIds } from "@/hooks/useMyRegisteredEventIds";
 
 interface Organizer {
   id: string;
@@ -247,7 +248,13 @@ function StatusBadge({ status }: { status: HomeEvent["status"] }) {
   return null;
 }
 
-function EventCard({ event }: { event: HomeEvent }) {
+function EventCard({
+  event,
+  isRegistered,
+}: {
+  event: HomeEvent;
+  isRegistered?: boolean;
+}) {
   const router = useRouter();
   return (
     <div
@@ -272,6 +279,11 @@ function EventCard({ event }: { event: HomeEvent }) {
 
       {/* Details */}
       <div className="flex flex-col gap-0.5 min-w-0 flex-1 mt-2 sm:mt-0 sm:justify-center">
+        {isRegistered && (
+          <span className="inline-block text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+            Registered
+          </span>
+        )}
         <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">
           {fmtDate(event.start)}
         </p>
@@ -292,7 +304,15 @@ function EventCard({ event }: { event: HomeEvent }) {
   );
 }
 
-function TrendingCard({ event, rank }: { event: HomeEvent; rank: number }) {
+function TrendingCard({
+  event,
+  rank,
+  isRegistered,
+}: {
+  event: HomeEvent;
+  rank: number;
+  isRegistered?: boolean;
+}) {
   const router = useRouter();
   return (
     <div
@@ -320,6 +340,11 @@ function TrendingCard({ event, rank }: { event: HomeEvent; rank: number }) {
 
       {/* Details */}
       <div className="flex flex-col gap-0.5 min-w-0 flex-1 mt-2 sm:mt-0 sm:justify-center">
+        {isRegistered && (
+          <span className="inline-block text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full w-fit">
+            Registered
+          </span>
+        )}
         <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">
           {fmtDate(event.start)}
         </p>
@@ -388,6 +413,7 @@ function RecommendedSkeletons() {
 export function RecommendedEvents() {
   const { user, loading } = useAuthStore();
   const isLoggedIn = !loading && !!user;
+  const { registeredEventIds } = useMyRegisteredEventIds();
 
   return (
     <section className="px-4 sm:px-6 lg:px-8 xl:px-12 pt-10 pb-12">
@@ -403,7 +429,11 @@ export function RecommendedEvents() {
               style={{ scrollbarWidth: "none" }}
             >
               {RECOMMENDED.slice(0, 3).map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isRegistered={registeredEventIds.has(event.id)}
+                />
               ))}
             </div>
           ) : (
@@ -425,7 +455,12 @@ export function RecommendedEvents() {
             style={{ scrollbarWidth: "none" }}
           >
             {TRENDING.slice(0, 3).map((event, i) => (
-              <TrendingCard key={event.id} event={event} rank={i + 1} />
+              <TrendingCard
+                key={event.id}
+                event={event}
+                rank={i + 1}
+                isRegistered={registeredEventIds.has(event.id)}
+              />
             ))}
           </div>
         </div>

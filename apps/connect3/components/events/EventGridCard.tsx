@@ -52,9 +52,10 @@ export function EventGridCardSkeleton() {
 interface EventGridCardProps {
   event: Event;
   onClick?: () => void;
+  isRegistered?: boolean;
 }
 
-export function EventGridCard({ event, onClick }: EventGridCardProps) {
+export function EventGridCard({ event, onClick, isRegistered }: EventGridCardProps) {
   const router = useRouter();
   const tags = getEventTags(event);
   const visibleTags = tags.slice(0, 2);
@@ -108,6 +109,11 @@ export function EventGridCard({ event, onClick }: EventGridCardProps) {
 
         {/* Tags */}
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          {isRegistered && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500 text-white">
+              Registered
+            </span>
+          )}
           {visibleTags.map((tag, idx) => (
             <span
               key={idx}
