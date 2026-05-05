@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,11 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { TicketForm } from "./TicketForm";
 import { useCheckoutContext } from "./CheckoutContext";
+import { PillTabs } from "@c3/ui";
+import { useState } from "react";
 
 const FEE_PER_TICKET = 0.75;
 
@@ -29,11 +30,41 @@ export function CheckoutPreview() {
     setQuantity,
     activeTicketTab,
     setActiveTicketTab,
+    checkoutMode,
+    editorMode,
+    handlePaymentStart,
+    handleRegister,
   } = useCheckoutContext();
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const isPaid =
+    checkoutMode === "ticket" && !!selectedTier && selectedTier.price > 0;
+
+  const attendeeLabel = checkoutMode === "registration" ? "Attendee" : "Ticket";
+
+  const tabs = Array.from({ length: quantity }, (_, i) => ({
+    value: `ticket-${i}`,
+    label: `${attendeeLabel} ${i + 1}`,
+  }));
+
+  const activeIndex = tabs.findIndex((t) => t.value === activeTicketTab);
+  const safeIndex = activeIndex >= 0 ? activeIndex : 0;
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      if (isPaid) await handlePaymentStart();
+      else await handleRegister();
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <>
-      {pricing.length > 0 && selectedTier && (
+      {/* Tier card — only for ticket mode */}
+      {checkoutMode === "ticket" && pricing.length > 0 && selectedTier && (
         <div
           className={cn(
             "mt-4 flex items-center gap-4 rounded-xl border p-3",
@@ -94,6 +125,7 @@ export function CheckoutPreview() {
             )}
           </div>
 
+          {/* Quantity stepper for ticket mode */}
           <div
             className={cn(
               "flex shrink-0 items-center rounded-lg border",
@@ -110,10 +142,7 @@ export function CheckoutPreview() {
               <Minus className="h-3.5 w-3.5" />
             </Button>
             <span
-              className={cn(
-                "w-8 text-center text-sm font-medium",
-                colors.text,
-              )}
+              className={cn("w-8 text-center text-sm font-medium", colors.text)}
             >
               {quantity}
             </span>
@@ -130,31 +159,82 @@ export function CheckoutPreview() {
         </div>
       )}
 
-      {quantity > 1 ? (
-        <Tabs
+      {/* Attendee pill tabs + Add/Remove for registration */}
+      <div className="mt-8 flex flex-wrap items-center gap-2">
+        <PillTabs
+          tabs={tabs}
           value={activeTicketTab}
           onValueChange={setActiveTicketTab}
-          className="mt-8"
-        >
-          <TabsList>
-            {Array.from({ length: quantity }, (_, i) => (
-              <TabsTrigger key={i} value={`ticket-${i}`}>
-                Ticket {i + 1}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        />
 
-          {Array.from({ length: quantity }, (_, i) => (
-            <TabsContent key={i} value={`ticket-${i}`}>
-              <TicketForm ticketIndex={i} />
-            </TabsContent>
-          ))}
-        </Tabs>
-      ) : (
-        <div className="mt-8">
-          <TicketForm ticketIndex={0} />
-        </div>
-      )}
+        {checkoutMode === "registration" && (
+          <>
+            <button
+              onClick={() => {
+                const next = quantity + 1;
+                setQuantity(next);
+                setActiveTicketTab(`ticket-${next - 1}`);
+              }}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:border-solid hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add
+            </button>
+
+            {quantity > 1 && (
+              <button
+                onClick={() => {
+                  const next = quantity - 1;
+                  setQuantity(next);
+                  if (safeIndex >= next)
+                    setActiveTicketTab(`ticket-${next - 1}`);
+                }}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:border-red-400 hover:border-solid hover:text-red-500"
+              >
+                Remove
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Active attendee form */}
+      <div className="mt-6">
+        <TicketForm ticketIndex={safeIndex} />
+      </div>
+
+      {/* Submit */}
+      <div className="mt-8">
+        <Button
+          size="lg"
+          className="w-full gap-2"
+          onClick={handleSubmit}
+          disabled={submitting || editorMode === "edit"}
+        >
+          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPaid
+            ? `Pay $${((selectedTier!.price + FEE_PER_TICKET) * quantity).toFixed(2)}`
+            : checkoutMode === "registration"
+              ? "Register"
+              : "Get Free Ticket"}
+        </Button>
+        {editorMode === "edit" && (
+          <p className={cn("mt-2 text-center text-xs", colors.textMuted)}>
+            Admin preview — submitting is disabled
+          </p>
+        )}
+        {editorMode === "preview" && checkoutMode === "registration" && (
+          <p className={cn("mt-2 text-center text-xs", colors.textMuted)}>
+            You&apos;ll receive a QR code to log your attendance and earn
+            rewards.
+          </p>
+        )}
+        {editorMode === "preview" && checkoutMode === "ticket" && !isPaid && (
+          <p className={cn("mt-2 text-center text-xs", colors.textMuted)}>
+            Free admission — your QR code will be sent by email.
+          </p>
+        )}
+      </div>
     </>
   );
 }

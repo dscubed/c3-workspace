@@ -3,8 +3,9 @@
 import { useState, useCallback } from "react";
 import { useAuthStore } from "@c3/auth";
 import { toast } from "sonner";
+import type { AttendeeData } from "@c3/types";
 
-export type AttendeeData = Record<number, Record<string, string>>;
+export type { AttendeeData };
 
 /**
  * Manages per-ticket attendee form data and "Buy for myself" autofill.

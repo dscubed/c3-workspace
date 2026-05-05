@@ -4,30 +4,11 @@ import {
   fetchEventServer,
   getAllPublishedEventIds,
   publicToFetchedData,
+  resolveEventByIdOrSlug,
 } from "@/lib/api/fetchEventServer";
-import { supabaseAdmin } from "@c3/supabase/admin";
 import { TicketingButton } from "@/components/events/TicketingButton";
 import EventForm from "@/components/event-form/EventForm";
 import type { ThemeAccent } from "@/components/events/shared/types";
-
-/**
- * Resolve the [id] param for visitors:
- *  1. Try by id (works for UUIDs and nanoid-style IDs)
- *  2. If not found, try by url_slug
- */
-async function resolveVisitorEvent(param: string) {
-  const byId = await fetchEventServer(param);
-  if (byId) return byId;
-  // Not found by id — try as a slug
-  const { data } = await supabaseAdmin
-    .from("events")
-    .select("id")
-    .eq("url_slug", param)
-    .eq("status", "published")
-    .maybeSingle();
-  if (!data) return null;
-  return fetchEventServer(data.id);
-}
 
 /* ── Static generation ─────────────────────────────────────────── */
 
@@ -59,7 +40,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const event = await resolveVisitorEvent(id);
+  const event = await resolveEventByIdOrSlug(id);
 
   if (!event) {
     return { title: "Event Not Found | Connect3" };
@@ -245,7 +226,7 @@ export default async function EventPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const event = await resolveVisitorEvent(id);
+  const event = await resolveEventByIdOrSlug(id);
 
   if (!event) notFound();
 
@@ -266,7 +247,7 @@ export default async function EventPage({
       />
       {/* Sticky ticketing button (visitor mode — only shows if ticketing is enabled) */}
       <TicketingButton
-        eventId={id}
+        eventId={event.id}
         mode="preview"
         accent={(event.theme?.accent as ThemeAccent) ?? "none"}
         accentCustom={event.theme?.accent_custom ?? undefined}

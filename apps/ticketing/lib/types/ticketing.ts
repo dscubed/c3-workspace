@@ -9,7 +9,7 @@ export interface TicketingConfig {
 }
 
 /**
- * Admin only. Shape of a ticket field when creating an event 
+ * Admin only. Shape of a ticket field when creating an event
  */
 export interface TicketingField {
   id: string;
@@ -113,10 +113,29 @@ export function createBlankField(
   };
 }
 
-/** The preset checkout fields (not editable — always shown). */
-export const CHECKOUT_PRESET_FIELDS = [
-  { key: "first_name", label: "First Name", type: "text", required: true },
-  { key: "last_name", label: "Last Name", type: "text", required: true },
-  { key: "email", label: "Email Address", type: "email", required: true },
-  { key: "mobile", label: "Mobile Number", type: "tel", required: true },
-] as const;
+/**
+ * The preset checkout fields (not editable — always shown).
+ * These are required by UMSU for event attendance tracking.
+ *
+ * @param clubName - The organising club's name, used in the membership question.
+ */
+export function getPresetFields(clubName?: string | null) {
+  return [
+    { key: "first_name", label: "First Name", type: "text", required: true },
+    { key: "last_name", label: "Last Name", type: "text", required: true },
+    { key: "email", label: "Email Address", type: "email", required: true },
+    { key: "student_id", label: "Student ID", type: "text", required: true },
+    { key: "course", label: "Course", type: "text", required: true },
+    {
+      key: "is_member",
+      label: clubName
+        ? `Are you a member of ${clubName}?`
+        : "Are you a club member?",
+      type: "yesno" as const,
+      required: true,
+    },
+  ] as const;
+}
+
+/** @deprecated Use `getPresetFields()` instead. */
+export const CHECKOUT_PRESET_FIELDS = getPresetFields();

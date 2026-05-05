@@ -21,16 +21,26 @@ export type NavSite = {
   baseUrl: string;
   current: boolean;
   children: NavChild[];
-  separator?: boolean;
 };
 
 export type AppId = "connect3" | "ticketing" | "admin";
 
-const SITE_URL = process.env.NEXT_PUBLIC_CONNECT3_URL ?? "http://localhost:3000";
-const TICKETING_URL = process.env.NEXT_PUBLIC_TICKETING_URL ?? process.env.NEXT_PUBLIC_URL ?? "http://localhost:3001";
-const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL ?? process.env.NEXT_PUBLIC_URL ?? "http://localhost:3002";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_CONNECT3_URL ?? "http://localhost:3000";
+const TICKETING_URL =
+  process.env.NEXT_PUBLIC_TICKETING_URL ??
+  process.env.NEXT_PUBLIC_URL ??
+  "http://localhost:3001";
+const ADMIN_URL =
+  process.env.NEXT_PUBLIC_ADMIN_URL ??
+  process.env.NEXT_PUBLIC_URL ??
+  "http://localhost:3002";
 
-export function buildSites(currentApp: AppId, isOrg: boolean, hasClubs: boolean): NavSite[] {
+export function buildSites(
+  currentApp: AppId,
+  isOrg: boolean,
+  hasClubs: boolean,
+): NavSite[] {
   const homeSite: NavSite = {
     baseUrl: SITE_URL,
     current: currentApp === "connect3",
@@ -42,38 +52,23 @@ export function buildSites(currentApp: AppId, isOrg: boolean, hasClubs: boolean)
     ],
   };
 
-  const ticketingOrgSite: NavSite = {
-    label: "TICKETING",
-    baseUrl: TICKETING_URL,
-    current: currentApp === "ticketing",
-    children: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-      { label: "Instagram", icon: Instagram, path: "/dashboard/instagram" },
-      { label: "Media", icon: ImageIcon, path: "/dashboard/media" },
-      { label: "Events", icon: Calendar, path: "/dashboard/events" },
-    ],
-  };
+  const ticketingChildren: NavChild[] = [
+    { label: "Tickets", icon: Ticket, path: "/dashboard/tickets" },
+  ];
 
-  const ticketingUserSite: NavSite = {
-    label: "TICKETING",
-    baseUrl: TICKETING_URL,
-    current: currentApp === "ticketing",
-    children: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-      { label: "Tickets", icon: Ticket, path: "/dashboard/tickets" },
-    ],
-  };
-
-  const ticketingClubSite: NavSite = {
-    label: "",
-    baseUrl: TICKETING_URL,
-    current: currentApp === "ticketing",
-    separator: true,
-    children: [
-      { label: "Instagram", icon: Instagram, path: "/dashboard/instagram" },
-      { label: "Media", icon: ImageIcon, path: "/dashboard/media" },
+  if (isOrg || hasClubs) {
+    ticketingChildren.push(
       { label: "Edit Events", icon: CalendarCog, path: "/dashboard/events" },
-    ],
+      { label: "Media", icon: ImageIcon, path: "/dashboard/media" },
+      { label: "Instagram", icon: Instagram, path: "/dashboard/instagram" },
+    );
+  }
+
+  const ticketingSite: NavSite = {
+    label: "TICKETING",
+    baseUrl: TICKETING_URL,
+    current: currentApp === "ticketing",
+    children: ticketingChildren,
   };
 
   const adminSite: NavSite = {
@@ -89,9 +84,9 @@ export function buildSites(currentApp: AppId, isOrg: boolean, hasClubs: boolean)
     ],
   };
 
-  if (isOrg) return [homeSite, ticketingOrgSite, adminSite];
-  if (hasClubs) return [homeSite, ticketingUserSite, ticketingClubSite, adminSite];
-  return [homeSite, ticketingUserSite, ticketingClubSite];
+  if (isOrg) return [homeSite, ticketingSite, adminSite];
+  if (hasClubs) return [homeSite, ticketingSite, adminSite];
+  return [homeSite, ticketingSite];
 }
 
 export function isChildActive(pathname: string, path: string) {

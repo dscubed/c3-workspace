@@ -1,13 +1,42 @@
-import { notFound, redirect } from "next/navigation";
-import { supabaseAdmin } from "@c3/supabase/admin";
-import { createClient } from "@c3/supabase/server";
-import { fetchEventServer } from "@/lib/api/fetchEventServer";
+import { notFound } from "next/navigation";
+import { resolveEventByIdOrSlug } from "@/lib/api/fetchEventServer";
 import CheckoutForm from "@/components/events/checkout/checkout-form/CheckoutForm";
 
-const SSO_BASE_URL =
-  process.env.NEXT_PUBLIC_SSO_BASE_URL ?? "http://localhost:3000/auth/sso";
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+/**
+ * Returns true if registration/checkout is still open.
+ * Open from any time until the event ends.
+ * If no end time is set, open until end of the event's start day.
+ * If neither is set, always open.
+ */
+function isWithinAvailabilityWindow(
+  startUtc: string | null,
+  endUtc: string | null,
+): boolean {
+  const now = Date.now();
+
+  if (endUtc) {
+    return now <= new Date(endUtc).getTime();
+  }
+
+  // No end time — open until end of the start day
+  if (startUtc) {
+    const startDate = new Date(startUtc);
+    const endOfDay = new Date(
+      Date.UTC(
+        startDate.getUTCFullYear(),
+        startDate.getUTCMonth(),
+        startDate.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+    return now <= endOfDay.getTime();
+  }
+
+  return true;
+}
 
 export default async function CheckoutPage({
   params,
@@ -16,31 +45,21 @@ export default async function CheckoutPage({
 }) {
   const { id } = await params;
 
-  /* ── Require auth — redirect unsigned users to Connect3 SSO ── */
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    const redirectTo = `${SITE_URL}/events/${id}/checkout`;
-    redirect(`${SSO_BASE_URL}?redirect_to=${encodeURIComponent(redirectTo)}`);
-  }
-
   /* ── Verify the event exists and is published ── */
-  const event = await fetchEventServer(id);
+  const event = await resolveEventByIdOrSlug(id);
   if (!event) notFound();
 
-  /* ── Verify ticketing is enabled ── */
-  const { data: ticketingRow } = await supabaseAdmin
-    .from("events")
-    .select("ticketing_enabled")
-    .eq("id", id)
-    .single();
+  /* ── Check availability window ── */
+  const withinWindow = isWithinAvailabilityWindow(
+    event.start ?? null,
+    event.end ?? null,
+  );
 
-  if (!ticketingRow?.ticketing_enabled) {
-    notFound();
-  }
-
-  return <CheckoutForm eventId={id} mode="preview" />;
+  return (
+    <CheckoutForm
+      eventId={event.id}
+      mode="preview"
+      availabilityWindowOpen={withinWindow}
+    />
+  );
 }

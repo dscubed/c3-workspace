@@ -38,9 +38,9 @@ import {
   type EventCollabContextValue,
 } from "@/components/events/shared/EventCollabContext";
 import { useAuthStore } from "@c3/auth";
+import { registerForEvent } from "@/app/actions/register";
 import { useEventRealtime } from "@/lib/hooks/useEventRealtime";
 import { useDocumentDark } from "@/lib/hooks/useDocumentDark";
-import { useEventTicketing } from "@/lib/hooks/useEventTicketing";
 import { useCheckoutFields } from "@/lib/hooks/useCheckoutFields";
 import { useAttendeeData } from "@/lib/hooks/useAttendeeData";
 import { fetchEvent } from "@/lib/api/fetchEvent";
@@ -81,6 +81,14 @@ export interface CheckoutContextValue {
   previewMode: boolean;
   setPreviewMode: React.Dispatch<React.SetStateAction<boolean>>;
   eventName: string | null;
+  /** "edit" = admin is authoring the checkout; "preview" = real buyer checkout */
+  editorMode: "edit" | "preview";
+  /** "ticket" = paid/free admission ticket; "registration" = attendance log */
+  checkoutMode: "ticket" | "registration";
+  /** Whether the event's availability window is currently open */
+  availabilityWindowOpen: boolean;
+  /** Organising club name — used in the UMSU membership field label */
+  clubName: string | null;
   /* theme */
   layout: ThemeLayout;
   theme: EventTheme;
@@ -89,10 +97,6 @@ export interface CheckoutContextValue {
   accentColor: string | undefined;
   accentGradient: string | undefined;
   solidBg: string | undefined;
-  /* ticketing */
-  ticketingEnabled: boolean;
-  ticketingChanging: boolean;
-  handleEnableTicketing: () => void;
   pricingCount: number;
   /* checkout fields (editor) */
   fields: TicketingFieldDraft[];
@@ -120,6 +124,7 @@ export interface CheckoutContextValue {
   setActiveTicketTab: (tab: string) => void;
   /* actions */
   handlePaymentStart: () => Promise<void>;
+  handleRegister: () => Promise<void>;
 }
 
 const CheckoutContext = createContext<CheckoutContextValue | null>(null);
@@ -140,12 +145,14 @@ export { CheckoutContext };
 interface CheckoutProviderProps {
   eventId: string;
   mode: "edit" | "preview";
+  availabilityWindowOpen?: boolean;
   children: React.ReactNode;
 }
 
 export function CheckoutProvider({
   eventId,
   mode,
+  availabilityWindowOpen = true,
   children,
 }: CheckoutProviderProps) {
   const router = useRouter();
@@ -205,18 +212,6 @@ export function CheckoutProvider({
     onRemoteChange,
   });
 
-  /* ── Ticketing ── */
-  const {
-    ticketingEnabled,
-    ticketingChanging,
-    enableTicketing: handleEnableTicketing,
-    disableTicketing: handleDisableTicketing,
-  } = useEventTicketing({
-    eventId,
-    initialEnabled: eventData?.ticketingEnabled ?? false,
-    pricingCount: eventData?.formData.pricing?.length ?? 0,
-  });
-
   /* ── Checkout fields ── */
   const {
     fields,
@@ -225,7 +220,6 @@ export function CheckoutProvider({
     removeField,
     savingFields,
     lastSavedAt,
-    flushFields,
     dndSensors,
     fieldIds,
     handleFieldDragEnd,
@@ -255,7 +249,13 @@ export function CheckoutProvider({
     theme.layout === "card" && theme.bgColor ? theme.bgColor : undefined;
 
   /* ── Derived ticket values ── */
-  const pricing = eventData?.formData.pricing ?? [];
+  const pricing = useMemo(
+    () => eventData?.formData.pricing ?? [],
+    [eventData?.formData.pricing],
+  );
+  // Derived from whether the event has ticket tiers — no flag needed
+  const checkoutMode =
+    pricing.length > 0 ? ("ticket" as const) : ("registration" as const);
   const defaultTierId = pricing[0]?.id ?? "";
   const effectiveSelectedTierId = selectedTierId || defaultTierId;
   const selectedTier =
@@ -277,6 +277,11 @@ export function CheckoutProvider({
     );
   }, [eventId, attendeeData, fields, quantity]);
 
+  /* ── Registration (non-Stripe) ── */
+  const handleRegister = useCallback(async () => {
+    await registerForEvent(eventId, attendeeData);
+  }, [eventId, attendeeData]);
+
   /* ── Checkout context value ── */
   const checkoutValue: CheckoutContextValue = useMemo(
     () => ({
@@ -286,16 +291,17 @@ export function CheckoutProvider({
       previewMode,
       setPreviewMode,
       eventName: eventData?.formData.name ?? null,
+      editorMode: mode,
+      checkoutMode,
+      availabilityWindowOpen,
+      clubName: eventData?.clubName ?? null,
       layout: theme.layout,
       theme,
       isDark,
       colors,
       accentColor,
-      accentGradient,
+      accentGradient: accentGradient ?? undefined,
       solidBg,
-      ticketingEnabled,
-      ticketingChanging,
-      handleEnableTicketing,
       pricingCount: pricing.length,
       fields,
       addField,
@@ -319,6 +325,7 @@ export function CheckoutProvider({
       activeTicketTab,
       setActiveTicketTab,
       handlePaymentStart,
+      handleRegister,
     }),
     [
       eventId,
@@ -326,15 +333,16 @@ export function CheckoutProvider({
       isEditing,
       previewMode,
       eventData?.formData.name,
+      mode,
+      checkoutMode,
+      availabilityWindowOpen,
+      eventData?.clubName,
       theme,
       isDark,
       colors,
       accentColor,
       accentGradient,
       solidBg,
-      ticketingEnabled,
-      ticketingChanging,
-      handleEnableTicketing,
       pricing,
       fields,
       addField,
@@ -356,6 +364,7 @@ export function CheckoutProvider({
       activeTicketTab,
       setActiveTicketTab,
       handlePaymentStart,
+      handleRegister,
     ],
   );
 
@@ -387,10 +396,6 @@ export function CheckoutProvider({
       handleBack: () => router.replace(`/events/${eventId}/edit`),
       handlePublish: () => {},
       handleUnpublish: () => {},
-      ticketingEnabled,
-      ticketingChanging,
-      enableTicketing: handleEnableTicketing,
-      disableTicketing: handleDisableTicketing,
       openPricingModalRef: { current: () => {} },
       checklistRefsRef: { current: {} },
     };
@@ -401,10 +406,6 @@ export function CheckoutProvider({
     isEditing,
     savingFields,
     lastSavedAt,
-    ticketingEnabled,
-    ticketingChanging,
-    handleEnableTicketing,
-    handleDisableTicketing,
     router,
     theme,
     colors,
@@ -432,7 +433,7 @@ export function CheckoutProvider({
       setTheme: noop,
       colors,
       isDark,
-      accentGradient,
+      accentGradient: accentGradient ?? undefined,
       markDirty: noop,
       flush: noopAsync,
       broadcastRef: { current: noop },

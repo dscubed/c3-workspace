@@ -38,7 +38,6 @@ export function EventFormProviders({
         <EventEditorProvider
           eventId={eventId}
           initialStatus={data?.status ?? "draft"}
-          initialTicketingEnabled={data?.ticketingEnabled ?? false}
           initialUrlSlug={data?.urlSlug ?? null}
           isVisitorPreview={isVisitorPreview}
         >

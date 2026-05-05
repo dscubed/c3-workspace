@@ -29,7 +29,6 @@ export function EditorToolbox() {
     lastSavedAt,
     previewMode,
     setPreviewMode,
-    ticketingEnabled,
   } = useEventEditor();
   const { flush } = useEventForm();
   const { collaborators } = useEventCollab();
@@ -168,10 +167,7 @@ export function EditorToolbox() {
                   pathname?.includes("/checkout") ? "secondary" : "ghost"
                 }
                 size="sm"
-                className={cn(
-                  "h-7 text-xs px-3",
-                  !ticketingEnabled && "opacity-50",
-                )}
+                className="h-7 text-xs px-3"
                 onClick={async () => {
                   if (!pathname?.includes("/checkout")) {
                     await flush();

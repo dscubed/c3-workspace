@@ -115,13 +115,23 @@ export async function GET(
       ]);
 
     /* Theme and ticketing come directly from the events row */
-    const theme = event.theme_mode != null ? {
-      mode: event.theme_mode,
-      layout: event.theme_layout,
-      accent: event.theme_accent,
-      accent_custom: event.theme_accent_custom ?? null,
-      bg_color: event.theme_bg_color ?? null,
-    } : null;
+    const theme =
+      event.theme_mode != null
+        ? {
+            mode: event.theme_mode,
+            layout: event.theme_layout,
+            accent: event.theme_accent,
+            accent_custom: event.theme_accent_custom ?? null,
+            bg_color: event.theme_bg_color ?? null,
+          }
+        : null;
+
+    /* Fetch creator profile for club name */
+    const { data: creatorProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("first_name")
+      .eq("id", event.creator_profile_id)
+      .single();
 
     return NextResponse.json({
       data: {
@@ -135,7 +145,7 @@ export async function GET(
         occurrences: occurrences.data ?? [],
         venues: venues.data ?? [],
         thumbnail: (images.data ?? [])[0]?.url ?? null,
-        ticketing: { enabled: event.ticketing_enabled ?? false },
+        club_name: creatorProfile?.first_name ?? null,
       },
     });
   } catch (error) {
@@ -188,7 +198,8 @@ export async function PUT(
     const endTime: string | null = body.endTime || null;
     const timezone: string | null = body.timezone || null;
     const isOnline: boolean = body.isOnline ?? false;
-    const locationType: string = body.locationType ?? (isOnline ? "online" : "tba");
+    const locationType: string =
+      body.locationType ?? (isOnline ? "online" : "tba");
     const onlineLink: string | null = body.onlineLink || null;
     const isRecurring: boolean = body.isRecurring ?? false;
     const category: string | null = body.category || null;
@@ -358,13 +369,16 @@ export async function PUT(
 
     /* ── Update theme columns on events row ── */
     if (theme) {
-      await supabaseAdmin.from("events").update({
-        theme_mode: theme.mode,
-        theme_layout: theme.layout,
-        theme_accent: theme.accent,
-        theme_accent_custom: theme.accentCustom || null,
-        theme_bg_color: theme.bgColor || null,
-      }).eq("id", eventId);
+      await supabaseAdmin
+        .from("events")
+        .update({
+          theme_mode: theme.mode,
+          theme_layout: theme.layout,
+          theme_accent: theme.accent,
+          theme_accent_custom: theme.accentCustom || null,
+          theme_bg_color: theme.bgColor || null,
+        })
+        .eq("id", eventId);
     }
 
     /* ── Replace sections ── */
@@ -380,7 +394,10 @@ export async function PUT(
     }
 
     /* ── Replace occurrences ── */
-    await supabaseAdmin.from("event_occurrences").delete().eq("event_id", eventId);
+    await supabaseAdmin
+      .from("event_occurrences")
+      .delete()
+      .eq("event_id", eventId);
     if (occurrences.length > 0) {
       const occRows = occurrences.map((o) => ({
         event_id: eventId,
@@ -432,7 +449,9 @@ export async function PATCH(
     /* ── Verify ownership, accepted collaborator, or club admin ── */
     const { data: existing } = await supabaseAdmin
       .from("events")
-      .select("creator_profile_id, url_slug" /* , location_id — removed: column no longer exists */)
+      .select(
+        "creator_profile_id, url_slug" /* , location_id — removed: column no longer exists */,
+      )
       .eq("id", eventId)
       .single();
 
@@ -465,8 +484,10 @@ export async function PATCH(
       if ("category" in body) payload.category = body.category || null;
       if ("tags" in body) payload.tags = body.tags ?? [];
       if ("isOnline" in body) payload.is_online = body.isOnline ?? false;
-      if ("locationType" in body) payload.location_type = body.locationType ?? "tba";
-      if ("isRecurring" in body) payload.is_recurring = body.isRecurring ?? false;
+      if ("locationType" in body)
+        payload.location_type = body.locationType ?? "tba";
+      if ("isRecurring" in body)
+        payload.is_recurring = body.isRecurring ?? false;
       if ("timezone" in body) payload.timezone = body.timezone || null;
       if ("startDate" in body || "startTime" in body) {
         const sd = body.startDate;
@@ -554,12 +575,19 @@ export async function PATCH(
         const existingIds = new Set((existingVenues ?? []).map((v) => v.id));
 
         // Separate new (nanoid) vs existing (UUID) venues
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const toInsert = venues.filter((v) => !uuidRegex.test(v.id) || !existingIds.has(v.id));
-        const toUpdate = venues.filter((v) => uuidRegex.test(v.id) && existingIds.has(v.id));
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const toInsert = venues.filter(
+          (v) => !uuidRegex.test(v.id) || !existingIds.has(v.id),
+        );
+        const toUpdate = venues.filter(
+          (v) => uuidRegex.test(v.id) && existingIds.has(v.id),
+        );
 
         // Delete venues no longer present
-        const keepIds = venues.filter((v) => uuidRegex.test(v.id)).map((v) => v.id);
+        const keepIds = venues
+          .filter((v) => uuidRegex.test(v.id))
+          .map((v) => v.id);
         if (keepIds.length > 0) {
           await supabaseAdmin
             .from("event_venues")
@@ -567,7 +595,10 @@ export async function PATCH(
             .eq("event_id", eventId)
             .not("id", "in", `(${keepIds.map((id) => `'${id}'`).join(",")})`);
         } else {
-          await supabaseAdmin.from("event_venues").delete().eq("event_id", eventId);
+          await supabaseAdmin
+            .from("event_venues")
+            .delete()
+            .eq("event_id", eventId);
         }
 
         if (toInsert.length > 0) {
@@ -586,15 +617,19 @@ export async function PATCH(
 
         for (const v of toUpdate) {
           const idx = venues.indexOf(v);
-          await supabaseAdmin.from("event_venues").update({
-            type: v.type,
-            venue: v.location.displayName || null,
-            address: v.location.address || null,
-            latitude: v.type === "physical" ? (v.location.lat ?? null) : null,
-            longitude: v.type === "physical" ? (v.location.lon ?? null) : null,
-            online_link: v.type === "online" ? (v.onlineLink ?? null) : null,
-            sort_order: idx,
-          }).eq("id", v.id);
+          await supabaseAdmin
+            .from("event_venues")
+            .update({
+              type: v.type,
+              venue: v.location.displayName || null,
+              address: v.location.address || null,
+              latitude: v.type === "physical" ? (v.location.lat ?? null) : null,
+              longitude:
+                v.type === "physical" ? (v.location.lon ?? null) : null,
+              online_link: v.type === "online" ? (v.onlineLink ?? null) : null,
+              sort_order: idx,
+            })
+            .eq("id", v.id);
         }
       }
 
@@ -752,13 +787,16 @@ export async function PATCH(
     if (groups.includes("theme")) {
       const theme: ThemePayload | null = body.theme ?? null;
       if (theme) {
-        await supabaseAdmin.from("events").update({
-          theme_mode: theme.mode,
-          theme_layout: theme.layout,
-          theme_accent: theme.accent,
-          theme_accent_custom: theme.accentCustom || null,
-          theme_bg_color: theme.bgColor || null,
-        }).eq("id", eventId);
+        await supabaseAdmin
+          .from("events")
+          .update({
+            theme_mode: theme.mode,
+            theme_layout: theme.layout,
+            theme_accent: theme.accent,
+            theme_accent_custom: theme.accentCustom || null,
+            theme_bg_color: theme.bgColor || null,
+          })
+          .eq("id", eventId);
       }
       updatedGroups.push("theme");
     }

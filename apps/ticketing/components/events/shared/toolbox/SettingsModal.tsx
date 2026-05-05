@@ -31,10 +31,6 @@ export function SettingsModal({
     setTheme,
     eventStatus,
     hasName,
-    ticketingEnabled,
-    ticketingChanging,
-    enableTicketing,
-    disableTicketing,
     savingPublish,
     handlePublish,
     handleUnpublish,
@@ -56,11 +52,7 @@ export function SettingsModal({
     "publish" | "unpublish"
   >("publish");
 
-  // Ticketing Alert State
-  const [ticketingAlertOpen, setTicketingAlertOpen] = useState(false);
-  const [pendingTicketingAction, setPendingTicketingAction] = useState<
-    "enable" | "disable"
-  >("enable");
+  // Ticketing Alert State — removed (ticketing derived from tier count)
 
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -132,21 +124,10 @@ export function SettingsModal({
     setStatusAlertOpen(true);
   };
 
-  const handleTicketingToggle = (checked: boolean) => {
-    setPendingTicketingAction(checked ? "enable" : "disable");
-    setTicketingAlertOpen(true);
-  };
-
   const confirmStatusAction = () => {
     if (pendingStatusAction === "publish") handlePublish();
     else handleUnpublish();
     setStatusAlertOpen(false);
-  };
-
-  const confirmTicketingAction = () => {
-    if (pendingTicketingAction === "enable") enableTicketing();
-    else disableTicketing();
-    setTicketingAlertOpen(false);
   };
 
   return (
@@ -255,24 +236,6 @@ export function SettingsModal({
                 />
               </div>
             )}
-
-            {eventId && ticketingEnabled !== undefined && (
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Ticketing</Label>
-                  <p className="text-[13px] text-muted-foreground">
-                    {ticketingEnabled
-                      ? "Currently enabled"
-                      : "Currently disabled"}
-                  </p>
-                </div>
-                <Switch
-                  checked={ticketingEnabled}
-                  onCheckedChange={handleTicketingToggle}
-                  disabled={ticketingChanging}
-                />
-              </div>
-            )}
           </div>
         </div>
       </ResponsiveModal>
@@ -305,42 +268,6 @@ export function SettingsModal({
               {pendingStatusAction === "publish"
                 ? "Publish Event"
                 : "Unpublish Event"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Ticketing Toggle Alert Dialog */}
-      <AlertDialog
-        open={ticketingAlertOpen}
-        onOpenChange={setTicketingAlertOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingTicketingAction === "enable"
-                ? "Enabling ticketing will allow you to start selling tickets for this event."
-                : "Disabling ticketing will prevent any further ticket sales. This action will not refund or cancel existing orders."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={ticketingChanging}>
-              Cancel
-            </AlertDialogCancel>
-            <Button
-              variant={
-                pendingTicketingAction === "enable" ? "default" : "destructive"
-              }
-              onClick={confirmTicketingAction}
-              disabled={ticketingChanging}
-            >
-              {ticketingChanging && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {pendingTicketingAction === "enable"
-                ? "Enable Ticketing"
-                : "Disable Ticketing"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

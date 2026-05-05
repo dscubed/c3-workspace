@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@c3/supabase/server";
+import { supabaseAdmin } from "@c3/supabase/admin";
+import { checkEventPermission } from "@/lib/auth/clubAdmin";
 
 export async function GET(
   request: NextRequest,
@@ -10,12 +12,13 @@ export async function GET(
   const slug = searchParams.get("slug");
 
   if (!slug) {
-    return NextResponse.json({ error: "Missing slug parameter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing slug parameter" },
+      { status: 400 },
+    );
   }
 
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("events")
     .select("id")
     .eq("url_slug", slug)
@@ -23,10 +26,12 @@ export async function GET(
 
   if (error && error.code !== "PGRST116") {
     console.error("Error checking slug:", error);
-    return NextResponse.json({ error: "Failed to check slug availability" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to check slug availability" },
+      { status: 500 },
+    );
   }
 
-  // It is available if no event has it, OR if the current event has it
   const isAvailable = !data || data.id === eventId;
 
   return NextResponse.json({ available: isAvailable });
@@ -37,6 +42,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id: eventId } = await context.params;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,7 +52,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // TODO: Add proper permission check (e.g., matching profile/club admin)
+  const perm = await checkEventPermission(eventId, user.id);
+  if (!perm.isCreator && !perm.isCollaborator && !perm.isClubAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   let body;
   try {
@@ -63,33 +72,39 @@ export async function PATCH(
   }
 
   if (slug) {
-    // Check again before saving
-    const { data: existing, error: checkErr } = await supabase
+    const { data: existing, error: checkErr } = await supabaseAdmin
       .from("events")
       .select("id")
       .eq("url_slug", slug)
       .single();
 
     if (checkErr && checkErr.code !== "PGRST116") {
-       return NextResponse.json({ error: "Failed to check slug availability" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to check slug availability" },
+        { status: 500 },
+      );
     }
 
     if (existing && existing.id !== eventId) {
-       return NextResponse.json({ error: "Slug is already taken" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Slug is already taken" },
+        { status: 409 },
+      );
     }
   }
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin
     .from("events")
     .update({ url_slug: slug || null })
     .eq("id", eventId);
 
   if (updateError) {
     console.error("Failed to update slug:", updateError);
-    return NextResponse.json({ error: "Failed to update slug" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update slug" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ success: true, slug });
 }
-
-

@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
     "./provider": "./src/provider.tsx",
-    "./sso": "./src/sso.ts"
+    "./sso": "./src/sso.ts",
+    "./server": "./src/claimGuestRegistrations.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"

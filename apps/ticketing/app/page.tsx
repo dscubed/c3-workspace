@@ -11,8 +11,8 @@ export default async function Home() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(getLoginUrl(SITE_URL, "/dashboard"));
+    redirect(getLoginUrl(SITE_URL, "/dashboard/events"));
   }
 
-  redirect("/dashboard");
+  redirect("/dashboard/tickets");
 }

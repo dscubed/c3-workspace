@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, CreditCard } from "lucide-react";
+import { ArrowLeft, Loader2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { EditorToolbox } from "@/components/events/shared/EditorToolbox";
 import { CheckoutProvider, useCheckoutContext } from "./CheckoutContext";
 import { CheckoutEditor } from "./CheckoutEditor";
@@ -13,11 +12,20 @@ import { CheckoutPreview } from "./CheckoutPreview";
 interface CheckoutFormProps {
   eventId: string;
   mode: "edit" | "preview";
+  availabilityWindowOpen?: boolean;
 }
 
-export default function CheckoutForm({ eventId, mode }: CheckoutFormProps) {
+export default function CheckoutForm({
+  eventId,
+  mode,
+  availabilityWindowOpen = true,
+}: CheckoutFormProps) {
   return (
-    <CheckoutProvider eventId={eventId} mode={mode}>
+    <CheckoutProvider
+      eventId={eventId}
+      mode={mode}
+      availabilityWindowOpen={availabilityWindowOpen}
+    >
       <CheckoutFormUI />
     </CheckoutProvider>
   );
@@ -30,14 +38,15 @@ function CheckoutFormUI() {
     isLoading,
     isEditing,
     previewMode,
+    setPreviewMode,
     eventName,
-    theme,
     isDark,
     colors,
     accentGradient,
     solidBg,
-    ticketingEnabled,
-    handlePaymentStart,
+    availabilityWindowOpen,
+    checkoutMode,
+    editorMode,
   } = useCheckoutContext();
 
   if (isLoading) {
@@ -48,6 +57,8 @@ function CheckoutFormUI() {
     );
   }
 
+  const pageTitle = checkoutMode === "registration" ? "Register" : "Checkout";
+
   return (
     <div
       className={cn("min-h-screen pb-12", colors.pageBg, isDark && "dark")}
@@ -55,7 +66,34 @@ function CheckoutFormUI() {
     >
       {!previewMode && <EditorToolbox />}
 
-      {previewMode && (
+      {previewMode && editorMode === "edit" && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-3 py-2 sm:px-6 border-b bg-amber-500/10 border-amber-500/30 backdrop-blur">
+          <span
+            className={cn(
+              "text-xs font-medium",
+              isDark ? "text-amber-300" : "text-amber-700",
+            )}
+          >
+            Preview mode — changes won&apos;t be saved or processed
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-2 text-xs",
+              isDark
+                ? "text-amber-300 hover:text-amber-100 hover:bg-white/10"
+                : "text-amber-700 hover:text-amber-900 hover:bg-amber-500/10",
+            )}
+            onClick={() => setPreviewMode(false)}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Exit Preview
+          </Button>
+        </div>
+      )}
+
+      {previewMode && editorMode === "preview" && (
         <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2 sm:px-6">
           <Button
             variant="ghost"
@@ -86,7 +124,7 @@ function CheckoutFormUI() {
 
           <div className="mb-2">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Checkout
+              {pageTitle}
             </h1>
             {eventName && (
               <p className={cn("mt-1 text-sm", colors.textMuted)}>
@@ -95,27 +133,31 @@ function CheckoutFormUI() {
             )}
           </div>
 
-          {isEditing && <CheckoutEditor />}
-          {!isEditing && <CheckoutPreview />}
-
-          {(ticketingEnabled || previewMode) && (
-            <div className="mt-8">
-              <SectionWrapper
-                title="Payment"
-                layout={theme.layout}
-                isDark={isDark}
-              >
-                <div className="flex flex-col items-center gap-3 py-4 text-center">
-                  <CreditCard
-                    className={cn("h-10 w-10 opacity-40", colors.textMuted)}
-                  />
-                  <div>
-                    <Button onClick={handlePaymentStart}>Test Payment</Button>
-                  </div>
-                </div>
-              </SectionWrapper>
+          {/* Availability closed state */}
+          {previewMode && !availabilityWindowOpen && (
+            <div
+              className={cn(
+                "mt-6 flex flex-col items-center gap-3 rounded-xl border px-6 py-10 text-center",
+                colors.cardBg,
+                colors.cardBorder,
+              )}
+            >
+              <Clock className={cn("h-10 w-10 opacity-40", colors.textMuted)} />
+              <p className={cn("font-semibold", colors.text)}>
+                {checkoutMode === "registration"
+                  ? "Registration is closed"
+                  : "Ticketing is closed"}
+              </p>
+              <p className={cn("text-sm max-w-xs", colors.textMuted)}>
+                {checkoutMode === "registration"
+                  ? "Registration opens at the event start time and closes at the end of the event."
+                  : "Tickets are only available from event start until the event ends."}
+              </p>
             </div>
           )}
+
+          {isEditing && <CheckoutEditor />}
+          {!isEditing && availabilityWindowOpen && <CheckoutPreview />}
         </div>
       </div>
     </div>

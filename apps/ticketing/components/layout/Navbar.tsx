@@ -13,8 +13,11 @@ export function Navbar() {
           className="flex items-center justify-center gap-2 tracking-tight text-lg"
         >
           <LogoAnimated className="h-5 w-5" onHover={true} />
-          <span className="font-semibold" style={{ fontFamily: "var(--font-fredoka)" }}>
-            connect3
+          <span
+            className="font-semibold"
+            style={{ fontFamily: "var(--font-fredoka)" }}
+          >
+            Connect3
           </span>
         </Link>
 

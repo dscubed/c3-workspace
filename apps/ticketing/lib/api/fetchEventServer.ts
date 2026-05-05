@@ -85,9 +85,7 @@ export interface PublicEventData {
     avatar_url: string | null;
   } | null;
   url_slug: string | null;
-  ticketing: {
-    enabled: boolean;
-  } | null;
+  club_name: string | null;
 }
 
 /**
@@ -183,7 +181,7 @@ export async function fetchEventServer(
     sections: sections.data ?? [],
     creator_profile: creatorProfile.data ?? null,
     url_slug: event.url_slug ?? null,
-    ticketing: { enabled: event.ticketing_enabled ?? true },
+    club_name: creatorProfile.data?.first_name ?? null,
   };
 }
 
@@ -204,6 +202,33 @@ export async function getAllPublishedEventIds(): Promise<string[]> {
     if (e.url_slug) segments.push(e.url_slug);
   }
   return [...new Set(segments)];
+}
+
+/**
+ * Resolve an event by ID or url_slug.
+ * Tries by ID first; if not found, falls back to url_slug lookup.
+ * Use this anywhere a route param could be either an ID or a slug.
+ */
+export async function resolveEventByIdOrSlug(
+  param: string,
+  options: { requirePublished?: boolean } = {},
+): Promise<PublicEventData | null> {
+  const byId = await fetchEventServer(param, options);
+  if (byId) return byId;
+
+  const slugQuery = supabaseAdmin
+    .from("events")
+    .select("id")
+    .eq("url_slug", param);
+
+  if (options.requirePublished !== false) {
+    slugQuery.eq("status", "published");
+  }
+
+  const { data } = await slugQuery.maybeSingle();
+  if (!data) return null;
+
+  return fetchEventServer(data.id, options);
 }
 
 /**
@@ -481,6 +506,8 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
     creatorProfile,
     urlSlug: null,
     status: event.status as "draft" | "published" | "archived",
-    ticketingEnabled: event.ticketing?.enabled ?? false,
+    clubName: event.club_name ?? creatorProfile?.first_name ?? null,
+    startUtc: event.start ?? null,
+    endUtc: event.end ?? null,
   };
 }

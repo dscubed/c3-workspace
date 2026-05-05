@@ -1,17 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThemeAccent } from "@/components/events/shared/types";
 import { useEditorTheme } from "@/components/events/shared/EventEditorContext";
 import { useContext } from "react";
 import { EventFormContext } from "@/components/events/shared/EventFormContext";
-import { fetcher } from "@/lib/fetcher";
 import { TooltipContent, TooltipTrigger, Tooltip } from "../ui/tooltip";
-import { toast } from "sonner";
 
 /* ── Accent → solid colour mapping ── */
 const ACCENT_SOLID_MAP: Record<
@@ -40,22 +36,16 @@ function getAccentButtonStyle(
 
 interface TicketingButtonProps {
   eventId: string;
-  /** "edit" = shows "Setup Ticketing"; "preview" = shows "Get Tickets" or hidden.
-   *  When omitted, reads viewMode from EventEditorContext. */
+  /** "edit" = shows "Edit Checkout" or "Setup Checkout"; "preview" = shows "Get Tickets" or "Register". */
   mode?: "edit" | "preview";
   accent?: ThemeAccent;
   accentCustom?: string;
   isDark?: boolean;
   draft?: boolean;
-  /** Whether the event has at least one ticket tier. Defaults to true. */
   /** Whether the event has at least one ticket tier. Read from context when inside the editor. */
   hasTiers?: boolean;
   /** Whether the button is in edit form. Defaults to false. */
   editor?: boolean;
-  /** Callback fired when the button is clicked but has no tiers */
-  onNoTiersClick?: () => void;
-  /** Whether ticketing is initialized */
-  ticketingEnabled?: boolean | null;
 }
 
 /**
@@ -76,8 +66,6 @@ export function TicketingButton({
   draft = false,
   hasTiers: hasTiersProp,
   editor = false,
-  onNoTiersClick,
-  ticketingEnabled = null,
 }: TicketingButtonProps) {
   const ctx = useEditorTheme();
   const formCtx = useContext(EventFormContext);
@@ -86,59 +74,22 @@ export function TicketingButton({
   const accentCustom = accentCustomProp ?? ctx?.theme.accentCustom;
   const isDark = isDarkProp ?? ctx?.isDark ?? false;
   const hasTiers =
-    hasTiersProp ?? (formCtx ? formCtx.form.pricing.length > 0 : true);
+    hasTiersProp ?? (formCtx ? formCtx.form.pricing.length > 0 : false);
   const router = useRouter();
-
-  const { data: ticketingData } = useSWR(
-    ticketingEnabled === null ? `/api/events/${eventId}/ticketing` : null,
-    fetcher<{ data: { ticketing: { enabled: boolean } | null } }>,
-  );
-
-  const finalTicketingEnabled =
-    ticketingEnabled !== null
-      ? ticketingEnabled
-      : ticketingData
-        ? !!ticketingData.data?.ticketing?.enabled
-        : null;
-  if (finalTicketingEnabled === null && mode === "edit") {
-    // We only show a loading state if we're in edit mode.
-    return null;
-  }
-  const isSetUp = finalTicketingEnabled === true;
-
-  /* Preview mode: only show if ticketing is set up */
-  if (mode === "preview" && !isSetUp) return null;
 
   const label =
     mode === "edit"
-      ? isSetUp
+      ? hasTiers
         ? "Edit Checkout"
-        : "Setup Ticketing"
-      : "Get Tickets";
+        : "Setup Checkout"
+      : hasTiers
+        ? "Get Tickets"
+        : "Register";
 
   const accentStyle = getAccentButtonStyle(accent, accentCustom);
-  const loading = finalTicketingEnabled === null;
-  const disabled = loading || (mode === "preview" && draft);
-  const tooltip = !hasTiers
-    ? "Add at least one ticket tier to enable checkout"
-    : draft
-      ? "Publish your event to enable checkout"
-      : undefined;
+  const tooltip = draft ? "Publish your event to enable checkout" : undefined;
 
   const handleClick = () => {
-    if (!hasTiers) {
-      if (onNoTiersClick) {
-        onNoTiersClick();
-      } else {
-        toast.error(
-          editor
-            ? "Add at least one ticket tier to enable checkout"
-            : "Event has no tickets",
-        );
-      }
-      return;
-    }
-
     if (editor) {
       router.replace(`/events/${eventId}/checkout/edit`);
     } else {
@@ -163,15 +114,15 @@ export function TicketingButton({
               <Button
                 size="lg"
                 className={cn(
-                  "w-full gap-2 rounded-lg",
-                  !accentStyle &&
-                    "bg-foreground text-background hover:bg-foreground/90",
+                  "w-full gap-2 rounded-lg transition-opacity",
+                  !accentStyle
+                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    : "hover:opacity-90",
                 )}
                 style={accentStyle}
                 onClick={handleClick}
-                disabled={disabled}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : label}
+                {label}
               </Button>
             </div>
 
@@ -187,15 +138,15 @@ export function TicketingButton({
               <Button
                 size="lg"
                 className={cn(
-                  "gap-2 rounded-lg px-10",
-                  !accentStyle &&
-                    "bg-foreground text-background hover:bg-foreground/90",
+                  "gap-2 rounded-lg px-10 transition-opacity",
+                  !accentStyle
+                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    : "hover:opacity-90",
                 )}
                 style={accentStyle}
                 onClick={handleClick}
-                disabled={disabled}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : label}
+                {label}
               </Button>
             </div>
           </div>

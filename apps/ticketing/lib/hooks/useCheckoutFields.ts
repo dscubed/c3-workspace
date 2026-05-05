@@ -36,13 +36,11 @@ export function useCheckoutFields({
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Load ticketing fields ── */
-  const [ticketingEnabled, setTicketingEnabled] = useState(false);
 
   useEffect(() => {
     fetch(`/api/events/${eventId}/ticketing`)
       .then((res) => res.json())
       .then((json) => {
-        setTicketingEnabled(!!json.data?.ticketing?.enabled);
         const dbFields = (json.data?.fields ?? []) as {
           id: string;
           label: string;
@@ -173,8 +171,6 @@ export function useCheckoutFields({
 
   return {
     fields,
-    ticketingEnabled,
-    setTicketingEnabled,
     addField,
     updateField,
     removeField,

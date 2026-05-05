@@ -1,26 +1,26 @@
-'use server';
+"use server";
 
-import Stripe from 'stripe';
-import { redirect } from 'next/navigation';
-import { createClient } from '@c3/supabase/server';
-import { AttendeeData } from '@/lib/hooks/useAttendeeData';
-import { TicketingField, TicketingFieldDraft } from '@/lib/types/ticketing';
+import Stripe from "stripe";
+import { redirect } from "next/navigation";
+import { createClient } from "@c3/supabase/server";
+import { AttendeeData } from "@c3/types";
+import { TicketingField, TicketingFieldDraft } from "@/lib/types/ticketing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 /**
- * Server action to create a Stripe checkout session 
- * @param priceId 
- * @returns 
+ * Server action to create a Stripe checkout session
+ * @param priceId
+ * @returns
  */
 export async function createCheckoutSession(
   eventId: string,
   priceId: string,
   attendeeData: AttendeeData,
   additionalFields?: TicketingFieldDraft[],
-  quantity?: number
+  quantity?: number,
 ) {
-  console.log("ATTENDEE ", Object.keys(attendeeData))
+  console.log("ATTENDEE ", Object.keys(attendeeData));
   console.log("FIELDS ", additionalFields);
   // Perhaps change price id to support creating checkout session for multiple items
   // Unless we want to enforce buy one ticket at a time and not have a cart system
@@ -57,8 +57,8 @@ export async function createCheckoutSession(
   // Create checkout session
   console.log(process.env.NEXT_PUBLIC_SITE_URL);
   const checkoutSession = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    payment_method_types: ['card'],
+    mode: "payment",
+    payment_method_types: ["card"],
     line_items: [
       {
         price: priceId,
@@ -67,7 +67,7 @@ export async function createCheckoutSession(
     ],
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`, // Change
     metadata: {
-      event_id: eventId
+      event_id: eventId,
     },
   });
 

@@ -15,7 +15,6 @@ import type { ChecklistRefMap } from "@/components/event-form/EventChecklist";
 import type { FieldGroup } from "@/lib/api/patchEvent";
 import { useEventForm } from "./EventFormContext";
 import { useEventPublish } from "@/lib/hooks/useEventPublish";
-import { useEventTicketing } from "@/lib/hooks/useEventTicketing";
 
 /* ── Context value ── */
 
@@ -55,12 +54,6 @@ export interface EventEditorContextValue {
   handlePublish: () => void;
   handleUnpublish: () => void;
 
-  /* ── Ticketing ── */
-  ticketingEnabled: boolean;
-  ticketingChanging: boolean;
-  enableTicketing: () => void;
-  disableTicketing: () => void;
-
   /* ── Cross-component refs ── */
   /** Registered by EventDetailsForm during render so TicketingButton can open pricing modal. */
   openPricingModalRef: React.MutableRefObject<() => void>;
@@ -96,7 +89,6 @@ export { EventEditorContext };
 interface EventEditorProviderProps {
   eventId?: string;
   initialStatus?: "draft" | "published" | "archived";
-  initialTicketingEnabled?: boolean;
   initialUrlSlug?: string | null;
   isVisitorPreview?: boolean;
   children: React.ReactNode;
@@ -105,7 +97,6 @@ interface EventEditorProviderProps {
 export function EventEditorProvider({
   eventId,
   initialStatus = "draft",
-  initialTicketingEnabled = false,
   initialUrlSlug = null,
   isVisitorPreview = false,
   children,
@@ -152,17 +143,6 @@ export function EventEditorProvider({
       initialStatus,
     });
 
-  const {
-    ticketingEnabled,
-    ticketingChanging,
-    enableTicketing,
-    disableTicketing,
-  } = useEventTicketing({
-    eventId,
-    initialEnabled: initialTicketingEnabled,
-    pricingCount: (form.pricing ?? []).length,
-  });
-
   const handleBack = useCallback(async () => {
     await flush();
     router.back();
@@ -191,10 +171,6 @@ export function EventEditorProvider({
       handleBack,
       handlePublish,
       handleUnpublish,
-      ticketingEnabled,
-      ticketingChanging,
-      enableTicketing,
-      disableTicketing,
       openPricingModalRef,
       checklistRefsRef,
     }),
@@ -217,10 +193,6 @@ export function EventEditorProvider({
       handleBack,
       handlePublish,
       handleUnpublish,
-      ticketingEnabled,
-      ticketingChanging,
-      enableTicketing,
-      disableTicketing,
     ],
   );
 

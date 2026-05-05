@@ -3,15 +3,33 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, LogOut, LogIn, UserPlus, UserRound } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  LogIn,
+  UserPlus,
+  UserRound,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../avatar";
 import { Skeleton } from "../skeleton";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
 import { cn } from "@c3/utils";
 import { useAuthStore } from "@c3/auth/store";
 import { useClubStore } from "@c3/auth";
 import LogoAnimated from "../logo/LogoAnimated";
-import { buildSites, isChildActive, type AppId, type NavSite } from "./nav-config";
+import {
+  buildSites,
+  isChildActive,
+  type AppId,
+  type NavSite,
+} from "./nav-config";
 
 interface NavItemProps {
   label: string;
@@ -22,7 +40,14 @@ interface NavItemProps {
   external?: boolean;
 }
 
-function NavItem({ label, icon: Icon, href, isActive, isExpanded, external }: NavItemProps) {
+function NavItem({
+  label,
+  icon: Icon,
+  href,
+  isActive,
+  isExpanded,
+  external,
+}: NavItemProps) {
   const Component = external ? "a" : Link;
   return (
     <Component
@@ -47,7 +72,15 @@ function NavItem({ label, icon: Icon, href, isActive, isExpanded, external }: Na
   );
 }
 
-function DropdownButton({ onClick, text, icon }: { onClick: () => void; text: string; icon: React.ReactNode }) {
+function DropdownButton({
+  onClick,
+  text,
+  icon,
+}: {
+  onClick: () => void;
+  text: string;
+  icon: React.ReactNode;
+}) {
   return (
     <DropdownMenuItem
       onClick={onClick}
@@ -75,7 +108,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, loading } = useAuthStore();
-  const { clubs, clubsLoading } = useClubStore();
+  const { clubs } = useClubStore();
 
   const [isDesktop, setIsDesktop] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -154,7 +187,8 @@ export function AppSidebar({
 
   const handleSignUp = () => {
     if (onSignUp) return onSignUp();
-    const siteUrl = process.env.NEXT_PUBLIC_CONNECT3_URL ?? "http://localhost:3000";
+    const siteUrl =
+      process.env.NEXT_PUBLIC_CONNECT3_URL ?? "http://localhost:3000";
     window.location.href = `${siteUrl}/auth/sign-up`;
   };
 
@@ -178,8 +212,17 @@ export function AppSidebar({
           className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 border border-white/10 hover:bg-white/15 transition-all hover:scale-105"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
-          <div className={cn("transition-all duration-200", mobileOpen ? "rotate-90" : "rotate-0")}>
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <div
+            className={cn(
+              "transition-all duration-200",
+              mobileOpen ? "rotate-90" : "rotate-0",
+            )}
+          >
+            {mobileOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </div>
         </button>
       </nav>
@@ -192,10 +235,18 @@ export function AppSidebar({
         <aside
           className={cn(
             "flex flex-col h-[100dvh] px-3 backdrop-blur-xl pt-4 pb-4 border-r bg-white z-50 transition-all",
-            hasMounted ? (isDesktop ? "duration-200" : "duration-300 ease-in-out") : "duration-0",
+            hasMounted
+              ? isDesktop
+                ? "duration-200"
+                : "duration-300 ease-in-out"
+              : "duration-0",
             isDesktop
               ? cn("translate-x-0", isExpanded ? "w-[200px]" : "w-[68px]")
-              : cn(mobileOpen ? "translate-x-0 w-[200px]" : "-translate-x-full w-fit"),
+              : cn(
+                  mobileOpen
+                    ? "translate-x-0 w-[200px]"
+                    : "-translate-x-full w-fit",
+                ),
           )}
           onMouseEnter={() => isDesktop && setIsHovered(true)}
           onMouseLeave={() => isDesktop && !dropdownOpen && setIsHovered(false)}
@@ -208,11 +259,19 @@ export function AppSidebar({
               onMouseEnter={() => setHeaderHovering(true)}
               onMouseLeave={() => setHeaderHovering(false)}
             >
-              <LogoAnimated width={20} height={20} onHover={true} hovering={headerHovering} className="shrink-0" />
+              <LogoAnimated
+                width={20}
+                height={20}
+                onHover={true}
+                hovering={headerHovering}
+                className="shrink-0"
+              />
               <span
                 className={cn(
                   "ml-2 text-base font-semibold font-fredoka whitespace-nowrap overflow-hidden transition-all duration-200",
-                  isExpanded ? "max-w-[140px] opacity-100" : "max-w-0 opacity-0",
+                  isExpanded
+                    ? "max-w-[140px] opacity-100"
+                    : "max-w-0 opacity-0",
                 )}
               >
                 Connect3
@@ -229,12 +288,12 @@ export function AppSidebar({
             >
               <div className="flex flex-col gap-1 w-full">
                 {sites.map((site, idx) => {
-                  if (site.separator && !isOrg && !isClubAdmin && !clubsLoading) return null;
                   return (
-                    <div key={`${site.label}-${idx}`} className="flex flex-col gap-1 w-full">
-                      {site.separator ? (
-                        <span className="w-full border-t border-gray-200 my-2" />
-                      ) : site.label ? (
+                    <div
+                      key={`${site.label}-${idx}`}
+                      className="flex flex-col gap-1 w-full"
+                    >
+                      {site.label ? (
                         <div className="px-3 flex items-end h-7 pt-2">
                           <span
                             className={cn(
@@ -247,8 +306,11 @@ export function AppSidebar({
                         </div>
                       ) : null}
                       {site.children.map((c) => {
-                        const href = site.current ? c.path : `${site.baseUrl}${c.path}`;
-                        const active = site.current && isChildActive(pathname, c.path);
+                        const href = site.current
+                          ? c.path
+                          : `${site.baseUrl}${c.path}`;
+                        const active =
+                          site.current && isChildActive(pathname, c.path);
                         return (
                           <NavItem
                             key={`${site.label}-${c.path}`}
@@ -275,12 +337,19 @@ export function AppSidebar({
           <div className="-mx-3 px-3 pt-3 border-t border-gray-100 shrink-0">
             <div className="flex flex-col items-center gap-1">
               {loading ? (
-                <div className={cn("flex items-center gap-2 p-2 rounded-lg w-full", !isExpanded && "justify-center")}>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg w-full",
+                    !isExpanded && "justify-center",
+                  )}
+                >
                   <Skeleton className="h-8 w-8 rounded-full shrink-0" />
                   <div
                     className={cn(
                       "min-w-0 overflow-hidden transition-all duration-200 flex flex-col gap-1",
-                      isExpanded ? "max-w-[120px] opacity-100" : "max-w-0 opacity-0",
+                      isExpanded
+                        ? "max-w-[120px] opacity-100"
+                        : "max-w-0 opacity-0",
                     )}
                   >
                     <Skeleton className="h-3 w-16 rounded" />
@@ -290,7 +359,10 @@ export function AppSidebar({
               ) : user && profile ? (
                 <DropdownMenu
                   open={dropdownOpen}
-                  onOpenChange={(open) => { setDropdownOpen(open); if (!open) setIsHovered(false); }}
+                  onOpenChange={(open) => {
+                    setDropdownOpen(open);
+                    if (!open) setIsHovered(false);
+                  }}
                 >
                   <DropdownMenuTrigger asChild>
                     <button
@@ -300,31 +372,59 @@ export function AppSidebar({
                       )}
                     >
                       <Avatar className="h-8 w-8 shrink-0">
-                        {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.first_name ?? ""} />}
-                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">{initials}</AvatarFallback>
+                        {profile.avatar_url && (
+                          <AvatarImage
+                            src={profile.avatar_url}
+                            alt={profile.first_name ?? ""}
+                          />
+                        )}
+                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">
+                          {initials}
+                        </AvatarFallback>
                       </Avatar>
                       <div
                         className={cn(
                           "min-w-0 overflow-hidden transition-all duration-200",
-                          isExpanded ? "max-w-[120px] opacity-100" : "max-w-0 opacity-0",
+                          isExpanded
+                            ? "max-w-[120px] opacity-100"
+                            : "max-w-0 opacity-0",
                         )}
                       >
                         <p className="text-sm font-medium truncate whitespace-nowrap text-black w-full text-start">
-                          {profile?.first_name ?? user?.email?.split("@")[0] ?? "User"}
+                          {profile?.first_name ??
+                            user?.email?.split("@")[0] ??
+                            "User"}
                         </p>
-                        <p className="text-xs text-muted-foreground truncate whitespace-nowrap">{user?.email}</p>
+                        <p className="text-xs text-muted-foreground truncate whitespace-nowrap">
+                          {user?.email}
+                        </p>
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" side="right" className="z-[110] w-44 rounded-xl border border-gray-200 bg-white p-1">
-                    <DropdownButton onClick={() => router.push(settingsPath)} text="Profile" icon={<User className="w-4 h-4" />} />
-                    <DropdownButton onClick={handleLogout} text="Log Out" icon={<LogOut className="w-4 h-4" />} />
+                  <DropdownMenuContent
+                    align="end"
+                    side="right"
+                    className="z-[110] w-44 rounded-xl border border-gray-200 bg-white p-1"
+                  >
+                    <DropdownButton
+                      onClick={() => router.push(settingsPath)}
+                      text="Profile"
+                      icon={<User className="w-4 h-4" />}
+                    />
+                    <DropdownButton
+                      onClick={handleLogout}
+                      text="Log Out"
+                      icon={<LogOut className="w-4 h-4" />}
+                    />
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <DropdownMenu
                   open={dropdownOpen}
-                  onOpenChange={(open) => { setDropdownOpen(open); if (!open) setIsHovered(false); }}
+                  onOpenChange={(open) => {
+                    setDropdownOpen(open);
+                    if (!open) setIsHovered(false);
+                  }}
                 >
                   <DropdownMenuTrigger asChild>
                     <button
@@ -339,16 +439,30 @@ export function AppSidebar({
                       <span
                         className={cn(
                           "text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-200",
-                          isExpanded ? "max-w-[140px] opacity-100" : "max-w-0 opacity-0",
+                          isExpanded
+                            ? "max-w-[140px] opacity-100"
+                            : "max-w-0 opacity-0",
                         )}
                       >
                         Login
                       </span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" side="right" className="z-[110] w-44 rounded-xl border border-gray-200 bg-white p-1">
-                    <DropdownButton onClick={handleLogin} text="Log In" icon={<LogIn className="w-4 h-4" />} />
-                    <DropdownButton onClick={handleSignUp} text="Sign Up" icon={<UserPlus className="w-4 h-4" />} />
+                  <DropdownMenuContent
+                    align="end"
+                    side="right"
+                    className="z-[110] w-44 rounded-xl border border-gray-200 bg-white p-1"
+                  >
+                    <DropdownButton
+                      onClick={handleLogin}
+                      text="Log In"
+                      icon={<LogIn className="w-4 h-4" />}
+                    />
+                    <DropdownButton
+                      onClick={handleSignUp}
+                      text="Sign Up"
+                      icon={<UserPlus className="w-4 h-4" />}
+                    />
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

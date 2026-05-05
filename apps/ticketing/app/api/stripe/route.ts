@@ -1,17 +1,19 @@
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe/serverInstance";
-import { LineItem } from "@/components/templates/receipt";
 import { sendTicketEmail } from "@/lib/events/check-in/sendTicketEmail";
 import { generateQRCodeBuffer } from "@/lib/events/qr";
+import { supabaseAdmin } from "@c3/supabase/admin";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
 
 // Allowed events for only one time payments
 // Add more to support things like subscriptions
 const allowedEvents: Stripe.Event.Type[] = [
   "checkout.session.completed",
   "payment_intent.succeeded",
-  "payment_intent.payment_failed"
-]
+  "payment_intent.payment_failed",
+];
 export async function POST(request: Request) {
   try {
     const body = await request.text();
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
     const event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
 
     console.log("EVENT TYPE", event.type);
@@ -35,63 +37,95 @@ export async function POST(request: Request) {
 
     // Handle events
     if (event.type === "checkout.session.completed") {
-      // The main event. Runs after a user creates a purchase through Stripe
-
       const _session = event.data.object as Stripe.Checkout.Session;
       if (!_session.metadata) {
         throw new Error("Metadata missing");
       }
 
-      const eventId = _session.metadata.eventId;
-      const customerId = _session.customer as string | null;
+      const eventId = _session.metadata.event_id;
 
       // Expand the current session to get more attributes
-      const completeSession = await stripe.checkout.sessions.retrieve(_session.id, {
-        expand: ['line_items', 'line_items.data.price.product'],
-      });
+      const completeSession = await stripe.checkout.sessions.retrieve(
+        _session.id,
+        {
+          expand: ["line_items", "line_items.data.price.product"],
+        },
+      );
 
-      const customerName = completeSession.customer_details?.name?.split(' ')[0];
-      const lineItems: LineItem[]  = completeSession.line_items!.data.map(item => {
-        const hasPrice = !!item.price;
-        const product = item.price!.product as Stripe.Product;
-        return {
-          name: hasPrice ? product!.name : "Product",
-        thumbnail: hasPrice ? product!.images?.[0] ?? null : null,
-        quantity: item.quantity!,
-        price: hasPrice ? item.price!.unit_amount! : 0,
-        currency: hasPrice ? item.price!.currency : "IDK",
-        } 
-      });
+      const email = completeSession.customer_details?.email ?? "";
+      const fullName = completeSession.customer_details?.name ?? "";
+      const firstName = fullName.split(" ")[0] || "there";
 
-      const email = completeSession.customer_details?.email;
+      // Fetch event details for the email
+      const { data: eventRow } = await supabaseAdmin
+        .from("events")
+        .select(
+          "name, start, event_venues(venue), event_images(url, sort_order)",
+        )
+        .eq("id", eventId)
+        .single();
 
-      // TODO use a random url before making the scan-in endpoint
-      const qrBuffer = await generateQRCodeBuffer("https://johnling.me");
-      console.log("Created QR code");
+      const eventDate = eventRow?.start
+        ? new Date(eventRow.start).toLocaleDateString("en-AU", {
+            weekday: "short",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : undefined;
+      const venues = eventRow?.event_venues as
+        | { venue: string | null }[]
+        | null;
+      const venueName = venues?.[0]?.venue ?? undefined;
+      const images = eventRow?.event_images as
+        | { url: string; sort_order: number }[]
+        | null;
+      const thumbnailUrl = images?.[0]?.url ?? null;
 
-      console.log("Sending email");
-      await sendTicketEmail(email!!, customerName ?? "Buyer", completeSession.id, qrBuffer, lineItems);
-      console.log("Sent email");
+      // Create registration row — email/first_name/last_name are real columns,
+      // custom_fields holds any extra answers (empty for Stripe webhook path).
+      const { data: registration } = await supabaseAdmin
+        .from("event_registrations")
+        .insert({
+          event_id: eventId,
+          user_id: null, // guest checkout — no user_id available from webhook
+          type: "ticket",
+          email: email.toLowerCase(),
+          first_name: firstName,
+          last_name: fullName.split(" ").slice(1).join(" ") || "",
+          custom_fields: {},
+          stripe_session_id: completeSession.id,
+        })
+        .select("id, qr_code_id")
+        .single();
 
-      if (!customerId) {
-        // Guest checkout — no Stripe customer was created
-        return new Response("No customer ID on session", { status: 200 });
+      if (registration) {
+        const qrTarget = `${SITE_URL}/api/checkin/${registration.qr_code_id}`;
+        const qrBuffer = await generateQRCodeBuffer(qrTarget);
+
+        await sendTicketEmail({
+          email,
+          firstName,
+          eventName: eventRow?.name ?? "Event",
+          qrBuffer,
+          orderId: completeSession.id,
+          eventDate,
+          venueName,
+          thumbnailUrl,
+        });
+        console.log("Ticket email sent");
       }
-
-      // Add potential code for loyalty points here
-
 
       return Response.json("Purchase success", { status: 200 });
     }
 
     if (event.type === "payment_intent.succeeded") {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const customerId = intent.customer as string | null;
       console.log("Payment succeeded");
     }
 
     if (event.type === "payment_intent.payment_failed") {
-      const intent = event.data.object as Stripe.PaymentIntent;
       console.log("Payment failed");
     }
 
@@ -99,7 +133,7 @@ export async function POST(request: Request) {
   } catch (err) {
     return new Response(
       `Webhook error: ${err instanceof Error ? err.message : "Unknown error"}`,
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

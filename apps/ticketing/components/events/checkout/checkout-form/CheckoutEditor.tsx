@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -9,7 +8,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -19,6 +17,8 @@ import { AddFieldButton } from "@/components/events/checkout/AddFieldButton";
 import { CHECKOUT_PRESET_FIELDS } from "@/lib/types/ticketing";
 import type { TicketingFieldDraft } from "@/lib/types/ticketing";
 import { useCheckoutContext } from "./CheckoutContext";
+import Link from "next/link";
+import { Ticket } from "lucide-react";
 
 function SortableFieldWrapper({
   id,
@@ -55,10 +55,7 @@ export function CheckoutEditor() {
     layout,
     isDark,
     colors,
-    accentColor,
-    ticketingEnabled,
-    ticketingChanging,
-    handleEnableTicketing,
+    checkoutMode,
     pricingCount,
     fields,
     addField,
@@ -67,39 +64,65 @@ export function CheckoutEditor() {
     dndSensors,
     fieldIds,
     handleFieldDragEnd,
+    eventId,
   } = useCheckoutContext();
 
-  if (!ticketingEnabled) {
+  if (checkoutMode === "registration") {
     return (
-      <Card className="mt-6 flex flex-col items-center gap-4 p-8 text-center">
-        <div>
-          <h2 className="text-lg font-semibold">Enable Ticketing</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Set up ticketing for this event to start collecting attendee
-            information at checkout.
+      <div className="mt-8 space-y-8">
+        <SectionWrapper title="Checkout Info" layout={layout} isDark={isDark}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {CHECKOUT_PRESET_FIELDS.map((field) => (
+              <div key={field.key} className="space-y-1.5">
+                <Label className={cn("text-sm font-medium", colors.text)}>
+                  {field.label}
+                  <span className="ml-0.5 text-red-500">*</span>
+                </Label>
+                <Input
+                  type={field.type}
+                  placeholder={field.label}
+                  disabled
+                  className={cn(
+                    colors.inputBg,
+                    colors.inputBorder,
+                    colors.placeholder,
+                  )}
+                />
+              </div>
+            ))}
+          </div>
+          <p className={cn("mt-3 text-xs", colors.textMuted)}>
+            These fields are preset and cannot be modified. They will always
+            appear on the checkout form.
           </p>
-          {pricingCount === 0 && (
-            <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-              You need to add at least one ticket tier to your event before
-              enabling ticketing.
-            </p>
-          )}
-        </div>
-        <Button
-          size="lg"
-          className="gap-2"
-          style={
-            accentColor
-              ? { backgroundColor: accentColor, color: "#fff" }
-              : undefined
-          }
-          onClick={handleEnableTicketing}
-          disabled={ticketingChanging || pricingCount === 0}
-        >
-          {ticketingChanging && <Loader2 className="h-4 w-4 animate-spin" />}
-          Enable Ticketing
-        </Button>
-      </Card>
+        </SectionWrapper>
+
+        <SectionWrapper title="Ticket Info" layout={layout} isDark={isDark}>
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <div
+              className={cn(
+                "rounded-full p-3",
+                isDark ? "bg-white/10" : "bg-muted",
+              )}
+            >
+              <Ticket className={cn("h-5 w-5", colors.textMuted)} />
+            </div>
+            <div className="space-y-1">
+              <p className={cn("text-sm font-medium", colors.text)}>
+                No ticket tiers yet
+              </p>
+              <p className={cn("text-xs", colors.textMuted)}>
+                Add ticket tiers to configure custom checkout fields.
+              </p>
+            </div>
+            <Link href={`/events/${eventId}/edit`}>
+              <Button size="sm" variant="outline" className="mt-1 text-xs">
+                Add ticket tiers
+              </Button>
+            </Link>
+          </div>
+        </SectionWrapper>
+      </div>
     );
   }
 

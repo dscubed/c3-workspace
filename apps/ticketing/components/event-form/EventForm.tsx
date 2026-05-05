@@ -41,7 +41,6 @@ function EventFormUI() {
     isEditing,
     isVisitorPreview,
     eventId,
-    ticketingEnabled,
     eventStatus,
     openPricingModalRef,
     colors,
@@ -93,7 +92,6 @@ function EventFormUI() {
         <TicketingButton
           eventId={eventId}
           draft={eventStatus === "draft"}
-          ticketingEnabled={ticketingEnabled}
           onNoTiersClick={() => openPricingModalRef.current()}
           editor
         />

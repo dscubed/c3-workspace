@@ -16,7 +16,7 @@ export function EventPricingField({
   modalOpen,
   onModalOpenChange,
 }: EventPricingFieldProps) {
-  const { viewMode: mode, ticketingEnabled } = useEventEditor();
+  const { viewMode: mode } = useEventEditor();
   const { form, updateField } = useEventForm();
 
   if (mode === "preview") return <PricingDisplay value={form.pricing} />;
@@ -32,7 +32,6 @@ export function EventPricingField({
       onAfterSave={onAfterSave}
       modalOpen={modalOpen}
       onModalOpenChange={onModalOpenChange}
-      ticketingEnabled={ticketingEnabled}
     />
   );
 }

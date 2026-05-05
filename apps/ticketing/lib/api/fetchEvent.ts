@@ -111,7 +111,7 @@ interface RawEvent {
   sections: RawSection[];
   occurrences: RawOccurrence[];
   venues: RawVenue[];
-  ticketing: { enabled: boolean } | null;
+  club_name?: string | null;
 }
 
 export interface FetchedEventData {
@@ -124,7 +124,11 @@ export interface FetchedEventData {
   creatorProfile?: ClubProfile;
   urlSlug?: string | null;
   status: "draft" | "published" | "archived";
-  ticketingEnabled: boolean;
+  /** Display name of the organising club — used in the membership field label. */
+  clubName: string | null;
+  /** Raw UTC start/end strings for availability window checking. */
+  startUtc: string | null;
+  endUtc: string | null;
 }
 
 /**
@@ -160,7 +164,8 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
   }
 
   /* ── Location type ── */
-  const locationType: LocationType = (data.location_type as LocationType) ?? "tba";
+  const locationType: LocationType =
+    (data.location_type as LocationType) ?? "tba";
 
   /* ── Venues (from event_venues table, with legacy fallback) ── */
   let venues: Venue[] = [];
@@ -189,21 +194,23 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
   }
 
   /* ── Occurrences ── */
-  const occurrences: OccurrenceFormData[] = (data.occurrences ?? []).map((o) => {
-    const s = splitUtcTimestampInTimeZone(o.start, eventTimeZone);
-    const e = o.end
-      ? splitUtcTimestampInTimeZone(o.end, eventTimeZone)
-      : { date: s.date, time: "" };
-    return {
-      id: o.id,
-      name: o.name ?? undefined,
-      startDate: s.date,
-      startTime: s.time,
-      endDate: e.date,
-      endTime: e.time,
-      venueIds: o.venue_ids ?? [],
-    };
-  });
+  const occurrences: OccurrenceFormData[] = (data.occurrences ?? []).map(
+    (o) => {
+      const s = splitUtcTimestampInTimeZone(o.start, eventTimeZone);
+      const e = o.end
+        ? splitUtcTimestampInTimeZone(o.end, eventTimeZone)
+        : { date: s.date, time: "" };
+      return {
+        id: o.id,
+        name: o.name ?? undefined,
+        startDate: s.date,
+        startTime: s.time,
+        endDate: e.date,
+        endTime: e.time,
+        venueIds: o.venue_ids ?? [],
+      };
+    },
+  );
 
   // Legacy backward compat: synthesize one occurrence from the event's
   // start/end dates when the DB has no occurrences yet.
@@ -357,6 +364,8 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     creatorProfile,
     status: (data.status ?? "draft") as "draft" | "published" | "archived",
     urlSlug: data.url_slug,
-    ticketingEnabled: !!data.ticketing?.enabled,
+    clubName: data.club_name ?? creatorProfile?.first_name ?? null,
+    startUtc: data.start ?? null,
+    endUtc: data.end ?? null,
   };
 }

@@ -12,12 +12,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info, Plus, Trash2, Settings2, AlertTriangle } from "lucide-react";
+import { Info, Plus, Trash2, Settings2 } from "lucide-react";
 import type { TicketTier } from "../shared/types";
 import { validateTicketTier as validateTier } from "../shared/pricingUtils";
 import { TicketOfferWindowFields } from "./TicketOfferWindowFields";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface PricingModalProps {
   open: boolean;
@@ -27,7 +26,6 @@ interface PricingModalProps {
   eventCapacity?: number | null;
   eventStartDate?: string;
   eventStartTime?: string;
-  ticketingEnabled: boolean;
 }
 
 let nextId = 1;
@@ -43,7 +41,6 @@ export function PricingModal({
   eventCapacity: initialEventCapacity,
   eventStartDate,
   eventStartTime,
-  ticketingEnabled,
 }: PricingModalProps) {
   const [tiers, setTiers] = useState<TicketTier[]>(value);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,8 +55,6 @@ export function PricingModal({
   const [eventCapacity, setEventCapacity] = useState<number | null>(
     initialEventCapacity ?? null,
   );
-
-  const eventId = window.location.pathname.split("/")[2];
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
@@ -226,42 +221,6 @@ export function PricingModal({
             <p className="text-xs text-red-500 px-1">{errors.capacity}</p>
           )}
         </div>
-
-        {/* Empty ticketing tiers warning */}
-        {ticketingEnabled && tiers.length === 0 && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex gap-3 items-start text-red-800 dark:border-red-900/50 dark:bg-red-900/10 dark:text-red-400">
-            <AlertTriangle className="h-full shrink-0" />
-            <div className="text-xs">
-              <p className="font-semibold">
-                Ticketing is enabled but no tickets are configured.
-              </p>
-              <p className="mt-1 opacity-90">
-                Please add at least one ticket tier, or guests won&apos;t be
-                able to register.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Enable ticketing alert */}
-        {!ticketingEnabled && tiers.length > 0 && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 flex gap-3 items-start text-blue-800 dark:border-blue-900/50 dark:bg-blue-900/10 dark:text-blue-400">
-            <AlertTriangle className="h-full shrink-0" />
-            <div className="text-xs">
-              <p className="font-semibold">Ticketing is not enabled!</p>
-              <p className="mt-1 opacity-90">
-                You have ticket tiers configured, please{" "}
-                <Link
-                  href={`/events/${eventId}/checkout/edit`}
-                  className="underline"
-                >
-                  enable ticketing
-                </Link>{" "}
-                to allow guests to register.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Event-level capacity */}
         <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">

@@ -1,36 +1,101 @@
 import { Resend } from "resend";
-import { LineItem } from "@/components/templates/receipt";
-import { ReceiptTemplate } from "@/components/templates/receipt";
+import { TicketEmailTemplate } from "@/components/templates/ticket-email";
+import { RegistrationEmailTemplate } from "@/components/templates/registration-email";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
+interface BaseEmailParams {
+  email: string;
+  firstName: string;
+  eventName: string;
+  qrBuffer: Buffer;
+  eventDate?: string;
+  venueName?: string;
+  thumbnailUrl?: string | null;
+}
+
+/**
+ * Sends a ticket confirmation email with QR entry pass.
+ * Used for ticketed events — attendee must show QR at the door.
+ */
 export async function sendTicketEmail(
-  email: string,
-  customerName: string,
-  orderId: string,
-  qrBuffer: Buffer,
-  lineItems: LineItem[]
+  params: BaseEmailParams & { orderId: string },
 ) {
-  const { data: _, error } = await resend.emails.send({
+  const {
+    email,
+    firstName,
+    eventName,
+    qrBuffer,
+    orderId,
+    eventDate,
+    venueName,
+    thumbnailUrl,
+  } = params;
+
+  const { error } = await resend.emails.send({
     from: "Connect3 <ticketing@mail.connect3.app>",
-    to: [email!],
-    subject: "You're Checked In",
+    to: [email],
+    subject: `Your ticket for ${eventName}`,
     attachments: [
       {
-        filename: "qr-code.png",
+        filename: "ticket-qr.png",
         content: qrBuffer.toString("base64"),
         contentId: "ticket-qr",
       },
     ],
-    react: ReceiptTemplate({
-      firstName: customerName,
-      orderId: orderId,
-      lineItems: lineItems,
+    react: TicketEmailTemplate({
+      firstName,
+      eventName,
+      orderId,
       ticketQrCodeUrl: "cid:ticket-qr",
+      eventDate,
+      venueName,
+      thumbnailUrl,
     }),
   });
 
-  if (error) {
-    throw new Error("Failed to send ticket email");
-  }
+  if (error) throw new Error("Failed to send ticket email");
+}
+
+/**
+ * Sends a registration confirmation email with QR attendance code.
+ * Used for non-ticketed events — attendee scans QR to log attendance and earn rewards.
+ */
+export async function sendRegistrationEmail(
+  params: BaseEmailParams & { registrationId: string },
+) {
+  const {
+    email,
+    firstName,
+    eventName,
+    qrBuffer,
+    registrationId,
+    eventDate,
+    venueName,
+    thumbnailUrl,
+  } = params;
+
+  const { error } = await resend.emails.send({
+    from: "Connect3 <ticketing@mail.connect3.app>",
+    to: [email],
+    subject: `You're registered for ${eventName}`,
+    attachments: [
+      {
+        filename: "attendance-qr.png",
+        content: qrBuffer.toString("base64"),
+        contentId: "attendance-qr",
+      },
+    ],
+    react: RegistrationEmailTemplate({
+      firstName,
+      eventName,
+      registrationId,
+      qrCodeUrl: "cid:attendance-qr",
+      eventDate,
+      venueName,
+      thumbnailUrl,
+    }),
+  });
+
+  if (error) throw new Error("Failed to send registration email");
 }
