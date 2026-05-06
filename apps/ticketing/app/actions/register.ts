@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
 import { supabaseAdmin } from "@c3/supabase/admin";
-import { generateQRCodeBuffer } from "@/lib/events/qr/qr";
+import { generateQRCodeBuffer, signPayload } from "@/lib/events/qr/qr";
 import { sendRegistrationEmail } from "@/lib/events/check-in/sendTicketEmail";
 import type { AttendeeData } from "@c3/types";
 
@@ -74,8 +74,10 @@ export async function registerForEvent(
     throw new Error("Failed to create registration");
   }
 
-  const qrTarget = `${SITE_URL}/api/checkin/${registration.qr_code_id}`;
-  const qrBuffer = await generateQRCodeBuffer(qrTarget);
+  const ticketSecret = process.env.TICKET_SECRET;
+  if (!ticketSecret) throw new Error("TICKET_SECRET env var is not set");
+  const qrPayload = signPayload("ticket", registration.qr_code_id, ticketSecret);
+  const qrBuffer = await generateQRCodeBuffer(qrPayload);
 
   const eventDate = event?.start
     ? new Date(event.start).toLocaleDateString("en-AU", {

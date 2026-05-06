@@ -83,7 +83,7 @@ export function RegistrationRow({ registration }: RegistrationRowProps) {
       <QRCodeDialog
         open={showQR}
         onOpenChange={setShowQR}
-        qrCodeId={registration.qr_code_id}
+        registrationId={registration.id}
         eventName={registration.event_name ?? "Event"}
       />
       <RegistrationDetailsDialog

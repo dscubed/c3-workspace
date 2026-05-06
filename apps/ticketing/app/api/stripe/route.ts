@@ -2,10 +2,8 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe/serverInstance";
 import { sendTicketEmail } from "@/lib/events/check-in/sendTicketEmail";
-import { generateQRCodeBuffer } from "@/lib/events/qr";
+import { generateQRCodeBuffer, signPayload } from "@/lib/events/qr";
 import { supabaseAdmin } from "@c3/supabase/admin";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
 
 // Allowed events for only one time payments
 // Add more to support things like subscriptions
@@ -102,8 +100,10 @@ export async function POST(request: Request) {
         .single();
 
       if (registration) {
-        const qrTarget = `${SITE_URL}/api/checkin/${registration.qr_code_id}`;
-        const qrBuffer = await generateQRCodeBuffer(qrTarget);
+        const ticketSecret = process.env.TICKET_SECRET;
+        if (!ticketSecret) throw new Error("TICKET_SECRET env var is not set");
+        const qrPayload = signPayload("ticket", registration.qr_code_id, ticketSecret);
+        const qrBuffer = await generateQRCodeBuffer(qrPayload);
 
         await sendTicketEmail({
           email,
