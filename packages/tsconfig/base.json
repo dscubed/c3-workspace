@@ -5,7 +5,7 @@
     "declarationMap": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "incremental": false,
+    "incremental": true,
     "isolatedModules": true,
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,

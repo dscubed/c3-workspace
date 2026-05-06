@@ -2,5 +2,26 @@
     "chat.tools.terminal.autoApprove": {
         "robocopy": true,
         "Set-Content": true
-    }
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/.next/**": true,
+        "**/dist/**": true,
+        "**/.turbo/**": true,
+        "**/out/**": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/dist": true,
+        "**/.turbo": true,
+        "**/out": true,
+        "**/pnpm-lock.yaml": true
+    },
+    "typescript.tsserver.maxTsServerMemory": 4096,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "editor.formatOnSave": false
 }
