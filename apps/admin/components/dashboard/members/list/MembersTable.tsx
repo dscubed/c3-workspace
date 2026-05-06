@@ -92,7 +92,7 @@ function MemberRow({ member }: { member: Member }) {
         {member.verified_email}
       </td>
       <td className="px-4 py-3 text-muted-foreground">
-        {member.matched_product_name}
+        {member.club_membership_products?.product_name ?? "—"}
       </td>
       <td className="px-4 py-3 text-muted-foreground">
         {member.verified_at

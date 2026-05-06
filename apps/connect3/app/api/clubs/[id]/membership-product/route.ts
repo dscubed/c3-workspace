@@ -82,7 +82,7 @@ export async function GET(
       supabaseAdmin
         .from("club_memberships")
         .select(
-          "id, user_id, verified_email, matched_product_name, verified_at",
+          "id, user_id, verified_email, verified_at, club_membership_products(product_name)",
         )
         .eq("club_id", clubId)
         .order("verified_at", { ascending: false })

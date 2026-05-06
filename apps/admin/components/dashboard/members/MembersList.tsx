@@ -46,7 +46,7 @@ export function MembersList({
           .filter(Boolean)
           .join(" ") || "—",
         m.verified_email,
-        m.matched_product_name,
+        m.club_membership_products?.product_name ?? "—",
         m.verified_at ? new Date(m.verified_at).toLocaleDateString() : "—",
       ]),
     ];

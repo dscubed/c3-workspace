@@ -268,8 +268,7 @@ export class MembershipVerificationService {
       user_id: userId,
       verified_email: verifiedEmail,
       receipt_reference_id: receiptReferenceId,
-      matched_product_name: match.productName,
-      matched_receipt_item_name: match.matchedItemName,
+      product_id: match.productId,
       dkim_domain: receipt.dkimDomain,
       dkim_selector: receipt.dkimSelector,
       message_id: receipt.messageId,
@@ -288,8 +287,7 @@ export class MembershipVerificationService {
     return matches.map((match) => ({
       club_id: match.clubId,
       club: clubs.find((club) => club.id === match.clubId) ?? null,
-      matchedProductName: match.productName,
-      matchedReceiptItemName: match.matchedItemName,
+      productId: match.productId,
     }));
   }
 }

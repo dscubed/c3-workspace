@@ -83,7 +83,7 @@ export class MembershipRepository {
   ): Promise<MembershipProductConfig | null> {
     const { data, error } = await this.supabase
       .from("club_membership_products")
-      .select("club_id, product_name")
+      .select("id, club_id, product_name")
       .eq("club_id", clubId)
       .eq("enabled", true)
       .maybeSingle();
@@ -98,7 +98,7 @@ export class MembershipRepository {
   async listEnabledProducts(): Promise<MembershipProductConfig[]> {
     const { data, error } = await this.supabase
       .from("club_membership_products")
-      .select("club_id, product_name")
+      .select("id, club_id, product_name")
       .eq("enabled", true);
 
     if (error) {

@@ -37,7 +37,7 @@ export async function GET(
     const { data, error } = await supabaseAdmin
       .from("club_memberships")
       .select(
-        `id, matched_product_name, verified_email, verified_at,
+        `id, verified_email, verified_at, club_membership_products(product_name),
          profile:user_id(id, first_name, last_name, avatar_url)`,
       )
       .eq("club_id", clubId)

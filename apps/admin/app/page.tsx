@@ -1,18 +1,8 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@c3/supabase/server";
-import { getLoginUrl } from "@c3/auth/sso";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3003";
-
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-between p-24">
+      <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+    </div>
+  )
 
-  if (!user) {
-    redirect(getLoginUrl(SITE_URL, "/"));
-  }
-
-  redirect("/dashboard");
 }

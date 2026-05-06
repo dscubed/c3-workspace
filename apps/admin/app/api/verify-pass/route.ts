@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .single(),
     supabaseAdmin
       .from("club_memberships")
-      .select("club_id, matched_product_name, verified_at")
+      .select("club_id, verified_at, club_membership_products(product_name)")
       .eq("user_id", userId),
   ]);
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     university: profile?.university ?? null,
     memberships: (memberships ?? []).map((m) => ({
       club_id: m.club_id,
-      product_name: m.matched_product_name,
+      product_name: (m.club_membership_products as unknown as { product_name: string } | null)?.product_name ?? null,
       verified_at: m.verified_at,
     })),
   });

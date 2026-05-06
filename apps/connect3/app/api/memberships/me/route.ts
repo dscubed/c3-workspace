@@ -37,7 +37,7 @@ export async function GET() {
       supabaseAdmin
         .from("club_memberships")
         .select(
-          "id, club_id, verified_email, matched_product_name, matched_receipt_item_name, verified_at",
+          "id, club_id, verified_email, verified_at, club_membership_products(product_name)",
         )
         .eq("user_id", user.id)
         .order("verified_at", { ascending: false }),

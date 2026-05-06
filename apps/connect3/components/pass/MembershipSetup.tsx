@@ -18,7 +18,7 @@ import { useAuthStore } from "@/stores/authStore";
 type VerifiedMember = {
   id: string;
   verified_email: string;
-  matched_product_name: string;
+  club_membership_products: { product_name: string } | null;
   verified_at: string;
   profile: {
     first_name: string | null;

@@ -10,7 +10,6 @@ export class MembershipProductMatcher {
     verification: DkimReceiptVerification,
     products: MembershipProductConfig[],
   ): ProductMatch[] {
-    const body = normalizeProductName(verification.textBody);
     const normalizedItems = verification.itemNames.map((itemName) => ({
       itemName,
       normalized: normalizeProductName(itemName),
@@ -22,23 +21,14 @@ export class MembershipProductMatcher {
         product.product_name,
       );
 
+      if (!normalizedProductName) continue;
       const itemMatch = normalizedItems.find(
         (item) => item.normalized === normalizedProductName,
       );
       if (itemMatch) {
         matches.push({
           clubId: product.club_id,
-          productName: product.product_name,
-          matchedItemName: itemMatch.itemName,
-        });
-        continue;
-      }
-
-      if (body.includes(normalizedProductName)) {
-        matches.push({
-          clubId: product.club_id,
-          productName: product.product_name,
-          matchedItemName: product.product_name,
+          productId: product.id,
         });
       }
     }

@@ -1,4 +1,5 @@
 export interface MembershipProductConfig {
+  id: string;
   club_id: string;
   product_name: string;
 }
@@ -24,8 +25,7 @@ export type DkimReceiptVerification = ParsedReceiptContent &
 
 export interface ProductMatch {
   clubId: string;
-  productName: string;
-  matchedItemName: string;
+  productId: string;
 }
 
 export interface MembershipEmailBinding {
@@ -53,8 +53,7 @@ export interface ClubMembershipUpsertRow {
   user_id: string;
   verified_email: string;
   receipt_reference_id: number;
-  matched_product_name: string;
-  matched_receipt_item_name: string;
+  product_id: string;
   dkim_domain: string;
   dkim_selector: string | null;
   message_id: string | null;
@@ -77,6 +76,5 @@ export interface MembershipReceiptReference {
 export interface VerifiedClubResult {
   club_id: string;
   club: ClubSummary | null;
-  matchedProductName: string;
-  matchedReceiptItemName: string;
+  productId: string;
 }

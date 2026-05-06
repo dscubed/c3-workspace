@@ -29,8 +29,7 @@ import {
 type Membership = {
   id: string;
   club_id: string;
-  matched_product_name: string;
-  matched_receipt_item_name: string;
+  club_membership_products: { product_name: string } | null;
   verified_email: string;
   verified_at: string | null;
   club: {
@@ -83,7 +82,7 @@ function OutlookIcon() {
 function MembershipItem({ membership: m }: { membership: Membership }) {
   const [expanded, setExpanded] = useState(false);
   const displayName =
-    (m.matched_product_name || m.matched_receipt_item_name) ||
+    m.club_membership_products?.product_name ||
     m.club?.first_name ||
     "Club membership";
   const initials = (m.club?.first_name ?? "?")

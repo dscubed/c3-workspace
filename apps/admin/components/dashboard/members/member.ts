@@ -1,6 +1,6 @@
 export type Member = {
   id: string;
-  matched_product_name: string;
+  club_membership_products: { product_name: string } | null;
   verified_email: string;
   verified_at: string | null;
   profile: {
