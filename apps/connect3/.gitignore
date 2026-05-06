@@ -48,3 +48,5 @@ next-env.d.ts
 
 # local database migrations/state are applied manually per environment
 /supabase/migrations/
+
+certificates

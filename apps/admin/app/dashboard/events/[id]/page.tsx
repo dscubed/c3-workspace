@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
-import { ArrowLeft, Download, X, UserCheck } from "lucide-react";
+import { use, useState, useCallback } from "react";
+import { ArrowLeft, Download, X, UserCheck, ScanLine, Loader2 } from "lucide-react";
+import { CheckinStatusPopover } from "@/components/events/CheckinStatusPopover";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { useClubStore } from "@c3/auth";
 import type { EventCardDetails } from "@c3/types";
 import useSWR from "swr";
 import { useEventRegistrations } from "@/lib/hooks/useEventRegistrations";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   live: "bg-green-100 text-green-700 border-green-200",
@@ -37,8 +39,34 @@ export default function EventDetailPage({
   const showSkeleton = !activeClubId || isLoading;
   const event = events?.find((e) => e.id === id) ?? null;
 
-  const { registrations, isLoading: regLoading } = useEventRegistrations(id);
+  const { registrations, isLoading: regLoading, mutate } = useEventRegistrations(id);
   const checkedInCount = registrations.filter((r) => r.checked_in).length;
+  const [pendingCheckin, setPendingCheckin] = useState<string | null>(null);
+
+  const toggleCheckin = useCallback(
+    async (regId: string, currentState: boolean) => {
+      setPendingCheckin(regId);
+      try {
+        const res = await fetch(`/api/events/${id}/registrations/${regId}/checkin`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ checked_in: !currentState }),
+        });
+        if (!res.ok) {
+          const body = await res.json();
+          toast.error(body.error ?? "Failed to update check-in");
+          return;
+        }
+        await mutate();
+        toast.success(currentState ? "Check-in undone" : "Checked in");
+      } catch {
+        toast.error("Network error");
+      } finally {
+        setPendingCheckin(null);
+      }
+    },
+    [id, mutate],
+  );
 
   if (showSkeleton) {
     return (
@@ -127,16 +155,26 @@ export default function EventDetailPage({
         <div className="rounded-lg border bg-white overflow-hidden">
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <h2 className="font-semibold text-sm">Attendees</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                /* TODO: CSV export */
-              }}
-            >
-              <Download className="size-4" />
-              Export CSV
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => router.push(`/events/${id}/checkin`)}
+              >
+                <ScanLine className="size-4" />
+                Scan QR
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  /* TODO: CSV export */
+                }}
+              >
+                <Download className="size-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
 
           {regLoading ? (
@@ -207,9 +245,11 @@ export default function EventDetailPage({
                       )}
                       <td className="px-4 py-3">
                         {attendee.checked_in ? (
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Checked In
-                          </Badge>
+                          <CheckinStatusPopover
+                            checkedIn={true}
+                            checkedInAt={attendee.checked_in_at}
+                            checkedInByName={attendee.checked_in_by_name}
+                          />
                         ) : (
                           <Badge className="bg-gray-100 text-gray-600 border-gray-200">
                             Not Checked In
@@ -217,19 +257,20 @@ export default function EventDetailPage({
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {!attendee.checked_in && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                            onClick={() => {
-                              /* TODO: check-in route */
-                            }}
-                          >
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                          disabled={pendingCheckin === attendee.id}
+                          onClick={() => toggleCheckin(attendee.id, attendee.checked_in)}
+                        >
+                          {pendingCheckin === attendee.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
                             <UserCheck className="size-3.5" />
-                            Check In
-                          </Button>
-                        )}
+                          )}
+                          {attendee.checked_in ? "Undo" : "Check In"}
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -259,7 +300,7 @@ export default function EventDetailPage({
             <span className="text-gray-400 text-sm">QR Code</span>
           </div>
           <p className="text-white text-2xl font-semibold">
-            {checkedInCount} / {mockAttendees.length} checked in
+            {checkedInCount} / {registrations.length} checked in
           </p>
         </div>
       )}

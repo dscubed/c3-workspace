@@ -16,6 +16,8 @@ const REGISTRATION_SELECT = `
   stripe_session_id,
   checked_in,
   checked_in_at,
+  checked_in_by,
+  checked_in_by_profile:profiles!checked_in_by(first_name, last_name),
   created_at
 `;
 
@@ -32,6 +34,11 @@ const REGISTRATION_WITH_EVENT_SELECT = `
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toRegistration(row: any): EventRegistration {
+  const p = row.checked_in_by_profile as { first_name: string | null; last_name: string | null } | null;
+  const checked_in_by_name = p
+    ? [p.first_name, p.last_name].filter(Boolean).join(" ") || null
+    : null;
+
   return {
     id: row.id,
     event_id: row.event_id,
@@ -47,6 +54,8 @@ function toRegistration(row: any): EventRegistration {
     stripe_session_id: row.stripe_session_id,
     checked_in: row.checked_in,
     checked_in_at: row.checked_in_at,
+    checked_in_by: row.checked_in_by ?? null,
+    checked_in_by_name,
     created_at: row.created_at,
   };
 }

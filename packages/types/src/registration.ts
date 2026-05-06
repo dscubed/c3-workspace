@@ -37,6 +37,8 @@ export interface EventRegistration {
   stripe_session_id: string | null;
   checked_in: boolean;
   checked_in_at: string | null;
+  checked_in_by: string | null;
+  checked_in_by_name: string | null;
   created_at: string;
 }
 
