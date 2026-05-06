@@ -37,15 +37,8 @@ export default function EventForm({ data, eventId, mode }: EventFormProps) {
 }
 
 function EventFormUI() {
-  const {
-    isEditing,
-    isVisitorPreview,
-    eventId,
-    eventStatus,
-    openPricingModalRef,
-    colors,
-    isDark,
-  } = useEventEditor();
+  const { isEditing, isVisitorPreview, eventId, eventStatus, colors, isDark } =
+    useEventEditor();
 
   const { theme, accentGradient, carouselImages, form, sections } =
     useEventForm();
@@ -92,7 +85,6 @@ function EventFormUI() {
         <TicketingButton
           eventId={eventId}
           draft={eventStatus === "draft"}
-          onNoTiersClick={() => openPricingModalRef.current()}
           editor
         />
       )}

@@ -7,6 +7,9 @@
     "lib": ["dom", "dom.iterable", "ESNext"],
     "allowJs": true,
     "jsx": "preserve",
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@c3/*": ["../../packages/*/src"]
+    }
   }
 }

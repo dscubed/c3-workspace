@@ -16,7 +16,8 @@ import { MediaGridSkeleton } from "../MediaGridSkeleton";
 import { MediaTabBar } from "../MediaTabBar";
 
 export function StorageTabContent({ active }: { active: StorageCategory }) {
-  const { items, isLoading, mutate } = useMediaStorage(active);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { items, isLoading, mutate } = useMediaStorage(active, scrollRef);
   const { uploads, uploadFiles, dismissUpload } = useMediaUpload(mutate);
   const selection = useStorageSelection(items, active, mutate);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -34,19 +35,21 @@ export function StorageTabContent({ active }: { active: StorageCategory }) {
 
       {!isLoading && items.length > 0 && <SelectionActionBar />}
 
-      {isLoading ? (
-        <MediaGridSkeleton />
-      ) : (
-        <StorageGrid
-          items={items}
-          selectMode={selection.selectMode}
-          selected={selection.selected}
-          onToggle={selection.toggleSelect}
-          onOpen={setLightbox}
-          onDrop={uploadFiles}
-          category={active}
-        />
-      )}
+      <div ref={scrollRef} className="overflow-y-auto max-h-[70vh]">
+        {isLoading ? (
+          <MediaGridSkeleton />
+        ) : (
+          <StorageGrid
+            items={items}
+            selectMode={selection.selectMode}
+            selected={selection.selected}
+            onToggle={selection.toggleSelect}
+            onOpen={setLightbox}
+            onDrop={uploadFiles}
+            category={active}
+          />
+        )}
+      </div>
 
       <input
         ref={fileInputRef}

@@ -13,9 +13,28 @@ interface MediaItem {
   created_at: string;
 }
 
+interface PaginatedResponse {
+  items: MediaItem[];
+  cursor: string | null;
+}
+
+function encodeCursor(offset: number): string {
+  return Buffer.from(JSON.stringify({ offset })).toString("base64");
+}
+
+function decodeCursor(cursor: string): number {
+  try {
+    const decoded = Buffer.from(cursor, "base64").toString("utf-8");
+    const { offset } = JSON.parse(decoded);
+    return offset;
+  } catch {
+    return 0;
+  }
+}
+
 /* ================================================================
-   GET /api/media?category=images
-   Lists all files in the user's media folder for a given category.
+   GET /api/media?category=images&limit=40&cursor=...
+   Lists files in the user's media folder with cursor pagination.
 ================================================================ */
 export async function GET(request: NextRequest) {
   try {
@@ -31,26 +50,43 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = (searchParams.get("category") ||
       "images") as MediaCategory;
+    const limit = Math.min(parseInt(searchParams.get("limit") || "40"), 100);
+    const cursor = searchParams.get("cursor");
+    const offset = cursor ? decodeCursor(cursor) : 0;
 
     const folder = `${user.id}/${category}`;
     const { data: files, error } = await supabaseAdmin.storage
       .from("media")
-      .list(folder, { sortBy: { column: "created_at", order: "desc" } });
+      .list(folder, {
+        sortBy: { column: "created_at", order: "desc" },
+        limit: limit + 1,
+        offset,
+      });
 
     if (error) {
       console.error("Media list error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const items: MediaItem[] = (files ?? [])
-      .filter((f) => f.name !== ".emptyFolderPlaceholder")
-      .map((f) => ({
-        name: f.name,
-        url: `${SUPABASE_URL}/storage/v1/object/public/media/${folder}/${f.name}`,
-        created_at: f.created_at ?? "",
-      }));
+    const allFiles = (files ?? []).filter(
+      (f) => f.name !== ".emptyFolderPlaceholder"
+    );
+    const hasMore = allFiles.length > limit;
+    const pageFiles = hasMore ? allFiles.slice(0, limit) : allFiles;
 
-    return NextResponse.json({ data: items });
+    const items: MediaItem[] = pageFiles.map((f) => ({
+      name: f.name,
+      url: `${SUPABASE_URL}/storage/v1/object/public/media/${folder}/${f.name}`,
+      created_at: f.created_at ?? "",
+    }));
+
+    const nextCursor = hasMore ? encodeCursor(offset + limit) : null;
+
+    return NextResponse.json({
+      items,
+      cursor: nextCursor,
+      data: items, // backwards compat for useMediaStorage
+    });
   } catch (error) {
     console.error("GET /api/media error:", error);
     return NextResponse.json(

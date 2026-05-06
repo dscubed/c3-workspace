@@ -541,6 +541,19 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  packages/hooks:
+    dependencies:
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.4
+      swr:
+        specifier: ^2.2.4
+        version: 2.4.1(react@19.2.4)
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/search:
     dependencies:
       '@c3/supabase':

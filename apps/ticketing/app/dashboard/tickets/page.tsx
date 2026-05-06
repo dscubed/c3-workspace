@@ -143,7 +143,10 @@ function AllTab({ onSeeMore }: { onSeeMore: (tab: Tab) => void }) {
         {isLoading ? (
           <OrderListSkeleton />
         ) : all.length === 0 ? (
-          <EmptyState icon={Receipt} text="Your order history will appear here" />
+          <EmptyState
+            icon={Receipt}
+            text="Your order history will appear here"
+          />
         ) : (
           <div className="divide-y">
             {all.slice(0, 3).map((r) => (

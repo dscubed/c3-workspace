@@ -1,7 +1,7 @@
 "use client";
 
-import useSWR from "swr";
-import { fetcher } from "@/lib/fetcher";
+import { RefObject } from "react";
+import { useInfiniteScroll } from "@c3/hooks";
 
 export type StorageCategory = "images" | "companies" | "panelists";
 
@@ -11,18 +11,18 @@ export interface StorageItem {
   created_at: string;
 }
 
-interface StorageResponse {
-  data: StorageItem[];
-}
-
-export function useMediaStorage(category: StorageCategory) {
-  const { data, isLoading, mutate } = useSWR<StorageResponse>(
+export function useMediaStorage(
+  category: StorageCategory,
+  scrollRef: RefObject<HTMLDivElement | null>,
+) {
+  const { items, isLoading, mutate } = useInfiniteScroll<StorageItem>(
+    scrollRef,
     `/api/media?category=${category}`,
-    fetcher,
+    { limit: 40 },
   );
 
   return {
-    items: data?.data ?? [],
+    items,
     isLoading,
     mutate,
   };

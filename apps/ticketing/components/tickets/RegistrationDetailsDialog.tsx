@@ -34,7 +34,10 @@ export function RegistrationDetailsDialog({
             {registration.event_name}
           </p>
           <div className="rounded-lg border divide-y text-sm">
-            <Row label="Name" value={`${registration.first_name} ${registration.last_name}`} />
+            <Row
+              label="Name"
+              value={`${registration.first_name} ${registration.last_name}`}
+            />
             <Row label="Email" value={registration.email} />
             {registration.student_id && (
               <Row label="Student ID" value={registration.student_id} />

@@ -15,7 +15,7 @@ import { ClubsHeader } from "@/components/clubs/HeaderSection";
 import { CubeLoader } from "@/components/ui/CubeLoader";
 import { Club } from "@/types/clubs/club";
 import { useBreakpointLarge } from "@/hooks/useMediaQuery";
-import useInfiniteScroll from "@/hooks/useInfiniteScroll";
+import { useInfiniteScroll } from "@c3/hooks";
 import { toast } from "sonner";
 import { ClubListCard } from "@/components/clubs/ClubListCard";
 import ClubFilters from "@/components/clubs/ClubFilters";

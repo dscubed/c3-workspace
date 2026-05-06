@@ -14,7 +14,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useEventEditor, LastSavedLabel } from "./EventEditorContext";
+import { useEventEditor } from "./EventEditorContext";
+import { LastSavedLabel } from "./LastSavedLabel";
 import { useEventForm } from "./EventFormContext";
 import { useEventCollab } from "./EventCollabContext";
 import { SettingsModal } from "./toolbox/SettingsModal";

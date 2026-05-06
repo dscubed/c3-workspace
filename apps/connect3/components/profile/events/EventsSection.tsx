@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import useInfiniteScroll from "@/hooks/useInfiniteScroll";
+import { useInfiniteScroll } from "@c3/hooks";
 import { useRef } from "react";
 import { HostedEvent } from "@/types/events/event";
 import { CubeLoader } from "@/components/ui/CubeLoader";

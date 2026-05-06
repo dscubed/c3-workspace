@@ -55,7 +55,11 @@ interface EventGridCardProps {
   isRegistered?: boolean;
 }
 
-export function EventGridCard({ event, onClick, isRegistered }: EventGridCardProps) {
+export function EventGridCard({
+  event,
+  onClick,
+  isRegistered,
+}: EventGridCardProps) {
   const router = useRouter();
   const tags = getEventTags(event);
   const visibleTags = tags.slice(0, 2);

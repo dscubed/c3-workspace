@@ -25,7 +25,7 @@ interface UseInfiniteScrollOptions {
 export default function useInfiniteScroll<T>(
   listRef: RefObject<HTMLDivElement | null>,
   endpoint: string | null,
-  options?: UseInfiniteScrollOptions
+  options?: UseInfiniteScrollOptions,
 ) {
   const { limit, queryParams, rootMargin = "200px" } = options ?? {};
   const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -34,7 +34,7 @@ export default function useInfiniteScroll<T>(
 
   const getKey = (
     pageIndex: number,
-    previousPageData: PaginatedResponse<T> | null
+    previousPageData: PaginatedResponse<T> | null,
   ): string | null => {
     if (!endpoint) return null;
 
@@ -113,7 +113,7 @@ export default function useInfiniteScroll<T>(
         root: scrollRoot ?? null,
         rootMargin,
         threshold: 0,
-      }
+      },
     );
 
     observer.observe(sentinel);
