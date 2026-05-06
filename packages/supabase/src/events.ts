@@ -1,5 +1,9 @@
 import { supabaseAdmin } from "./admin";
-import type { EventCardDetails, AvatarProfile } from "@c3/types";
+import type {
+  EventCardDetails,
+  EventCardDetailsWithStats,
+  AvatarProfile,
+} from "@c3/types";
 
 const EVENT_CARD_SELECT = `
   id,
@@ -74,6 +78,7 @@ async function toEventCardDetails(row: any): Promise<EventCardDetails> {
  * Fetch event cards for a club (admin-side, uses service role).
  * Includes events where the club is the creator OR an accepted co-host.
  * Returns all statuses so admins can see drafts too.
+ * Each card includes aggregated registration and attendance counts.
  */
 export async function fetchClubEventCards(
   clubId: string,
@@ -102,4 +107,44 @@ export async function fetchClubEventCards(
   if (error) throw new Error(error.message);
 
   return Promise.all((data ?? []).map(toEventCardDetails));
+}
+
+/**
+ * Same as fetchClubEventCards but enriches each event with registration
+ * and attendance counts from event_registrations in a single batch query.
+ */
+export async function fetchClubEventCardsWithStats(
+  clubId: string,
+): Promise<EventCardDetailsWithStats[]> {
+  const events = await fetchClubEventCards(clubId);
+
+  if (events.length === 0) {
+    return [];
+  }
+
+  const eventIds = events.map((e) => e.id);
+
+  const { data: regRows, error: regError } = await supabaseAdmin
+    .from("event_registrations")
+    .select("event_id, checked_in")
+    .in("event_id", eventIds);
+
+  if (regError) throw new Error(regError.message);
+
+  const statsMap = new Map<string, { registered: number; attended: number }>();
+  for (const row of regRows ?? []) {
+    const existing = statsMap.get(row.event_id) ?? {
+      registered: 0,
+      attended: 0,
+    };
+    existing.registered += 1;
+    if (row.checked_in) existing.attended += 1;
+    statsMap.set(row.event_id, existing);
+  }
+
+  return events.map((event) => ({
+    ...event,
+    registered: statsMap.get(event.id)?.registered ?? 0,
+    attended: statsMap.get(event.id)?.attended ?? 0,
+  }));
 }

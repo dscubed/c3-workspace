@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@c3/supabase/server";
 import { getClubAdminRow } from "@c3/supabase/club-admin";
-import { fetchClubEventCards } from "@c3/supabase/events";
+import { fetchClubEventCardsWithStats } from "@c3/supabase/events";
 
 export async function GET(request: NextRequest) {
   const clubId = request.nextUrl.searchParams.get("club_id");
@@ -25,10 +25,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const events = await fetchClubEventCards(clubId);
+    const events = await fetchClubEventCardsWithStats(clubId);
     return NextResponse.json({ data: events });
   } catch (err) {
     console.error("GET /api/events error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

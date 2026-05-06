@@ -17,6 +17,11 @@ export interface EventCardDetails {
   collaborators: AvatarProfile[] | null;
 }
 
+export interface EventCardDetailsWithStats extends EventCardDetails {
+  registered: number;
+  attended: number;
+}
+
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventVisibility = "public" | "members_only" | "invite_only";
 
