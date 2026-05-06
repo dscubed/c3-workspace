@@ -600,10 +600,22 @@ export async function POST(request: NextRequest) {
         offer_end: buildUtcTimestamp(t.offerEndDate, t.offerEndTime, timezone),
         sort_order: i,
       }));
-      const { error } = await supabaseAdmin
+      const { data: insertedTiers, error } = await supabaseAdmin
         .from("event_ticket_tiers")
-        .insert(rows);
+        .insert(rows)
+        .select("id, name, price");
       if (error) console.error("event_ticket_tiers insert error:", error);
+
+      if (insertedTiers && insertedTiers.length > 0) {
+        const { syncTierStripeProducts } = await import(
+          "@/lib/stripe/syncTiers"
+        );
+        try {
+          await syncTierStripeProducts(eventId, name ?? "Event", insertedTiers);
+        } catch (err) {
+          console.error("[stripe] sync tiers failed (create):", err);
+        }
+      }
     }
 
     /* ── Insert links ── */

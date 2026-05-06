@@ -14,7 +14,6 @@ export function SubmitButton() {
     editorMode,
     checkoutMode,
     selectedTier,
-    quantity,
     colors,
     handlePaymentStart,
     handleRegister,
@@ -36,7 +35,7 @@ export function SubmitButton() {
   }
 
   const label = isPaid
-    ? `Pay $${((selectedTier!.price + FEE_PER_TICKET) * quantity).toFixed(2)}`
+    ? `Pay $${(selectedTier!.price + FEE_PER_TICKET).toFixed(2)}`
     : checkoutMode === "registration"
       ? "Register"
       : "Get Free Ticket";

@@ -707,31 +707,60 @@ export async function PATCH(
     if (groups.includes("pricing")) {
       const pricing: TicketTierPayload[] = body.pricing ?? [];
       let pricingTimeZone: string | null = body.timezone ?? null;
-      if (!pricingTimeZone) {
-        const { data: eventRow } = await supabaseAdmin
-          .from("events")
-          .select("timezone")
-          .eq("id", eventId)
-          .single();
-        pricingTimeZone = eventRow?.timezone ?? null;
+      let eventName: string | null = null;
+      const { data: eventRow } = await supabaseAdmin
+        .from("events")
+        .select("timezone, name")
+        .eq("id", eventId)
+        .single();
+      if (!pricingTimeZone) pricingTimeZone = eventRow?.timezone ?? null;
+      eventName = eventRow?.name ?? null;
+
+      for (const tier of pricing) {
+        const validationError = validateTicketTierInput(tier);
+        if (validationError) {
+          return NextResponse.json(
+            { error: validationError },
+            { status: 400 },
+          );
+        }
       }
 
-      await supabaseAdmin
+      // Diff against existing tiers — preserve ids for tiers that already exist
+      const { data: existingTiers } = await supabaseAdmin
         .from("event_ticket_tiers")
-        .delete()
+        .select("id, stripe_product_id")
         .eq("event_id", eventId);
-      if (pricing.length > 0) {
-        for (const tier of pricing) {
-          const validationError = validateTicketTierInput(tier);
-          if (validationError) {
-            return NextResponse.json(
-              { error: validationError },
-              { status: 400 },
-            );
-          }
-        }
+      const existingIds = new Set((existingTiers ?? []).map((r) => r.id));
+      const incomingIds = new Set(
+        pricing.map((p) => p.id).filter((x): x is string => !!x),
+      );
 
-        const rows = pricing.map((t, i) => ({
+      // Tiers to delete (present in DB, not in incoming)
+      const toDelete = (existingTiers ?? []).filter(
+        (r) => !incomingIds.has(r.id),
+      );
+      if (toDelete.length > 0) {
+        await supabaseAdmin
+          .from("event_ticket_tiers")
+          .delete()
+          .in(
+            "id",
+            toDelete.map((r) => r.id),
+          );
+        const { archiveTierStripeProducts } = await import(
+          "@/lib/stripe/syncTiers"
+        );
+        await archiveTierStripeProducts(
+          toDelete.map((r) => r.stripe_product_id),
+        );
+      }
+
+      // Upsert: update existing by id, insert new (DB generates id)
+      const upsertedTiers: { id: string; name: string; price: number }[] = [];
+      for (let i = 0; i < pricing.length; i++) {
+        const t = pricing[i]!;
+        const row = {
           event_id: eventId,
           member_verification: t.memberVerification ?? false,
           name: t.name,
@@ -748,9 +777,38 @@ export async function PATCH(
             pricingTimeZone,
           ),
           sort_order: i,
-        }));
-        await supabaseAdmin.from("event_ticket_tiers").insert(rows);
+        };
+        if (t.id && existingIds.has(t.id)) {
+          await supabaseAdmin
+            .from("event_ticket_tiers")
+            .update(row)
+            .eq("id", t.id);
+          upsertedTiers.push({ id: t.id, name: t.name, price: t.price });
+        } else {
+          const { data: inserted } = await supabaseAdmin
+            .from("event_ticket_tiers")
+            .insert(row)
+            .select("id")
+            .single();
+          if (inserted) {
+            upsertedTiers.push({
+              id: inserted.id,
+              name: t.name,
+              price: t.price,
+            });
+          }
+        }
       }
+
+      // Stripe sync — fire-and-forget so autosave latency stays low
+      if (upsertedTiers.length > 0) {
+        import("@/lib/stripe/syncTiers")
+          .then(({ syncTierStripeProducts }) =>
+            syncTierStripeProducts(eventId, eventName ?? "Event", upsertedTiers),
+          )
+          .catch((err) => console.error("[stripe] sync tiers failed:", err));
+      }
+
       updatedGroups.push("pricing");
     }
 

@@ -1,4 +1,6 @@
 export interface TicketTierInput {
+  /** Optional DB id — preserved on update so Stripe product stays linked */
+  id?: string;
   memberVerification?: boolean;
   name: string;
   price: number;

@@ -275,15 +275,21 @@ export function CheckoutProvider({
 
   /* ── Payment ── */
   const handlePaymentStart = useCallback(async () => {
-    const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL";
+    if (!selectedTier) {
+      toast.error("Select a ticket first");
+      return;
+    }
+    if (!selectedTier.stripePriceId) {
+      toast.error("This ticket isn't ready for checkout yet — try again shortly");
+      return;
+    }
     await createCheckoutSession(
       eventId,
-      tmpPriceId,
+      selectedTier.id,
       attendeeData,
       fields,
-      quantity,
     );
-  }, [eventId, attendeeData, fields, quantity]);
+  }, [eventId, attendeeData, fields, selectedTier]);
 
   /* ── Registration (non-Stripe) ── */
   const handleRegister = useCallback(async () => {
@@ -303,6 +309,7 @@ export function CheckoutProvider({
           body: JSON.stringify({
             fields: ["pricing"],
             pricing: tiers.map((t) => ({
+              id: t.id,
               memberVerification: t.memberVerification,
               name: t.name,
               price: t.price,

@@ -1,8 +1,6 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -23,8 +21,6 @@ export function TicketPicker() {
     effectiveSelectedTierId,
     setSelectedTierId,
     thumbnailUrl,
-    quantity,
-    setQuantity,
     isEditing,
     colors,
     openPricingModal,
@@ -91,34 +87,6 @@ export function TicketPicker() {
         )}
       </div>
 
-      <div
-        className={cn(
-          "flex shrink-0 items-center rounded-lg border",
-          colors.cardBorder,
-        )}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-          disabled={isEditing || quantity <= 1}
-        >
-          <Minus className="h-3.5 w-3.5" />
-        </Button>
-        <span className={cn("w-8 text-center text-sm font-medium", colors.text)}>
-          {quantity}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setQuantity((q) => Math.min(10, q + 1))}
-          disabled={isEditing || quantity >= 10}
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </div>
     </div>
   );
 }

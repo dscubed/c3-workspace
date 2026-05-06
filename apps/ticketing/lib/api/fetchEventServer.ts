@@ -430,6 +430,7 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
     memberVerification: t.member_verification,
     name: t.name,
     price: t.price,
+    stripePriceId: (t as { stripe_price_id?: string | null }).stripe_price_id ?? null,
     quantity: t.quantity,
   }));
 

@@ -53,8 +53,10 @@ export const TicketTierSchema = z.object({
   memberVerification: z.boolean().optional(),
   /** Required display name (e.g. "General Admission", "VIP") */
   name: z.string(),
-  /** Price in AUD cents — 0 means free */
+  /** Price in AUD dollars — 0 means free */
   price: z.number().min(0),
+  /** Stripe Price id, set after server sync */
+  stripePriceId: z.string().nullable().optional(),
   /** null = unlimited; must be a positive integer when set */
   quantity: z.number().int().positive().nullable().optional(),
   /** Offer window — all four must be set together; end must be after start */
