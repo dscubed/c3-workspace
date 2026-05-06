@@ -7,7 +7,6 @@ import type {
   MembershipEmailBinding,
   MembershipProductConfig,
   MembershipProfile,
-  MembershipReceiptReference,
 } from "@/lib/memberships/types";
 
 export class MembershipRepository {
@@ -31,7 +30,7 @@ export class MembershipRepository {
     userId: string,
   ): Promise<MembershipEmailBinding | null> {
     const { data, error } = await this.supabase
-      .from("membership_email_bindings")
+      .from("club_membership_email_bindings")
       .select("*")
       .eq("user_id", userId)
       .maybeSingle();
@@ -47,7 +46,7 @@ export class MembershipRepository {
     verifiedEmail: string,
   ): Promise<MembershipEmailBinding | null> {
     const { data, error } = await this.supabase
-      .from("membership_email_bindings")
+      .from("club_membership_email_bindings")
       .select("*")
       .eq("verified_email", verifiedEmail)
       .maybeSingle();
@@ -61,15 +60,13 @@ export class MembershipRepository {
 
   async createEmailBinding(input: MembershipEmailBinding): Promise<void> {
     const { error } = await this.supabase
-      .from("membership_email_bindings")
+      .from("club_membership_email_bindings")
       .insert(input);
 
     if (error) {
       if (
         error.code === "23505" &&
-        error.message.includes(
-          "membership_email_bindings_verified_email_lower_key",
-        )
+        error.message.includes("club_membership_email_bindings")
       ) {
         throw new MembershipVerificationError(
           "This UMSU receipt email is already tied to another Connect3 account",
@@ -86,10 +83,9 @@ export class MembershipRepository {
   ): Promise<MembershipProductConfig | null> {
     const { data, error } = await this.supabase
       .from("club_membership_products")
-      .select("club_id, product_name, normalized_product_name")
+      .select("club_id, product_name")
       .eq("club_id", clubId)
       .eq("enabled", true)
-      .neq("normalized_product_name", "")
       .maybeSingle();
 
     if (error) {
@@ -102,9 +98,8 @@ export class MembershipRepository {
   async listEnabledProducts(): Promise<MembershipProductConfig[]> {
     const { data, error } = await this.supabase
       .from("club_membership_products")
-      .select("club_id, product_name, normalized_product_name")
-      .eq("enabled", true)
-      .neq("normalized_product_name", "");
+      .select("club_id, product_name")
+      .eq("enabled", true);
 
     if (error) {
       throw new MembershipVerificationError(error.message, { status: 500 });
@@ -123,47 +118,20 @@ export class MembershipRepository {
     }
   }
 
-  async getReceiptReferenceByNumber(
-    referenceNumber: string,
-  ): Promise<MembershipReceiptReference | null> {
+  async getMembershipByReceiptReferenceId(
+    receiptReferenceId: number,
+  ): Promise<ExistingClubMembership | null> {
     const { data, error } = await this.supabase
-      .from("membership_receipt_references")
-      .select("*")
-      .eq("reference_number", referenceNumber)
+      .from("club_memberships")
+      .select("club_id, user_id")
+      .eq("receipt_reference_id", receiptReferenceId)
       .maybeSingle();
 
     if (error) {
       throw new MembershipVerificationError(error.message, { status: 500 });
     }
 
-    return data as MembershipReceiptReference | null;
-  }
-
-  async createReceiptReference(
-    input: MembershipReceiptReference,
-  ): Promise<void> {
-    const { error } = await this.supabase
-      .from("membership_receipt_references")
-      .insert(input);
-
-    if (!error) {
-      return;
-    }
-
-    if (
-      error.code === "23505" &&
-      error.message.includes("membership_receipt_references_reference_lower_key")
-    ) {
-      throw new MembershipVerificationError(
-        "This .eml receipt has already been used",
-        {
-          status: 409,
-          data: { referenceNumber: input.reference_number },
-        },
-      );
-    }
-
-    throw new MembershipVerificationError(error.message, { status: 500 });
+    return data as ExistingClubMembership | null;
   }
 
   async getExistingClubMemberships(

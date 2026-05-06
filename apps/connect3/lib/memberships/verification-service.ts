@@ -11,6 +11,8 @@ import type {
   VerifiedClubResult,
 } from "@/lib/memberships/types";
 
+const BASE_REFERENCE_ID = 30277458;
+
 export interface VerifyMembershipReceiptInput {
   userId: string;
   rawEmail: Buffer;
@@ -50,11 +52,17 @@ export class MembershipVerificationService {
       );
     }
 
-    await this.assertReceiptReferenceUnused(referenceNumber);
+    const receiptReferenceId = this.parseReferenceId(referenceNumber);
+    if (!receiptReferenceId || receiptReferenceId <= BASE_REFERENCE_ID) {
+      throw new MembershipVerificationError(
+        "Only receipts after 28 Feb 2026 14:51 are supported for verification",
+        { status: 422 },
+      );
+    }
+
+    await this.assertReceiptReferenceUnused(receiptReferenceId);
 
     const existingBinding = await this.repository.getEmailBinding(userId);
-    const emailBinding =
-      await this.repository.getEmailBindingByVerifiedEmail(verifiedEmail);
 
     if (existingBinding && existingBinding.verified_email !== verifiedEmail) {
       throw new MembershipVerificationError(
@@ -66,6 +74,8 @@ export class MembershipVerificationService {
       );
     }
 
+    const emailBinding =
+      await this.repository.getEmailBindingByVerifiedEmail(verifiedEmail);
     if (emailBinding && emailBinding.user_id !== userId) {
       throw new MembershipVerificationError(
         "This UMSU receipt email is already tied to another Connect3 account",
@@ -109,17 +119,11 @@ export class MembershipVerificationService {
       });
     }
 
-    await this.repository.createReceiptReference({
-      reference_number: referenceNumber,
-      user_id: userId,
-      first_used_at: verifiedAt,
-    });
-
     await this.repository.upsertClubMemberships(
       this.buildMembershipRows(
         userId,
         verifiedEmail,
-        referenceNumber,
+        receiptReferenceId,
         verifiedAt,
         receipt,
         matches,
@@ -181,13 +185,20 @@ export class MembershipVerificationService {
     return products;
   }
 
-  private async assertReceiptReferenceUnused(
-    referenceNumber: string,
-  ): Promise<void> {
-    const existingReference =
-      await this.repository.getReceiptReferenceByNumber(referenceNumber);
+  private parseReferenceId(referenceNumber: string): number | null {
+    const match = referenceNumber.match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  }
 
-    if (!existingReference) {
+  private async assertReceiptReferenceUnused(
+    receiptReferenceId: number,
+  ): Promise<void> {
+    const existingMembership =
+      await this.repository.getMembershipByReceiptReferenceId(
+        receiptReferenceId,
+      );
+
+    if (!existingMembership) {
       return;
     }
 
@@ -195,7 +206,7 @@ export class MembershipVerificationService {
       "This .eml receipt has already been used",
       {
         status: 409,
-        data: { referenceNumber },
+        data: { referenceId: receiptReferenceId },
       },
     );
   }
@@ -205,10 +216,8 @@ export class MembershipVerificationService {
     matches: ProductMatch[],
   ): Promise<void> {
     const clubIds = [...new Set(matches.map((match) => match.clubId))];
-    const existingMemberships = await this.repository.getExistingClubMemberships(
-      userId,
-      clubIds,
-    );
+    const existingMemberships =
+      await this.repository.getExistingClubMemberships(userId, clubIds);
 
     if (existingMemberships.length === 0) {
       return;
@@ -220,7 +229,8 @@ export class MembershipVerificationService {
     const duplicateMatches = matches.filter((match) =>
       existingClubIds.has(match.clubId),
     );
-    const duplicateResults = await this.buildVerifiedClubResults(duplicateMatches);
+    const duplicateResults =
+      await this.buildVerifiedClubResults(duplicateMatches);
     const duplicateNames = duplicateResults
       .map((result) => result.club?.first_name ?? "This club")
       .filter((name, index, values) => values.indexOf(name) === index);
@@ -241,16 +251,23 @@ export class MembershipVerificationService {
   private buildMembershipRows(
     userId: string,
     verifiedEmail: string,
-    referenceNumber: string,
+    receiptReferenceId: number,
     verifiedAt: string,
     receipt: Awaited<ReturnType<UmsuReceiptVerifier["verify"]>>,
     matches: ProductMatch[],
   ): ClubMembershipUpsertRow[] {
-    return matches.map((match) => ({
+    const seen = new Set<string>();
+    const dedupedMatches = matches.filter((match) => {
+      if (seen.has(match.clubId)) return false;
+      seen.add(match.clubId);
+      return true;
+    });
+
+    return dedupedMatches.map((match) => ({
       club_id: match.clubId,
       user_id: userId,
       verified_email: verifiedEmail,
-      receipt_reference_number: referenceNumber,
+      receipt_reference_id: receiptReferenceId,
       matched_product_name: match.productName,
       matched_receipt_item_name: match.matchedItemName,
       dkim_domain: receipt.dkimDomain,

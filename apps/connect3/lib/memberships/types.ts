@@ -1,7 +1,6 @@
 export interface MembershipProductConfig {
   club_id: string;
   product_name: string;
-  normalized_product_name: string;
 }
 
 export interface DkimSignatureEvidence {
@@ -26,7 +25,6 @@ export type DkimReceiptVerification = ParsedReceiptContent &
 export interface ProductMatch {
   clubId: string;
   productName: string;
-  normalizedProductName: string;
   matchedItemName: string;
 }
 
@@ -54,7 +52,7 @@ export interface ClubMembershipUpsertRow {
   club_id: string;
   user_id: string;
   verified_email: string;
-  receipt_reference_number: string;
+  receipt_reference_id: number;
   matched_product_name: string;
   matched_receipt_item_name: string;
   dkim_domain: string;

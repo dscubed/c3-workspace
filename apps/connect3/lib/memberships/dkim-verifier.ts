@@ -134,70 +134,13 @@ export class UmsuDkimVerifier {
     let hasValidArcChain = false;
     try {
       hasValidArcChain = await verifyASChain(parsedArcData as never, {});
-      console.error("membership_arc_verify_as_chain", {
-        hasValidArcChain,
-      });
     } catch (error) {
       console.error("membership_arc_verify_as_chain_error", {
         name: error instanceof Error ? error.name : null,
         message: error instanceof Error ? error.message : String(error),
-        code:
-          typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          typeof (error as { code?: unknown }).code === "string"
-            ? (error as { code: string }).code
-            : null,
-        queryDomain:
-          typeof error === "object" &&
-          error !== null &&
-          "queryDomain" in error &&
-          typeof (error as { queryDomain?: unknown }).queryDomain === "string"
-            ? (error as { queryDomain: string }).queryDomain
-            : null,
       });
       return null;
     }
-
-    console.error("membership_arc_debug", {
-      arcDataError:
-        parsedArcData.error
-          ? {
-              name: parsedArcData.error?.name ?? null,
-              message: parsedArcData.error?.message ?? null,
-            }
-          : null,
-      lastEntry:
-        parsedArcData.lastEntry
-          ? {
-              i: parsedArcData.lastEntry?.i ?? null,
-              sealerDomain:
-                parsedArcData.lastEntry?.["arc-seal"]?.parsed?.d?.value ?? null,
-              messageSignatureDomain:
-                parsedArcData.lastEntry?.messageSignature?.signingDomain ?? null,
-              messageSignatureSelector:
-                parsedArcData.lastEntry?.messageSignature?.selector ?? null,
-              messageSignatureStatus:
-                parsedArcData.lastEntry?.messageSignature?.status?.result ?? null,
-              messageSignatureComment:
-                parsedArcData.lastEntry?.messageSignature?.status?.comment ?? null,
-            }
-          : null,
-      hasValidArcChain,
-      chain:
-        parsedArcData.chain?.map((entry) => ({
-          i: entry.i ?? null,
-          sealDomain: entry["arc-seal"]?.parsed?.d?.value ?? null,
-          dkim:
-            entry["arc-authentication-results"]?.parsed?.dkim?.map((result) => ({
-              value: result.value ?? null,
-              result: result.result ?? null,
-              headerD: result.header?.d ?? null,
-              headerI: result.header?.i ?? null,
-              headerS: result.header?.s ?? null,
-            })) ?? [],
-        })) ?? [],
-    });
 
     if (!hasValidArcChain) {
       return null;
@@ -207,10 +150,6 @@ export class UmsuDkimVerifier {
       parsedArcData.lastEntry?.["arc-seal"]?.parsed?.d?.value ?? "",
     );
     if (!TRUSTED_ARC_SEALERS.includes(sealerDomain)) {
-      return null;
-    }
-
-    if (parsedArcData.lastEntry?.messageSignature?.status?.result !== "pass") {
       return null;
     }
 

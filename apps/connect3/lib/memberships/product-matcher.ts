@@ -18,24 +18,26 @@ export class MembershipProductMatcher {
 
     const matches: ProductMatch[] = [];
     for (const product of products) {
+      const normalizedProductName = normalizeProductName(
+        product.product_name,
+      );
+
       const itemMatch = normalizedItems.find(
-        (item) => item.normalized === product.normalized_product_name,
+        (item) => item.normalized === normalizedProductName,
       );
       if (itemMatch) {
         matches.push({
           clubId: product.club_id,
           productName: product.product_name,
-          normalizedProductName: product.normalized_product_name,
           matchedItemName: itemMatch.itemName,
         });
         continue;
       }
 
-      if (body.includes(product.normalized_product_name)) {
+      if (body.includes(normalizedProductName)) {
         matches.push({
           clubId: product.club_id,
           productName: product.product_name,
-          normalizedProductName: product.normalized_product_name,
           matchedItemName: product.product_name,
         });
       }

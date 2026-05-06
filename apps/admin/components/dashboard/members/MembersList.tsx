@@ -1,21 +1,29 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { SetupAlert, MembersListActions, MembersTable } from "./list";
-import { Member, ProductConfig } from "./member";
+import { Member } from "./member";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 
+interface ProductItem {
+  id: string;
+  product_name: string;
+}
+
 interface MembersListProps {
   selectedClubId: string | null;
-  product: ProductConfig | null;
   productLoading: boolean;
 }
 
 export function MembersList({
   selectedClubId,
-  product,
   productLoading,
 }: MembersListProps) {
+  const { data: products = [], isLoading: productsLoading } = useSWR<ProductItem[]>(
+    selectedClubId ? `/api/clubs/${selectedClubId}/membership-products` : null,
+    fetcher,
+  );
+
   const { data: members, isLoading: membersLoading } = useSWR<Member[]>(
     selectedClubId ? `/api/clubs/${selectedClubId}/members` : null,
     fetcher,
@@ -63,11 +71,9 @@ export function MembersList({
 
   return (
     <>
-      {selectedClubId &&
-        !productLoading &&
-        (!product?.enabled || !product?.normalized_product_name) && (
-          <SetupAlert />
-        )}
+      {selectedClubId && !productsLoading && products.length === 0 && (
+        <SetupAlert />
+      )}
 
       <MembersListActions
         search={search}

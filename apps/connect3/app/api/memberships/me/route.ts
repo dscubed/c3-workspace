@@ -30,7 +30,7 @@ export async function GET() {
 
     const [binding, memberships] = await Promise.all([
       supabaseAdmin
-        .from("membership_email_bindings")
+        .from("club_membership_email_bindings")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle(),
