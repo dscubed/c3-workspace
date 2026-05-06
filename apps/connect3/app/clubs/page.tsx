@@ -75,7 +75,7 @@ function ClubsPageContent() {
     isValidating,
     hasMore,
     sentinelRef,
-  } = useInfiniteScroll<Club>(clubListRef, "/api/clubs", { queryParams });
+  } = useInfiniteScroll<Club>(clubListRef, "/api/clubs", process.env.NEXT_PUBLIC_SITE_URL, { queryParams });
 
   // Sync search & university to URL (replace so filter changes don't spam history)
   useEffect(() => {

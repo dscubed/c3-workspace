@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@c3/auth": "workspace:*",
+    "@c3/hooks": "workspace:*",
     "@c3/qr": "workspace:*",
     "@zxing/browser": "^0.1.5",
     "@c3/supabase": "workspace:*",

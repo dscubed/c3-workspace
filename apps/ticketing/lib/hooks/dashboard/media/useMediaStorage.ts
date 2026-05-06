@@ -18,6 +18,7 @@ export function useMediaStorage(
   const { items, isLoading, mutate } = useInfiniteScroll<StorageItem>(
     scrollRef,
     `/api/media?category=${category}`,
+    process.env.NEXT_PUBLIC_SITE_URL,
     { limit: 40 },
   );
 

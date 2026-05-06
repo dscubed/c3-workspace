@@ -25,6 +25,7 @@ interface UseInfiniteScrollOptions {
 export default function useInfiniteScroll<T>(
   listRef: RefObject<HTMLDivElement | null>,
   endpoint: string | null,
+  baseUrl: string | null,
   options?: UseInfiniteScrollOptions,
 ) {
   const { limit, queryParams, rootMargin = "200px" } = options ?? {};
@@ -37,11 +38,6 @@ export default function useInfiniteScroll<T>(
     previousPageData: PaginatedResponse<T> | null,
   ): string | null => {
     if (!endpoint) return null;
-
-    const baseUrl =
-      process.env.NODE_ENV !== "production"
-        ? "http://localhost:3000"
-        : "https://connect3.app";
     const setLimit = limit ?? 18;
 
     const params = new URLSearchParams();

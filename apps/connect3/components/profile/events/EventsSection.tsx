@@ -22,6 +22,7 @@ export default function EventsSection() {
   } = useInfiniteScroll<HostedEvent>(
     eventDisplayRef,
     profile?.id ? `/api/users/${profile.id}/events` : null,
+    process.env.NEXT_PUBLIC_SITE_URL, 
   );
   if (isLoading) {
     return (
