@@ -10,6 +10,7 @@ const allowedEvents: Stripe.Event.Type[] = [
   "checkout.session.completed",
   "payment_intent.succeeded",
   "payment_intent.payment_failed",
+  "account.updated",
 ];
 
 interface CheckoutPayload {
@@ -45,6 +46,11 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.completed") {
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
       return Response.json("Purchase success", { status: 200 });
+    }
+
+    if (event.type === "account.updated") {
+      await handleAccountUpdated(event.data.object as Stripe.Account);
+      return Response.json("Account updated", { status: 200 });
     }
 
     if (event.type === "payment_intent.succeeded") {
@@ -215,4 +221,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   console.log(`[stripe webhook] processed ticket for ${eventId}`);
+}
+
+async function handleAccountUpdated(account: Stripe.Account) {
+  await supabaseAdmin
+    .from("profiles")
+    .update({
+      stripe_charges_enabled: account.charges_enabled ?? false,
+      stripe_payouts_enabled: account.payouts_enabled ?? false,
+    })
+    .eq("stripe_account_id", account.id);
 }

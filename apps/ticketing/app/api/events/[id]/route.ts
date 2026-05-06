@@ -73,7 +73,7 @@ export async function GET(
     }
 
     /* Related tables in parallel */
-    const [images, hosts, tiers, links, sections, occurrences, venues] =
+    const [images, hosts, tiers, links, sections, occurrences, venues, regCounts] =
       await Promise.all([
         supabaseAdmin
           .from("event_images")
@@ -112,6 +112,11 @@ export async function GET(
           .select("*")
           .eq("event_id", id)
           .order("sort_order"),
+        supabaseAdmin
+          .from("event_registrations")
+          .select("tier_id")
+          .eq("event_id", id)
+          .eq("type", "ticket"),
       ]);
 
     /* Theme and ticketing come directly from the events row */
@@ -126,6 +131,18 @@ export async function GET(
           }
         : null;
 
+    /* Merge sold counts into ticket tiers */
+    const soldByTier = new Map<string, number>();
+    for (const r of regCounts.data ?? []) {
+      if (r.tier_id) {
+        soldByTier.set(r.tier_id, (soldByTier.get(r.tier_id) ?? 0) + 1);
+      }
+    }
+    const tiersWithSold = (tiers.data ?? []).map((t) => ({
+      ...t,
+      sold: soldByTier.get(t.id) ?? 0,
+    }));
+
     /* Fetch creator profile for club name */
     const { data: creatorProfile } = await supabaseAdmin
       .from("profiles")
@@ -138,7 +155,7 @@ export async function GET(
         ...event,
         images: images.data ?? [],
         hosts: hosts.data ?? [],
-        ticket_tiers: tiers.data ?? [],
+        ticket_tiers: tiersWithSold,
         links: links.data ?? [],
         theme,
         sections: sections.data ?? [],
@@ -189,6 +206,19 @@ export async function PUT(
 
     /* ── Parse JSON body ── */
     const body = await request.json();
+
+    const { data: currentEvent } = await supabaseAdmin
+      .from("events")
+      .select("status")
+      .eq("id", eventId)
+      .single();
+
+    if (currentEvent?.status === "archived" && (body.pricing || body.eventCapacity !== undefined)) {
+      return NextResponse.json(
+        { error: "Cannot edit pricing on an archived event" },
+        { status: 400 },
+      );
+    }
 
     const name: string = body.name ?? "";
     const description: string | null = body.description || null;
@@ -474,6 +504,14 @@ export async function PATCH(
       return NextResponse.json({ id: eventId, message: "Nothing to update" });
     }
 
+    const { data: currentEvent } = await supabaseAdmin
+      .from("events")
+      .select("status")
+      .eq("id", eventId)
+      .single();
+
+    const isArchived = currentEvent?.status === "archived";
+
     const updatedGroups: string[] = [];
 
     /* ── event (main row columns) ── */
@@ -705,6 +743,13 @@ export async function PATCH(
 
     /* ── pricing ── */
     if (groups.includes("pricing")) {
+      if (isArchived) {
+        return NextResponse.json(
+          { error: "Cannot edit pricing on an archived event" },
+          { status: 400 },
+        );
+      }
+
       const pricing: TicketTierPayload[] = body.pricing ?? [];
       let pricingTimeZone: string | null = body.timezone ?? null;
       let eventName: string | null = null;
@@ -726,20 +771,62 @@ export async function PATCH(
         }
       }
 
+      // Query sold counts for price-lock validation
+      const { data: soldCounts } = await supabaseAdmin
+        .from("event_registrations")
+        .select("tier_id")
+        .eq("event_id", eventId)
+        .eq("type", "ticket");
+
+      const soldByTier = new Map<string, number>();
+      for (const r of soldCounts ?? []) {
+        if (r.tier_id) {
+          soldByTier.set(r.tier_id, (soldByTier.get(r.tier_id) ?? 0) + 1);
+        }
+      }
+
       // Diff against existing tiers — preserve ids for tiers that already exist
       const { data: existingTiers } = await supabaseAdmin
         .from("event_ticket_tiers")
-        .select("id, stripe_product_id")
+        .select("id, stripe_product_id, price, name")
         .eq("event_id", eventId);
       const existingIds = new Set((existingTiers ?? []).map((r) => r.id));
       const incomingIds = new Set(
         pricing.map((p) => p.id).filter((x): x is string => !!x),
       );
 
-      // Tiers to delete (present in DB, not in incoming)
+      // Server-side price lock: block price decreases on tiers with sales
+      for (const existing of existingTiers ?? []) {
+        const sold = soldByTier.get(existing.id) ?? 0;
+        if (sold > 0) {
+          const incoming = pricing.find((p) => p.id === existing.id);
+          if (incoming && incoming.price < existing.price) {
+            return NextResponse.json(
+              {
+                error: `Cannot lower price on "${existing.name}" — ${sold} ticket${sold === 1 ? "" : "s"} already sold at $${existing.price.toFixed(2)}`,
+              },
+              { status: 400 },
+            );
+          }
+        }
+      }
+
+      // Block deletion of tiers with purchases
       const toDelete = (existingTiers ?? []).filter(
         (r) => !incomingIds.has(r.id),
       );
+      for (const tier of toDelete) {
+        const sold = soldByTier.get(tier.id) ?? 0;
+        if (sold > 0) {
+          return NextResponse.json(
+            {
+              error: `Cannot delete "${tier.name}" — ${sold} ticket${sold === 1 ? "" : "s"} already sold. Set quantity to 0 instead.`,
+            },
+            { status: 400 },
+          );
+        }
+      }
+
       if (toDelete.length > 0) {
         await supabaseAdmin
           .from("event_ticket_tiers")

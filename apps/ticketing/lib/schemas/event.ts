@@ -64,6 +64,8 @@ export const TicketTierSchema = z.object({
   offerStartTime: z.string().optional(), // HH:MM
   offerEndDate: z.string().optional(),
   offerEndTime: z.string().optional(),
+  /** Number of tickets sold for this tier (populated at fetch time) */
+  sold: z.number().int().nonnegative().optional(),
 });
 
 export const EventLinkSchema = z.object({

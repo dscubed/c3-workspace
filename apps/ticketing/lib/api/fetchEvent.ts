@@ -43,6 +43,7 @@ interface RawTicketTier {
   offer_start: string | null;
   offer_end: string | null;
   sort_order: number;
+  sold: number;
 }
 
 interface RawLink {
@@ -287,6 +288,7 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     price: t.price,
     stripePriceId: (t as { stripe_price_id?: string | null }).stripe_price_id ?? null,
     quantity: t.quantity,
+    sold: t.sold,
   }));
 
   /* ── Links ── */

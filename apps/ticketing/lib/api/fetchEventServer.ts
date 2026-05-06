@@ -64,6 +64,7 @@ export interface PublicEventData {
     price: number;
     quantity: number | null;
     sort_order: number;
+    sold: number;
   }[];
   links: {
     id: string;
@@ -146,6 +147,24 @@ export async function fetchEventServer(
         .single(),
     ]);
 
+  const { data: regCounts } = await supabaseAdmin
+    .from("event_registrations")
+    .select("tier_id")
+    .eq("event_id", event.id)
+    .eq("type", "ticket");
+
+  const soldByTier = new Map<string, number>();
+  for (const r of regCounts ?? []) {
+    if (r.tier_id) {
+      soldByTier.set(r.tier_id, (soldByTier.get(r.tier_id) ?? 0) + 1);
+    }
+  }
+
+  const tiersWithSold = (tiers.data ?? []).map((t) => ({
+    ...t,
+    sold: soldByTier.get(t.id) ?? 0,
+  }));
+
   /* Theme comes directly from the events row */
   const theme =
     event.theme_mode != null
@@ -175,7 +194,7 @@ export async function fetchEventServer(
     venues: (event.event_venues ?? []) as PublicEventData["venues"],
     images: images.data ?? [],
     hosts: (hosts.data ?? []) as unknown as PublicEventData["hosts"],
-    ticket_tiers: tiers.data ?? [],
+    ticket_tiers: tiersWithSold,
     links: links.data ?? [],
     theme,
     sections: sections.data ?? [],
@@ -432,6 +451,7 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
     price: t.price,
     stripePriceId: (t as { stripe_price_id?: string | null }).stripe_price_id ?? null,
     quantity: t.quantity,
+    sold: t.sold,
   }));
 
   const links: EventLink[] = event.links.map((l) => ({

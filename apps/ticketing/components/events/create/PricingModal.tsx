@@ -6,17 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Info, Plus, Trash2, Settings2 } from "lucide-react";
 import type { TicketTier } from "../shared/types";
 import { validateTicketTier as validateTier } from "../shared/pricingUtils";
 import { TicketOfferWindowFields } from "./TicketOfferWindowFields";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface PricingModalProps {
   open: boolean;
@@ -55,6 +65,14 @@ export function PricingModal({
   const [eventCapacity, setEventCapacity] = useState<number | null>(
     initialEventCapacity ?? null,
   );
+  const [confirmPriceUp, setConfirmPriceUp] = useState<{
+    tierName: string;
+    sold: number;
+    oldPrice: number;
+    newPrice: number;
+  } | null>(null);
+  const [savedTiers, setSavedTiers] = useState<TicketTier[]>([]);
+  const [savedCapacity, setSavedCapacity] = useState<number | null>(null);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
@@ -119,6 +137,13 @@ export function PricingModal({
   };
 
   const removeTier = (id: string) => {
+    const tier = tiers.find((t) => t.id === id);
+    if (tier && (tier.sold ?? 0) > 0) {
+      toast.error(
+        `Can't delete "${tier.name}" — ${tier.sold} ticket${tier.sold === 1 ? "" : "s"} sold. Set quantity to 0 to stop sales instead.`,
+      );
+      return;
+    }
     setTiers((prev) => prev.filter((t) => t.id !== id));
     setOpenSettings((prev) => {
       const next = new Set(prev);
@@ -194,6 +219,35 @@ export function PricingModal({
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
+    }
+
+    const originalMap = new Map(value.map((t) => [t.id, t]));
+
+    for (const tier of validTiers) {
+      const original = originalMap.get(tier.id);
+      if (original && (original.sold ?? 0) > 0) {
+        if (tier.price < original.price) {
+          toast.error(
+            `Can't lower price for "${tier.name}" — ${original.sold} ticket${original.sold === 1 ? "" : "s"} sold at $${original.price.toFixed(2)}. Create a new tier instead.`,
+          );
+          return;
+        }
+        if (tier.price > original.price) {
+          setConfirmPriceUp({
+            tierName: tier.name,
+            sold: original.sold ?? 0,
+            oldPrice: original.price,
+            newPrice: tier.price,
+          });
+          setSavedTiers(validTiers);
+          let finalCapacity = eventCapacity;
+          if (finalCapacity !== null && sumQuantities > finalCapacity) {
+            finalCapacity = sumQuantities;
+          }
+          setSavedCapacity(finalCapacity);
+          return;
+        }
+      }
     }
 
     let finalCapacity = eventCapacity;
@@ -347,14 +401,21 @@ export function PricingModal({
                     )}
                   >
                     {/* Name */}
-                    <Input
-                      value={tier.name}
-                      onChange={(e) =>
-                        updateTier(tier.id, { name: e.target.value })
-                      }
-                      placeholder="e.g. General Admission"
-                      className="h-8 text-sm"
-                    />
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Input
+                        value={tier.name}
+                        onChange={(e) =>
+                          updateTier(tier.id, { name: e.target.value })
+                        }
+                        placeholder="e.g. General Admission"
+                        className="h-8 text-sm min-w-0"
+                      />
+                      {(tier.sold ?? 0) > 0 && (
+                        <Badge className="shrink-0 text-[10px] h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200">
+                          {tier.sold} sold
+                        </Badge>
+                      )}
+                    </div>
 
                     {/* Price */}
                     <div className="relative">
@@ -584,6 +645,46 @@ export function PricingModal({
           </Button>
         </div>
       </div>
+
+      <Dialog
+        open={!!confirmPriceUp}
+        onOpenChange={(open) => {
+          if (!open) setConfirmPriceUp(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Price Increase</DialogTitle>
+            <DialogDescription>
+              {confirmPriceUp && (
+                <>
+                  {confirmPriceUp.sold} ticket{confirmPriceUp.sold === 1 ? "" : "s"} sold at $
+                  {confirmPriceUp.oldPrice.toFixed(2)} for{" "}
+                  &ldquo;{confirmPriceUp.tierName}&rdquo;. New buyers will pay $
+                  {confirmPriceUp.newPrice.toFixed(2)}. Past buyers are
+                  unaffected. Continue?
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmPriceUp(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const tiers = savedTiers;
+                const capacity = savedCapacity;
+                setConfirmPriceUp(null);
+                onSave(tiers, capacity);
+                onOpenChange(false);
+              }}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ResponsiveModal>
   );
 }
