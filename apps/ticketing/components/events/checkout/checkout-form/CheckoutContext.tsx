@@ -125,6 +125,14 @@ export interface CheckoutContextValue {
   /* actions */
   handlePaymentStart: () => Promise<void>;
   handleRegister: () => Promise<void>;
+  /* pricing modal */
+  pricingModalOpen: boolean;
+  openPricingModal: () => void;
+  setPricingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  handlePricingSave: (tiers: TicketTier[], eventCapacity: number | null) => Promise<void>;
+  eventCapacity: number | null;
+  eventStartDate: string | undefined;
+  eventStartTime: string | undefined;
 }
 
 const CheckoutContext = createContext<CheckoutContextValue | null>(null);
@@ -282,6 +290,39 @@ export function CheckoutProvider({
     await registerForEvent(eventId, attendeeData);
   }, [eventId, attendeeData]);
 
+  /* ── Pricing modal ── */
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const openPricingModal = useCallback(() => setPricingModalOpen(true), []);
+
+  const handlePricingSave = useCallback(
+    async (tiers: TicketTier[], cap: number | null) => {
+      try {
+        await fetch(`/api/events/${eventId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: ["pricing"],
+            pricing: tiers.map((t) => ({
+              memberVerification: t.memberVerification,
+              name: t.name,
+              price: t.price,
+              quantity: t.quantity ?? null,
+              offerStartDate: t.offerStartDate,
+              offerStartTime: t.offerStartTime,
+              offerEndDate: t.offerEndDate,
+              offerEndTime: t.offerEndTime,
+            })),
+            eventCapacity: cap,
+          }),
+        });
+        await mutateEvent();
+      } catch {
+        toast.error("Failed to save ticket tiers");
+      }
+    },
+    [eventId, mutateEvent],
+  );
+
   /* ── Checkout context value ── */
   const checkoutValue: CheckoutContextValue = useMemo(
     () => ({
@@ -326,6 +367,13 @@ export function CheckoutProvider({
       setActiveTicketTab,
       handlePaymentStart,
       handleRegister,
+      pricingModalOpen,
+      openPricingModal,
+      setPricingModalOpen,
+      handlePricingSave,
+      eventCapacity: eventData?.formData.eventCapacity ?? null,
+      eventStartDate: eventData?.formData.startDate,
+      eventStartTime: eventData?.formData.startTime,
     }),
     [
       eventId,
@@ -333,6 +381,9 @@ export function CheckoutProvider({
       isEditing,
       previewMode,
       eventData?.formData.name,
+      eventData?.formData.eventCapacity,
+      eventData?.formData.startDate,
+      eventData?.formData.startTime,
       mode,
       checkoutMode,
       availabilityWindowOpen,
@@ -365,6 +416,9 @@ export function CheckoutProvider({
       setActiveTicketTab,
       handlePaymentStart,
       handleRegister,
+      pricingModalOpen,
+      openPricingModal,
+      handlePricingSave,
     ],
   );
 
@@ -396,7 +450,7 @@ export function CheckoutProvider({
       handleBack: () => router.replace(`/events/${eventId}/edit`),
       handlePublish: () => {},
       handleUnpublish: () => {},
-      openPricingModalRef: { current: () => {} },
+      openPricingModalRef: { current: openPricingModal },
       checklistRefsRef: { current: {} },
     };
   }, [
@@ -411,6 +465,7 @@ export function CheckoutProvider({
     colors,
     isDark,
     eventData,
+    openPricingModal,
   ]);
 
   const formContextValue: EventFormContextValue | null = useMemo(() => {

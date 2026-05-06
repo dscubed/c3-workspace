@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { resolveEventByIdOrSlug } from "@/lib/api/fetchEventServer";
+import { createClient } from "@c3/supabase/server";
 import CheckoutForm from "@/components/events/checkout/checkout-form/CheckoutForm";
 
 /**
@@ -48,6 +49,19 @@ export default async function CheckoutPage({
   /* ── Verify the event exists and is published ── */
   const event = await resolveEventByIdOrSlug(id);
   if (!event) notFound();
+
+  /* ── Redirect if already registered ── */
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: existing } = await supabase
+      .from("event_registrations")
+      .select("id")
+      .eq("event_id", event.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (existing) redirect("/dashboard/tickets");
+  }
 
   /* ── Check availability window ── */
   const withinWindow = isWithinAvailabilityWindow(

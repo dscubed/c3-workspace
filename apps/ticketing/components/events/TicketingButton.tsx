@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThemeAccent } from "@/components/events/shared/types";
@@ -46,6 +47,8 @@ interface TicketingButtonProps {
   hasTiers?: boolean;
   /** Whether the button is in edit form. Defaults to false. */
   editor?: boolean;
+  /** Whether the current user has already registered/purchased for this event. */
+  isRegistered?: boolean;
 }
 
 /**
@@ -66,6 +69,7 @@ export function TicketingButton({
   draft = false,
   hasTiers: hasTiersProp,
   editor = false,
+  isRegistered = false,
 }: TicketingButtonProps) {
   const ctx = useEditorTheme();
   const formCtx = useContext(EventFormContext);
@@ -82,14 +86,25 @@ export function TicketingButton({
       ? hasTiers
         ? "Edit Checkout"
         : "Setup Checkout"
-      : hasTiers
-        ? "Get Tickets"
-        : "Register";
+      : isRegistered
+        ? "Already Registered"
+        : hasTiers
+          ? "Get Tickets"
+          : "Register";
 
   const accentStyle = getAccentButtonStyle(accent, accentCustom);
-  const tooltip = draft ? "Publish your event to enable checkout" : undefined;
+  const disabled = draft || isRegistered;
+  const tooltip = draft
+    ? "Publish your event to enable checkout"
+    : isRegistered
+      ? "You're already registered for this event"
+      : undefined;
 
   const handleClick = () => {
+    if (isRegistered) {
+      toast.info("You're already registered for this event");
+      return;
+    }
     if (editor) {
       router.replace(`/events/${eventId}/checkout/edit`);
     } else {
@@ -121,6 +136,7 @@ export function TicketingButton({
                 )}
                 style={accentStyle}
                 onClick={handleClick}
+                disabled={disabled}
               >
                 {label}
               </Button>
@@ -145,6 +161,7 @@ export function TicketingButton({
                 )}
                 style={accentStyle}
                 onClick={handleClick}
+                disabled={disabled}
               >
                 {label}
               </Button>

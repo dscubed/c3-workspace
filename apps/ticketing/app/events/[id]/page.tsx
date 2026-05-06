@@ -6,6 +6,7 @@ import {
   publicToFetchedData,
   resolveEventByIdOrSlug,
 } from "@/lib/api/fetchEventServer";
+import { createClient } from "@c3/supabase/server";
 import { TicketingButton } from "@/components/events/TicketingButton";
 import EventForm from "@/components/event-form/EventForm";
 import type { ThemeAccent } from "@/components/events/shared/types";
@@ -235,6 +236,20 @@ export default async function EventPage({
     redirect(`/events/${event.url_slug}`);
   }
 
+  /* ── Check if user is already registered ── */
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let isRegistered = false;
+  if (user) {
+    const { data: existing } = await supabase
+      .from("event_registrations")
+      .select("id")
+      .eq("event_id", event.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isRegistered = !!existing;
+  }
+
   const canonicalUrl = `${SITE_URL}/events/${event.url_slug ?? event.id}`;
 
   return (
@@ -252,6 +267,7 @@ export default async function EventPage({
         accent={(event.theme?.accent as ThemeAccent) ?? "none"}
         accentCustom={event.theme?.accent_custom ?? undefined}
         isDark={event.theme?.mode === "dark"}
+        isRegistered={isRegistered}
       />
     </>
   );
