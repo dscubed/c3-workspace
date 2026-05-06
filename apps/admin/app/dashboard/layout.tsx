@@ -1,11 +1,30 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@c3/supabase/server";
+import { getAdminClubIds } from "@c3/supabase";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 
-export default function DashboardLayout({
+const CONNECT3_URL = process.env.NEXT_PUBLIC_CONNECT3_URL ?? "https://connect3.app";
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`${CONNECT3_URL}/auth/login`);
+  }
+
+  const clubIds = await getAdminClubIds(user.id);
+  if (clubIds.length === 0) {
+    redirect(CONNECT3_URL);
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       <Sidebar />

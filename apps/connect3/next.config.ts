@@ -3,6 +3,7 @@ import { withBotId } from "botid/next/config";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["mailauth"],
+  transpilePackages: ["@c3/qr"],
   images: {
     unoptimized: true,
     remotePatterns: [

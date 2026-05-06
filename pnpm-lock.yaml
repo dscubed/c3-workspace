@@ -89,7 +89,7 @@ importers:
         version: 9.39.4(jiti@2.6.1)
       eslint-config-next:
         specifier: 16.2.4
-        version: 16.2.4(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.2.4(@typescript-eslint/parser@8.59.1(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       shadcn:
         specifier: ^4.5.0
         version: 4.6.0(@types/node@20.19.39)(typescript@5.9.3)
@@ -111,6 +111,9 @@ importers:
       '@c3/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@c3/qr':
+        specifier: workspace:*
+        version: link:../../packages/qr
       '@c3/search':
         specifier: workspace:*
         version: link:../../packages/search
@@ -505,7 +508,7 @@ importers:
         version: 9.39.4(jiti@2.6.1)
       eslint-config-next:
         specifier: 16.2.4
-        version: 16.2.4(@typescript-eslint/parser@8.59.1(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.2.4(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       shadcn:
         specifier: ^3.8.5
         version: 3.8.5(@types/node@20.19.39)(typescript@5.9.3)

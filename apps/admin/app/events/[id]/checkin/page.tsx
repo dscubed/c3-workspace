@@ -20,7 +20,7 @@ export default function CheckinScanPage({
         const res = await fetch("/api/checkin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ raw }),
+          body: JSON.stringify({ raw, eventId }),
         });
 
         const body = await res.json();

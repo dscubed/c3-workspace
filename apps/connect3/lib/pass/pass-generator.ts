@@ -1,4 +1,3 @@
-import { createCipheriv, createDecipheriv, createHmac } from "crypto";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { PKPass } from "passkit-generator";
@@ -18,54 +17,6 @@ export interface PassData {
   memberId: string;
 }
 
-export function encryptMemberData(
-  name: string,
-  email: string,
-  userId: string,
-): string {
-  const secret = process.env.PASS_ENCRYPTION_SECRET;
-  if (!secret) {
-    throw new Error("PASS_ENCRYPTION_SECRET is not set");
-  }
-
-  const key = Buffer.from(secret, "hex"); // 32 bytes for aes-256
-  const iv = createHmac("sha256", key)
-    .update(`${name}:${email}:${userId}`)
-    .digest()
-    .subarray(0, 16);
-  const cipher = createCipheriv("aes-256-cbc", key, iv);
-
-  const payload = JSON.stringify({ name, email, userId });
-  let encrypted = cipher.update(payload, "utf8", "hex");
-  encrypted += cipher.final("hex");
-
-  return iv.toString("hex") + ":" + encrypted;
-}
-
-export function decryptMemberData(memberId: string): {
-  name: string;
-  email: string;
-  userId: string;
-} {
-  const secret = process.env.PASS_ENCRYPTION_SECRET;
-  if (!secret) {
-    throw new Error("PASS_ENCRYPTION_SECRET is not set");
-  }
-
-  const [ivHex, encryptedHex] = memberId.split(":");
-  if (!ivHex || !encryptedHex) {
-    throw new Error("Invalid member ID format");
-  }
-
-  const key = Buffer.from(secret, "hex");
-  const iv = Buffer.from(ivHex, "hex");
-  const decipher = createDecipheriv("aes-256-cbc", key, iv);
-
-  let decrypted = decipher.update(encryptedHex, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-
-  return JSON.parse(decrypted);
-}
 
 // --- Apple Wallet ---
 

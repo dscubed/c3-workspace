@@ -3,13 +3,12 @@
 import Image from "next/image";
 import {
   forwardRef,
-  useCallback,
-  useEffect,
   useImperativeHandle,
   useState,
 } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
-
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +30,7 @@ type Membership = {
   id: string;
   club_id: string;
   matched_product_name: string;
+  matched_receipt_item_name: string;
   verified_email: string;
   verified_at: string | null;
   club: {
@@ -51,45 +51,16 @@ const HOW_TO_STEPS: Record<
   { title: string; description: string }[]
 > = {
   gmail: [
-    {
-      title: "Find your membership email",
-      description:
-        "Search for the confirmation email from your club or society in Gmail.",
-    },
-    {
-      title: "Open the email",
-      description: "Click on the membership confirmation email to open it.",
-    },
-    {
-      title: "Download as .eml",
-      description:
-        'Click the three-dot menu (⋮) in the top-right of the email → select "Download message". This saves a .eml file to your device.',
-    },
-    {
-      title: "Upload here",
-      description:
-        'Click "Upload Receipt" and select the downloaded .eml file.',
-    },
+    { title: "Find your membership email", description: "Search for the confirmation email from your club or society in Gmail." },
+    { title: "Open the email", description: "Click on the membership confirmation email to open it." },
+    { title: "Download as .eml", description: 'Click the three-dot menu (⋮) in the top-right of the email → select "Download message". This saves a .eml file to your device.' },
+    { title: "Upload here", description: 'Click "Upload Receipt" and select the downloaded .eml file.' },
   ],
   outlook: [
-    {
-      title: "Find your membership email",
-      description:
-        "Search for the confirmation email from your club or society in Outlook.",
-    },
-    {
-      title: "Open the email",
-      description: "Click on the membership confirmation email to open it.",
-    },
-    {
-      title: "Save as .eml",
-      description:
-        'Go to File → Save As, choose a location, and make sure the file type is set to ".eml" or "Outlook Message Format".',
-    },
-    {
-      title: "Upload here",
-      description: 'Click "Upload Receipt" and select the saved .eml file.',
-    },
+    { title: "Find your membership email", description: "Search for the confirmation email from your club or society in Outlook." },
+    { title: "Open the email", description: "Click on the membership confirmation email to open it." },
+    { title: "Save as .eml", description: 'Go to File → Save As, choose a location, and make sure the file type is set to ".eml" or "Outlook Message Format".' },
+    { title: "Upload here", description: 'Click "Upload Receipt" and select the saved .eml file.' },
   ],
 };
 
@@ -103,24 +74,18 @@ const HOW_TO_IMAGES: Partial<Record<"gmail" | "outlook", string[]>> = {
 };
 
 function GmailIcon() {
-  return (
-    <Image src="/memberships/gmail.svg" alt="Gmail" width={32} height={32} />
-  );
+  return <Image src="/memberships/gmail.svg" alt="Gmail" width={32} height={32} />;
 }
-
 function OutlookIcon() {
-  return (
-    <Image
-      src="/memberships/outlook.svg"
-      alt="Outlook"
-      width={32}
-      height={32}
-    />
-  );
+  return <Image src="/memberships/outlook.svg" alt="Outlook" width={32} height={32} />;
 }
 
 function MembershipItem({ membership: m }: { membership: Membership }) {
   const [expanded, setExpanded] = useState(false);
+  const displayName =
+    (m.matched_product_name || m.matched_receipt_item_name) ||
+    m.club?.first_name ||
+    "Club membership";
   const initials = (m.club?.first_name ?? "?")
     .split(" ")
     .map((w) => w[0])
@@ -134,7 +99,6 @@ function MembershipItem({ membership: m }: { membership: Membership }) {
         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left"
         onClick={() => setExpanded((v) => !v)}
       >
-        {/* Avatar */}
         <div className="shrink-0 w-8 h-8 rounded-full bg-purple-100 overflow-hidden flex items-center justify-center">
           {m.club?.avatar_url ? (
             <Image
@@ -145,31 +109,20 @@ function MembershipItem({ membership: m }: { membership: Membership }) {
               className="object-cover w-full h-full"
             />
           ) : (
-            <span className="text-xs font-semibold text-purple-600">
-              {initials}
-            </span>
+            <span className="text-xs font-semibold text-purple-600">{initials}</span>
           )}
         </div>
-
-        {/* Name */}
         <span className="flex-1 min-w-0 text-sm font-medium text-gray-900 truncate">
           {m.club?.first_name ?? "Club membership"}
         </span>
-
-        {/* Verified + chevron */}
         <div className="flex items-center gap-1.5 shrink-0">
           <BadgeCheck className="h-5 w-5 text-[#854ECB]" />
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
-          />
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
         </div>
       </button>
-
       {expanded && (
         <div className="px-3 pb-3 pt-0.5 flex flex-col gap-0.5 border-t border-gray-100 bg-gray-50/60">
-          <p className="text-xs text-muted-foreground">
-            {m.matched_product_name}
-          </p>
+          <p className="text-xs text-muted-foreground">{displayName}</p>
           {m.verified_at && (
             <p className="text-xs text-muted-foreground">
               Verified {new Date(m.verified_at).toLocaleDateString()}
@@ -181,6 +134,22 @@ function MembershipItem({ membership: m }: { membership: Membership }) {
   );
 }
 
+function MembershipsSkeleton() {
+  return (
+    <ul className="space-y-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <li key={i} className="rounded-xl border border-gray-100 px-3 py-2.5 flex items-center gap-3">
+          <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+          <Skeleton className="h-4 flex-1" />
+          <Skeleton className="w-5 h-5 rounded-full shrink-0" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
 export interface MembershipsSectionHandle {
   openHowTo: () => void;
   openUpload: () => void;
@@ -188,9 +157,15 @@ export interface MembershipsSectionHandle {
 
 const MembershipsSection = forwardRef<MembershipsSectionHandle>(
   function MembershipsSection(_props, ref) {
-    const [memberships, setMemberships] = useState<Membership[]>([]);
-    const [binding, setBinding] = useState<MembershipBinding | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { data, isLoading, mutate } = useSWR<{
+      data: { binding: MembershipBinding | null; memberships: Membership[] };
+    }>("/api/memberships/me", fetcher);
+
+    console.log("[MembershipsSection] data:", data);
+
+    const memberships = data?.data?.memberships ?? [];
+    const binding = data?.data?.binding ?? null;
+
     const [uploadOpen, setUploadOpen] = useState(false);
     const [howToOpen, setHowToOpen] = useState(false);
     const [emailClient, setEmailClient] = useState<EmailClient>(null);
@@ -200,31 +175,6 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
 
     const steps = emailClient ? HOW_TO_STEPS[emailClient] : [];
     const stepImages = emailClient ? (HOW_TO_IMAGES[emailClient] ?? []) : [];
-
-    const loadMemberships = useCallback(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/memberships/me");
-        const body = await res.json();
-
-        if (!res.ok) {
-          throw new Error(body.error || "Failed to load memberships");
-        }
-
-        setBinding(body.data?.binding ?? null);
-        setMemberships(body.data?.memberships ?? []);
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to load memberships",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, []);
-
-    useEffect(() => {
-      loadMemberships();
-    }, [loadMemberships]);
 
     const openHowTo = () => {
       setEmailClient(null);
@@ -245,42 +195,25 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
 
     const handleEmlUpload = async () => {
       if (!selectedFile) return;
-
       setUploading(true);
       try {
         const formData = new FormData();
         formData.append("receipt", selectedFile);
-
-        const res = await fetch("/api/memberships/verify-receipt", {
-          method: "POST",
-          body: formData,
-        });
+        const res = await fetch("/api/memberships/verify-receipt", { method: "POST", body: formData });
         const body = await res.json();
-
-        if (!res.ok) {
-          throw new Error(body.error || "Failed to verify receipt");
-        }
+        if (!res.ok) throw new Error(body.error || "Failed to verify receipt");
 
         const verifiedClubs = body.data?.verifiedClubs ?? [];
         const names = verifiedClubs
-          .map(
-            (club: { club?: { first_name?: string | null } | null }) =>
-              club.club?.first_name,
-          )
+          .map((club: { club?: { first_name?: string | null } | null }) => club.club?.first_name)
           .filter(Boolean);
 
-        toast.success(
-          names.length > 0
-            ? `Verified membership for ${names.join(", ")}`
-            : "Membership receipt verified",
-        );
+        toast.success(names.length > 0 ? `Verified membership for ${names.join(", ")}` : "Membership receipt verified");
         setUploadOpen(false);
         setSelectedFile(null);
-        await loadMemberships();
+        mutate();
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to verify receipt",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to verify receipt");
       } finally {
         setUploading(false);
       }
@@ -289,10 +222,8 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
     return (
       <>
         <div>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">
-              Loading memberships…
-            </p>
+          {isLoading ? (
+            <MembershipsSkeleton />
           ) : memberships.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No memberships verified yet. Upload a receipt to get started.
@@ -312,13 +243,7 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
         </div>
 
         {/* How to dialog */}
-        <Dialog
-          open={howToOpen}
-          onOpenChange={(o) => {
-            if (!o) closeHowTo();
-            else setHowToOpen(true);
-          }}
-        >
+        <Dialog open={howToOpen} onOpenChange={(o) => { if (!o) closeHowTo(); else setHowToOpen(true); }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>How to get your .eml file</DialogTitle>
@@ -330,36 +255,23 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
             </DialogHeader>
 
             {!emailClient ? (
-              /* Client picker */
               <div className="flex gap-4 py-4 justify-center">
                 {(["gmail", "outlook"] as const).map((client) => (
                   <button
                     key={client}
-                    onClick={() => {
-                      setEmailClient(client);
-                      setHowToStep(0);
-                    }}
+                    onClick={() => { setEmailClient(client); setHowToStep(0); }}
                     className="flex flex-col items-center gap-2 px-6 py-4 rounded-xl border border-border hover:border-primary/50 hover:bg-muted/30 transition-all"
                   >
                     {client === "gmail" ? <GmailIcon /> : <OutlookIcon />}
-                    <span className="text-sm font-medium capitalize">
-                      {client}
-                    </span>
+                    <span className="text-sm font-medium capitalize">{client}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              /* Steps */
               <div className="space-y-4 py-2">
                 {stepImages[howToStep] ? (
                   <div className="relative w-full overflow-hidden rounded-lg border border-border bg-muted">
-                    <Image
-                      src={stepImages[howToStep]}
-                      alt={steps[howToStep]?.title ?? ""}
-                      width={1200}
-                      height={900}
-                      className="h-auto w-full"
-                    />
+                    <Image src={stepImages[howToStep]} alt={steps[howToStep]?.title ?? ""} width={1200} height={900} className="h-auto w-full" />
                   </div>
                 ) : (
                   <div className="w-full h-48 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm border border-border">
@@ -367,20 +279,12 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
                   </div>
                 )}
                 <div className="space-y-1">
-                  <p className="font-medium text-sm">
-                    {steps[howToStep]?.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {steps[howToStep]?.description}
-                  </p>
+                  <p className="font-medium text-sm">{steps[howToStep]?.title}</p>
+                  <p className="text-sm text-muted-foreground">{steps[howToStep]?.description}</p>
                 </div>
                 <div className="flex justify-center gap-1.5">
                   {steps.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setHowToStep(i)}
-                      className={`h-1.5 rounded-full transition-all ${i === howToStep ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"}`}
-                    />
+                    <button key={i} onClick={() => setHowToStep(i)} className={`h-1.5 rounded-full transition-all ${i === howToStep ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"}`} />
                   ))}
                 </div>
               </div>
@@ -388,17 +292,9 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
 
             {emailClient && (
               <DialogFooter className="flex-row justify-between sm:justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    howToStep === 0
-                      ? setEmailClient(null)
-                      : setHowToStep((s) => s - 1)
-                  }
-                >
+                <Button variant="outline" size="sm" onClick={() => howToStep === 0 ? setEmailClient(null) : setHowToStep((s) => s - 1)}>
                   <ChevronLeft className="h-4 w-4" />
-                  {howToStep === 0 ? "Back" : "Back"}
+                  Back
                 </Button>
                 {howToStep < steps.length - 1 ? (
                   <Button size="sm" onClick={() => setHowToStep((s) => s + 1)}>
@@ -406,13 +302,7 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      closeHowTo();
-                      setUploadOpen(true);
-                    }}
-                  >
+                  <Button size="sm" onClick={() => { closeHowTo(); setUploadOpen(true); }}>
                     Upload Receipt
                     <Upload className="h-4 w-4" />
                   </Button>
@@ -428,48 +318,22 @@ const MembershipsSection = forwardRef<MembershipsSectionHandle>(
             <DialogHeader>
               <DialogTitle>Upload Membership Receipt</DialogTitle>
               <DialogDescription>
-                Upload your club membership confirmation email (.eml) for
-                verification. We&apos;ll verify its DKIM signature and match it
-                to participating club products.
+                Upload your club membership confirmation email (.eml) for verification. We&apos;ll verify its DKIM signature and match it to participating club products.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <Upload className="h-6 w-6" />
-                  <span className="text-sm">
-                    {selectedFile
-                      ? selectedFile.name
-                      : "Click to select a .eml file"}
-                  </span>
+                  <span className="text-sm">{selectedFile ? selectedFile.name : "Click to select a .eml file"}</span>
                 </div>
-                <input
-                  type="file"
-                  accept=".eml,message/rfc822"
-                  className="sr-only"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
-                />
+                <input type="file" accept=".eml,message/rfc822" className="sr-only" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
               </label>
-              {selectedFile && (
-                <p className="text-xs text-muted-foreground text-center">
-                  {(selectedFile.size / 1024).toFixed(1)} KB
-                </p>
-              )}
+              {selectedFile && <p className="text-xs text-muted-foreground text-center">{(selectedFile.size / 1024).toFixed(1)} KB</p>}
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setUploadOpen(false);
-                  setSelectedFile(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEmlUpload}
-                disabled={!selectedFile || uploading}
-              >
+              <Button variant="outline" onClick={() => { setUploadOpen(false); setSelectedFile(null); }}>Cancel</Button>
+              <Button onClick={handleEmlUpload} disabled={!selectedFile || uploading}>
                 {uploading ? "Verifying..." : "Verify Receipt"}
               </Button>
             </DialogFooter>

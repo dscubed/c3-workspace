@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import Sidebar from "@/components/sidebar/Sidebar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
 import { toPng } from "html-to-image";
@@ -11,20 +12,31 @@ import { useRouter } from "next/navigation";
 import MembershipsSection, {
   MembershipsSectionHandle,
 } from "@/components/pass/MembershipsSection";
+import useSWR from "swr";
 
-import { HelpCircle, Upload, Download } from "lucide-react";
+import { HelpCircle, Upload, Download, RotateCcw } from "lucide-react";
 
 const CLUB = {
   displayName: "Connect3",
   logoUrl: "/logo.png",
 };
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+function PassCardSkeleton() {
+  return (
+    <div className="w-full max-w-[500px] aspect-[3/4] rounded-2xl shadow-xl overflow-hidden bg-gray-100">
+      <Skeleton className="w-full h-full rounded-2xl" />
+    </div>
+  );
+}
+
 function PassPageContent() {
   const router = useRouter();
   const membershipsRef = useRef<MembershipsSectionHandle>(null);
   const { user, profile, loading, profileLoading } = useAuthStore();
-  const [generating, setGenerating] = useState(false);
-  const [generatedMemberId, setGeneratedMemberId] = useState("");
+
+  const [regenerating, setRegenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [googlePassUrl, setGooglePassUrl] = useState<string | null>(null);
   const [applePassData, setApplePassData] = useState<{
@@ -32,11 +44,20 @@ function PassPageContent() {
     data: number[];
   } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const hasGenerated = useRef(false);
+  const walletGenerated = useRef(false);
 
   const firstName = profile?.first_name ?? "";
   const lastName = profile?.last_name ?? "";
   const email = user?.email ?? "";
+
+  const shouldFetch = !loading && !!user && !profileLoading && !!firstName;
+
+  const { data: passData, isLoading: passLoading, mutate: mutatePass } = useSWR(
+    shouldFetch ? "/api/pass" : null,
+    fetcher,
+  );
+
+  const memberId = passData?.memberId ?? "";
 
   const updatePreview = useCallback(async () => {
     if (!cardRef.current) return;
@@ -72,11 +93,26 @@ function PassPageContent() {
     ).then(() => updatePreview());
   }, [updatePreview]);
 
-  // Update preview on name changes
+  // Update preview on name/memberId changes
   useEffect(() => {
     const timer = setTimeout(() => updatePreview(), 100);
     return () => clearTimeout(timer);
-  }, [firstName, lastName, generatedMemberId, updatePreview]);
+  }, [firstName, lastName, memberId, updatePreview]);
+
+  // Lazily generate wallet passes once memberId is available
+  useEffect(() => {
+    if (!memberId || walletGenerated.current) return;
+    if (!email) return;
+    walletGenerated.current = true;
+
+    fetch("/api/pass", { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.googlePassUrl) setGooglePassUrl(data.googlePassUrl);
+        if (data.applePassData) setApplePassData(data.applePassData);
+      })
+      .catch((e) => console.error("Wallet pass generation failed", e));
+  }, [memberId, email]);
 
   // Redirect logged-out users
   useEffect(() => {
@@ -85,46 +121,20 @@ function PassPageContent() {
     }
   }, [loading, user, router]);
 
-  // Auto-generate pass once profile is loaded
-  useEffect(() => {
-    if (hasGenerated.current) return;
-    if (!user || !profile || profileLoading) return;
-    if (!firstName || !email) return;
-
-    hasGenerated.current = true;
-    generatePass();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, profile, profileLoading, firstName, email]);
-
-  const generatePass = async () => {
-    if (!firstName || !email) {
-      toast.error("Missing profile information");
-      return;
-    }
-
-    setGenerating(true);
-
+  const handleRegenerate = async () => {
+    setRegenerating(true);
     try {
-      const res = await fetch("/api/pass", {
-        method: "POST",
-      });
-
+      const res = await fetch("/api/pass/regenerate", { method: "POST" });
       const data = await res.json();
-
-      if (res.ok) {
-        if (data.memberId) {
-          setGeneratedMemberId(data.memberId);
-        }
-        if (data.googlePassUrl) setGooglePassUrl(data.googlePassUrl);
-        if (data.applePassData) setApplePassData(data.applePassData);
-        toast.success("Pass generated successfully!");
-      } else {
-        toast.error(data.error || "Failed to generate pass");
-      }
-    } catch {
-      toast.error("An unexpected error occurred");
+      if (!res.ok) throw new Error(data.error || "Failed to regenerate");
+      walletGenerated.current = false;
+      setGooglePassUrl(null);
+      setApplePassData(null);
+      await mutatePass(data, false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to regenerate pass");
     } finally {
-      setGenerating(false);
+      setRegenerating(false);
     }
   };
 
@@ -147,13 +157,13 @@ function PassPageContent() {
   }
 
   const isOrg = profile?.account_type === "organisation";
-
   if (isOrg) {
-    const adminUrl =
-      process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3002";
+    const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3002";
     window.location.replace(`${adminUrl}/dashboard/members`);
     return null;
   }
+
+  const cardLoading = passLoading || !memberId;
 
   return (
     <div className="min-h-[100dvh] bg-white">
@@ -224,11 +234,11 @@ function PassPageContent() {
                     </div>
 
                     <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 flex items-center justify-center mt-auto">
-                      {generatedMemberId ? (
+                      {memberId ? (
                         <QRCode
                           size={256}
                           style={{ height: "auto" }}
-                          value={generatedMemberId}
+                          value={memberId}
                           viewBox="0 0 256 256"
                           className="w-28 h-28 p-2.5 bg-white rounded-lg"
                         />
@@ -244,57 +254,77 @@ function PassPageContent() {
                 </div>
 
                 {/* Visible preview */}
-                <div className="w-full max-w-[500px] aspect-[3/4] flex items-center justify-center rounded-2xl shadow-xl overflow-hidden bg-primary/20">
-                  {previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={previewUrl}
-                      alt="Membership Card Preview"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-muted">
-                      Loading Preview...
-                    </div>
-                  )}
-                </div>
+                {cardLoading ? (
+                  <PassCardSkeleton />
+                ) : (
+                  <div className="w-full max-w-[500px] aspect-[3/4] flex items-center justify-center rounded-2xl shadow-xl overflow-hidden bg-primary/20">
+                    {previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previewUrl}
+                        alt="Membership Card Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-muted">
+                        Loading Preview...
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Info sections */}
               <div className="flex flex-col gap-10">
                 {/* Connect3 Pass section */}
                 <div className="flex flex-col gap-4">
-                  <h2 className="text-xs font-semibold tracking-widest uppercase text-gray-400">
-                    Pass Details
-                  </h2>
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">
-                        Name
-                      </p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {firstName || lastName
-                          ? `${firstName} ${lastName}`.trim()
-                          : "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">
-                        Email
-                      </p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {email || "—"}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-semibold tracking-widest uppercase text-gray-400">
+                      Pass Details
+                    </h2>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleRegenerate}
+                      disabled={regenerating || cardLoading}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground h-7 px-2"
+                    >
+                      <RotateCcw className={`h-3.5 w-3.5 ${regenerating ? "animate-spin" : ""}`} />
+                      Regenerate QR
+                    </Button>
                   </div>
 
-                  {generating && (
-                    <p className="text-xs text-muted-foreground">
-                      Generating your pass…
-                    </p>
+                  {cardLoading ? (
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <Skeleton className="h-3 w-8 mb-1" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-3 w-8 mb-1" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">Name</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {firstName || lastName
+                            ? `${firstName} ${lastName}`.trim()
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {email || "—"}
+                        </p>
+                      </div>
+                    </div>
                   )}
 
-                  {generatedMemberId && (
+                  {memberId && (
                     <div className="flex flex-wrap gap-3 pt-1">
                       {applePassData && (
                         <button

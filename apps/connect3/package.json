@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3000",
+    "dev": "next dev --turbopack -p 3000 --experimental-https",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint"
   },
   "dependencies": {
     "@c3/auth": "workspace:*",
+    "@c3/qr": "workspace:*",
     "@c3/ui": "workspace:*",
     "@c3/search": "workspace:*",
     "@c3/supabase": "workspace:*",
