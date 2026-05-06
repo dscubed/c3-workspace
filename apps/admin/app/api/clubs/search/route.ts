@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@c3/supabase/admin";
-import { createClient } from "@c3/supabase/server";
 
 /* ================================================================
    GET /api/clubs/search?q=chess&limit=18&cursor=<base64>
@@ -31,16 +30,6 @@ function decodeCursor(cursor: string): number {
 
 export async function GET(request: NextRequest) {
   try {
-    /* Auth check */
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get("q") ?? "").trim();
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "18"), 50);

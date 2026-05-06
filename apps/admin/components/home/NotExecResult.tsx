@@ -1,12 +1,19 @@
 "use client";
 
+import { motion } from "framer-motion";
+import Link from "next/link";
 import { Logo } from "@c3/ui";
 import { ArrowRight } from "lucide-react";
 import { colors } from "./tokens";
 
 export function NotExecResult() {
   return (
-    <div className="anim-pop-in w-full flex flex-col items-center gap-4">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.88, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 18, duration: 0.6 }}
+      className="w-full flex flex-col items-center gap-4"
+    >
       <div
         className="w-full rounded-2xl p-5 text-center"
         style={{
@@ -28,7 +35,7 @@ export function NotExecResult() {
         </p>
       </div>
 
-      <a
+      <Link
         id="go-home-link"
         href="/"
         className="group inline-flex items-center gap-2 py-3 px-7 rounded-2xl font-fredoka font-semibold text-lg transition-all duration-250 hover:-translate-y-0.5 active:scale-95"
@@ -40,7 +47,7 @@ export function NotExecResult() {
       >
         Go to Home
         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
-      </a>
-    </div>
+      </Link>
+    </motion.div>
   );
 }

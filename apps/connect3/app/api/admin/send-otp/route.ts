@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const supportSendEmail = process.env.NOREPLY_EMAIL ?? "noreply@connect3.app";
+  const supportSendEmail = process.env.NOREPLY_EMAIL ?? "noreply@mail.connect3.app";
 
   try {
     await resend.emails.send({

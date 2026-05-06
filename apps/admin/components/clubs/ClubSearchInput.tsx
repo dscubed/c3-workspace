@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useInfiniteScroll } from "@c3/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@c3/ui";
 import { Search, Loader2, X } from "lucide-react";
@@ -32,7 +33,7 @@ export function ClubSearchInput({
 
   const { items, isLoading, isValidating, sentinelRef } =
     useInfiniteScroll<ClubResult>(listRef, endpoint, 
-      process.env.NEXT_PUBLIC_SITE_URL,
+      process.env.NEXT_PUBLIC_SITE_URL ?? null,
       {
       limit: 18,
       queryParams: query.trim() ? { q: query.trim() } : {},
@@ -49,6 +50,26 @@ export function ClubSearchInput({
 
   const showDropdown = focused;
   const loading = isLoading || isValidating;
+
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (showDropdown && containerRef.current) {
+      setDropdownRect(containerRef.current.getBoundingClientRect());
+    } else {
+      setDropdownRect(null);
+    }
+  }, [showDropdown]);
+
+  const dropdownStyle = dropdownRect
+    ? {
+        position: "absolute" as const,
+        top: dropdownRect.bottom + window.scrollY,
+        left: dropdownRect.left + window.scrollX,
+        width: dropdownRect.width,
+        zIndex: 9999,
+      }
+    : null;
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -69,8 +90,10 @@ export function ClubSearchInput({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={(e) => {
-            // Don't close if focus moved inside the container (list items)
-            if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+            if (
+              !containerRef.current?.contains(e.relatedTarget as Node) &&
+              !listRef.current?.contains(e.relatedTarget as Node)
+            ) {
               setTimeout(() => setFocused(false), 150);
             }
           }}
@@ -91,11 +114,12 @@ export function ClubSearchInput({
       </div>
 
       {/* ── Floating results dropdown ── */}
-      {showDropdown && (
+      {showDropdown && dropdownStyle && createPortal(
         <div
           ref={listRef}
-          className="absolute left-0 right-0 top-full z-50 max-h-30 overflow-y-auto rounded-xl border bg-white shadow-lg"
+          className="max-h-30 overflow-y-auto rounded-xl border bg-white shadow-lg"
           style={{
+            ...dropdownStyle,
             borderColor: "#ede9fe",
             boxShadow:
               "0 8px 24px rgba(109,40,217,0.08), 0 2px 8px rgba(0,0,0,0.06)",
@@ -148,7 +172,8 @@ export function ClubSearchInput({
                 : "No clubs found"}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

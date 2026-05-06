@@ -1,10 +1,16 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { LogoAnimated } from "@c3/ui";
 
 export function WelcomeBrand() {
   return (
-    <div className="anim-pop-in flex flex-col items-center gap-5">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.88, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 18, duration: 0.6 }}
+      className="flex flex-col items-center gap-5"
+    >
       <div
         className="relative flex items-center justify-center w-24 h-24 rounded-3xl"
         style={{
@@ -30,7 +36,7 @@ export function WelcomeBrand() {
       </div>
 
       <h1
-        className="font-fredoka font-semibold text-5xl tracking-tight"
+        className="font-fredoka font-semibold text-3xl sm:text-5xl tracking-tight"
         style={{
           background: "linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%)",
           WebkitBackgroundClip: "text",
@@ -39,6 +45,6 @@ export function WelcomeBrand() {
       >
         Connect3
       </h1>
-    </div>
+    </motion.div>
   );
 }

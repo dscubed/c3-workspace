@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { colors } from "./tokens";
 import { Divider } from "./Divider";
 
@@ -9,9 +10,14 @@ export interface ExecutiveQuestionProps {
 
 export function ExecutiveQuestion({ onChoice }: ExecutiveQuestionProps) {
   return (
-    <div className="anim-fade-up w-full flex flex-col items-center gap-5">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="w-full flex flex-col items-center gap-5"
+    >
       <Divider />
-      <p className="font-fredoka text-xl font-medium text-slate-500">
+      <p         className="font-fredoka text-lg sm:text-xl font-medium text-slate-500">
         Are you a club executive?
       </p>
       <div className="flex gap-3 w-full">
@@ -51,6 +57,6 @@ export function ExecutiveQuestion({ onChoice }: ExecutiveQuestionProps) {
           No
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -73,11 +73,11 @@ export default function useInfiniteScroll<T>(
     setSize(1);
   }, [queryParamsKey, setSize]);
 
-  const rawItems: T[] = !!data ? data.flatMap((d) => d.items) : [];
-  const items: T[] = rawItems.filter((item, index, arr) => {
+  const rawItems: T[] = !!data ? data.filter(Boolean).flatMap((d) => d.items ?? []) : [];
+  const items: T[] = rawItems.filter((item): item is T => item != null).filter((item, index, arr) => {
     const id = (item as { id?: string }).id;
     if (id == null || id === "") return true;
-    const firstIndex = arr.findIndex((i) => (i as { id?: string }).id === id);
+    const firstIndex = arr.findIndex((i) => i != null && (i as { id?: string }).id === id);
     return firstIndex === index;
   });
 

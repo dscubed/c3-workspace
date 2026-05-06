@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://connect3.app";
-  const noreplyEmail = process.env.NOREPLY_EMAIL ?? "noreply@connect3.app";
+  const noreplyEmail = process.env.NOREPLY_EMAIL ?? "noreply@mail.connect3.app";
   const clubName = profile.first_name ?? "your club";
 
   try {
