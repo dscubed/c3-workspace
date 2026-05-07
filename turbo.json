@@ -1,6 +1,29 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "SUPABASE_SECRET_KEY",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "TICKET_SECRET",
+    "PASS_SECRET",
+    "PASS_ENCRYPTION_SECRET",
+    "ADMIN_SECRET",
+    "CRON_SECRET",
+    "RESEND_API_KEY",
+    "NOREPLY_EMAIL",
+    "SUPPORT_EMAIL",
+    "OPENAI_API_KEY",
+    "OPENAI_USER_VECTOR_STORE_ID",
+    "OPENAI_ORG_VECTOR_STORE_ID",
+    "OPENAI_EVENTS_VECTOR_STORE_ID",
+    "OPENAI_UNI_VECTOR_STORE_ID",
+    "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+    "GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL",
+    "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+    "GOOGLE_ISSUER_ID",
+    "GOOGLE_PRIVATE_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
