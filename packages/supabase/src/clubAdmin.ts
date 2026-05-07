@@ -17,15 +17,28 @@ export async function getClubAdminRow(clubId: string, userId: string) {
 }
 
 /**
- * Get all club IDs where the user is an accepted admin.
+ * Get all club IDs where the user is an accepted admin, plus the user's own
+ * profile if they are an organisation account (i.e. they log in as the club).
  */
 export async function getAdminClubIds(userId: string): Promise<string[]> {
-  const { data } = await supabaseAdmin
-    .from("club_admins")
-    .select("club_id")
-    .eq("user_id", userId)
-    .eq("status", "accepted");
-  return (data ?? []).map((r) => r.club_id);
+  const [{ data: adminRows }, { data: ownProfile }] = await Promise.all([
+    supabaseAdmin
+      .from("club_admins")
+      .select("club_id")
+      .eq("user_id", userId)
+      .eq("status", "accepted"),
+    supabaseAdmin
+      .from("profiles")
+      .select("id, account_type")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
+
+  const ids = new Set((adminRows ?? []).map((r) => r.club_id as string));
+  if (ownProfile?.account_type === "organisation") {
+    ids.add(userId);
+  }
+  return [...ids];
 }
 
 /**

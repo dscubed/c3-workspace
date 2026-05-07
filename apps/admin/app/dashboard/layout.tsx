@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
 import { getAdminClubIds } from "@c3/supabase";
+import { getLoginUrl } from "@c3/auth/sso";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 
 const CONNECT3_URL = process.env.NEXT_PUBLIC_CONNECT3_URL ?? "https://connect3.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://admin.connect3.app";
 
 export default async function DashboardLayout({
   children,
@@ -17,7 +19,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`${CONNECT3_URL}/auth/login`);
+    redirect(getLoginUrl(SITE_URL, "/dashboard"));
   }
 
   const clubIds = await getAdminClubIds(user.id);
