@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CreditCard, DollarSign, Ticket, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CreditCard, DollarSign, Ticket, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +79,7 @@ export default function EventPaymentsPage({
     `/api/admin/events/${eventid}/stats`,
     fetcher,
   );
+  const [resyncing, setResyncing] = useState(false);
 
   if (isLoading) {
     return (
@@ -122,11 +123,40 @@ export default function EventPaymentsPage({
         Back to Events
       </button>
 
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold">{event.name ?? "Untitled"}</h1>
-        <Badge className={cn(statusColors[event.status])}>
-          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-        </Badge>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{event.name ?? "Untitled"}</h1>
+          <Badge className={cn(statusColors[event.status])}>
+            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+          </Badge>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={resyncing}
+          onClick={async () => {
+            setResyncing(true);
+            try {
+              const res = await fetch(
+                `/api/admin/events/${event.id}/resync-stripe`,
+                { method: "POST" },
+              );
+              const body = await res.json();
+              if (!res.ok) {
+                toast.error(body.error ?? "Resync failed");
+              } else {
+                toast.success(`Synced ${body.data.synced} tiers`);
+              }
+            } catch {
+              toast.error("Network error");
+            } finally {
+              setResyncing(false);
+            }
+          }}
+        >
+          <RefreshCw className={`size-4 mr-1.5 ${resyncing ? "animate-spin" : ""}`} />
+          {resyncing ? "Syncing..." : "Resync Stripe"}
+        </Button>
       </div>
       {event.start && (
         <p className="text-sm text-muted-foreground -mt-4">

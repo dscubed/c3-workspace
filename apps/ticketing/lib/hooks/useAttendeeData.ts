@@ -35,13 +35,27 @@ export function useAttendeeData() {
   };
 
   const handleBuyForMyself = useCallback(
-    async (ticketIndex: number) => {
+    async (ticketIndex: number, clubId?: string) => {
       if (!user) return;
       setFillingMyData(true);
       try {
-        const res = await fetch(
+        const profileRes = fetch(
           `/api/profiles/fetch?id=${user.id}&select=first_name,last_name`,
         );
+        const memberPromise = clubId
+          ? fetch(`/api/profiles/membership?club_id=${clubId}`)
+          : null;
+
+        let isMember: boolean | null = null;
+        if (memberPromise) {
+          const mr = await memberPromise;
+          if (mr.ok) {
+            const mb = await mr.json();
+            isMember = mb.data?.isMember ?? null;
+          }
+        }
+
+        const res = await profileRes;
         if (res.ok) {
           const { data } = await res.json();
           setAttendeeData((prev) => ({
@@ -51,6 +65,7 @@ export function useAttendeeData() {
               first_name: data?.first_name ?? "",
               last_name: data?.last_name ?? "",
               email: user.email ?? "",
+              ...(isMember !== null ? { is_member: isMember ? "Yes" : "No" } : {}),
             },
           }));
         }

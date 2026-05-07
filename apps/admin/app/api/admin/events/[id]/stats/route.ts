@@ -97,20 +97,37 @@ export async function GET(
 
     const { data: splits } = await supabaseAdmin
       .from("event_payout_splits")
-      .select("id, event_id, club_id, percentage, created_at, profiles(id, first_name, avatar_url, stripe_account_id, stripe_charges_enabled)")
+      .select("id, event_id, club_id, percentage, created_at, profiles(id, first_name, avatar_url)")
       .eq("event_id", eventId);
 
     const { data: hosts } = await supabaseAdmin
       .from("event_hosts")
-      .select("profile_id, status, profiles(id, first_name, avatar_url, stripe_account_id, stripe_charges_enabled)")
+      .select("profile_id, status, profiles(id, first_name, avatar_url)")
       .eq("event_id", eventId)
       .eq("status", "accepted");
 
     const { data: creator } = await supabaseAdmin
       .from("profiles")
-      .select("id, first_name, avatar_url, stripe_account_id, stripe_charges_enabled")
+      .select("id, first_name, avatar_url")
       .eq("id", event.creator_profile_id)
       .single();
+
+    const allClubIds = [
+      ...(creator ? [creator.id] : []),
+      ...((hosts ?? []).map((h) => h.profile_id)),
+      ...((splits ?? []).map((s) => s.club_id)),
+    ];
+
+    const { data: stripeRows } = allClubIds.length > 0
+      ? await supabaseAdmin
+          .from("club_stripe_accounts")
+          .select("club_id, stripe_account_id, charges_enabled")
+          .in("club_id", [...new Set(allClubIds)])
+      : { data: [] };
+
+    const stripeByClub = new Map(
+      (stripeRows ?? []).map((r) => [r.club_id, r]),
+    );
 
     const collaborators: {
       id: string;
@@ -123,13 +140,14 @@ export async function GET(
     const seenIds = new Set<string>();
 
     if (creator) {
+      const stripe = stripeByClub.get(creator.id);
       seenIds.add(creator.id);
       collaborators.push({
         id: creator.id,
         first_name: creator.first_name,
         avatar_url: creator.avatar_url,
-        stripe_account_id: creator.stripe_account_id,
-        stripe_charges_enabled: creator.stripe_charges_enabled,
+        stripe_account_id: stripe?.stripe_account_id ?? null,
+        stripe_charges_enabled: stripe?.charges_enabled ?? false,
         is_creator: true,
       });
     }
@@ -138,12 +156,13 @@ export async function GET(
       if (seenIds.has(h.profile_id)) continue;
       seenIds.add(h.profile_id);
       const p = Array.isArray(h.profiles) ? h.profiles[0] : h.profiles;
+      const stripe = stripeByClub.get(h.profile_id);
       collaborators.push({
         id: h.profile_id,
         first_name: p?.first_name ?? null,
         avatar_url: p?.avatar_url ?? null,
-        stripe_account_id: p?.stripe_account_id ?? null,
-        stripe_charges_enabled: p?.stripe_charges_enabled ?? false,
+        stripe_account_id: stripe?.stripe_account_id ?? null,
+        stripe_charges_enabled: stripe?.charges_enabled ?? false,
         is_creator: false,
       });
     }

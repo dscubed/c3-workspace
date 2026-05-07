@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { DragEndEvent, useSensors } from "@dnd-kit/core";
@@ -107,6 +108,7 @@ export interface CheckoutContextValue {
   fieldIds: string[];
   handleFieldDragEnd: (event: DragEndEvent) => void;
   /* attendee data (preview) */
+  attendeeData: Record<number, Record<string, string>>;
   user: { id: string; email?: string | undefined } | null;
   fillingMyData: boolean;
   getFieldValue: (ticketIndex: number, fieldKey: string) => string;
@@ -116,7 +118,7 @@ export interface CheckoutContextValue {
   pricing: TicketTier[];
   selectedTier: TicketTier | null;
   effectiveSelectedTierId: string;
-  setSelectedTierId: (id: string) => void;
+  setSelectedTierId: (id: string | null) => void;
   thumbnailUrl: string | null;
   quantity: number;
   setQuantity: (update: number | ((q: number) => number)) => void;
@@ -125,6 +127,9 @@ export interface CheckoutContextValue {
   /* actions */
   handlePaymentStart: () => Promise<void>;
   handleRegister: () => Promise<void>;
+  /* form validation */
+  isFormValid: boolean;
+  isMember: boolean | null;
   /* pricing modal */
   pricingModalOpen: boolean;
   openPricingModal: () => void;
@@ -169,7 +174,7 @@ export function CheckoutProvider({
   const isEditing = !previewMode;
 
   /* ── Ticket selection ── */
-  const [selectedTierId, setSelectedTierId] = useState<string>("");
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null);
   const [quantity, _setQuantity] = useState(1);
   const [activeTicketTab, setActiveTicketTab] = useState("ticket-0");
 
@@ -187,7 +192,7 @@ export function CheckoutProvider({
     user,
     getFieldValue,
     setFieldValue,
-    handleBuyForMyself,
+    handleBuyForMyself: handleBuyForMyselfRaw,
     fillingMyData,
   } = useAttendeeData();
 
@@ -203,6 +208,28 @@ export function CheckoutProvider({
       router.push("/");
     },
   });
+
+  const creatorProfileId = eventData?.creatorProfileId;
+
+  const handleBuyForMyself = useCallback(
+    (ticketIndex: number) =>
+      handleBuyForMyselfRaw(ticketIndex, creatorProfileId ?? undefined),
+    [handleBuyForMyselfRaw, creatorProfileId],
+  );
+
+  /* ── Membership status ── */
+  const [isMember, setIsMember] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const clubId = eventData?.creatorProfileId;
+    const userId = user?.id;
+    if (!clubId || !userId) return;
+
+    fetch(`/api/profiles/membership?club_id=${clubId}`)
+      .then((r) => r.json())
+      .then((b) => setIsMember(b.data?.isMember ?? false))
+      .catch(() => setIsMember(false));
+  }, [eventData?.creatorProfileId, user?.id]);
 
   /* ── Realtime sync ── */
   const onRemoteChange = useCallback(
@@ -264,10 +291,11 @@ export function CheckoutProvider({
   // Derived from whether the event has ticket tiers — no flag needed
   const checkoutMode =
     pricing.length > 0 ? ("ticket" as const) : ("registration" as const);
-  const defaultTierId = pricing[0]?.id ?? "";
-  const effectiveSelectedTierId = selectedTierId || defaultTierId;
-  const selectedTier =
-    pricing.find((t) => t.id === effectiveSelectedTierId) ?? pricing[0] ?? null;
+  const effectiveSelectedTierId = selectedTierId ?? "";
+  const selectedTier = useMemo(() => {
+    if (!selectedTierId) return isEditing ? (pricing[0] ?? null) : null;
+    return pricing.find((t) => t.id === selectedTierId) ?? null;
+  }, [pricing, selectedTierId, isEditing]);
   const thumbnailUrl =
     eventData?.carouselImages?.[0]?.url ??
     eventData?.formData.imageUrls?.[0] ??
@@ -283,18 +311,42 @@ export function CheckoutProvider({
       toast.error("This ticket isn't ready for checkout yet — try again shortly");
       return;
     }
-    await createCheckoutSession(
+    const result = await createCheckoutSession(
       eventId,
       selectedTier.id,
       attendeeData,
       fields,
     );
+    if (result?.error) {
+      toast.error(result.error);
+      return;
+    }
   }, [eventId, attendeeData, fields, selectedTier]);
 
   /* ── Registration (non-Stripe) ── */
   const handleRegister = useCallback(async () => {
-    await registerForEvent(eventId, attendeeData);
+    try {
+      await registerForEvent(eventId, attendeeData);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Registration failed");
+    }
   }, [eventId, attendeeData]);
+
+  /* ── Form validation ── */
+  const isFormValid = useMemo(() => {
+    if (checkoutMode !== "ticket") return true;
+    if (!selectedTier) return false;
+    if (selectedTier.price === 0) return true;
+    const slot = (attendeeData[0] ?? {}) as Record<string, string>;
+    const requiredPreset = ["first_name", "last_name", "email", "student_id", "course"];
+    const allPreset = requiredPreset.every((k) => String(slot[k] ?? "").trim());
+    const memberAnswered = ["yes", "no"].includes(String(slot.is_member ?? "").toLowerCase());
+    const allCustom = fields
+      .filter((f) => f.required)
+      .every((f) => String(slot[f.id] ?? "").trim());
+    const memberCheckPassed = !selectedTier?.memberVerification || isMember === true;
+    return allPreset && memberAnswered && allCustom && memberCheckPassed;
+  }, [checkoutMode, selectedTier, attendeeData, fields, isMember]);
 
   /* ── Pricing modal ── */
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
@@ -363,6 +415,7 @@ export function CheckoutProvider({
       getFieldValue,
       setFieldValue,
       handleBuyForMyself,
+      attendeeData,
       pricing,
       selectedTier,
       effectiveSelectedTierId,
@@ -374,6 +427,8 @@ export function CheckoutProvider({
       setActiveTicketTab,
       handlePaymentStart,
       handleRegister,
+      isFormValid,
+      isMember,
       pricingModalOpen,
       openPricingModal,
       setPricingModalOpen,
@@ -414,6 +469,7 @@ export function CheckoutProvider({
       getFieldValue,
       setFieldValue,
       handleBuyForMyself,
+      attendeeData,
       selectedTier,
       effectiveSelectedTierId,
       thumbnailUrl,
@@ -423,6 +479,8 @@ export function CheckoutProvider({
       setActiveTicketTab,
       handlePaymentStart,
       handleRegister,
+      isFormValid,
+      isMember,
       pricingModalOpen,
       openPricingModal,
       handlePricingSave,

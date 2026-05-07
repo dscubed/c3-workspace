@@ -63,15 +63,25 @@ export async function POST(
 
     const { data: splits } = await supabaseAdmin
       .from("event_payout_splits")
-      .select("club_id, percentage, profiles(stripe_account_id, stripe_charges_enabled)")
+      .select("club_id, percentage")
       .eq("event_id", eventId);
 
     let resolvedSplits: { club_id: string; percentage: number; stripe_account_id: string }[];
 
     if (splits && splits.length > 0) {
+      const clubIds = splits.map((s) => s.club_id);
+      const { data: stripeRows } = await supabaseAdmin
+        .from("club_stripe_accounts")
+        .select("club_id, stripe_account_id, charges_enabled")
+        .in("club_id", clubIds);
+
+      const stripeByClub = new Map(
+        (stripeRows ?? []).map((r) => [r.club_id, r]),
+      );
+
       for (const s of splits) {
-        const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
-        if (!p?.stripe_account_id || !p?.stripe_charges_enabled) {
+        const stripe = stripeByClub.get(s.club_id);
+        if (!stripe?.stripe_account_id || !stripe?.charges_enabled) {
           return NextResponse.json(
             {
               error: `Club in split has not completed Stripe onboarding`,
@@ -83,16 +93,16 @@ export async function POST(
       resolvedSplits = splits.map((s) => ({
         club_id: s.club_id,
         percentage: Number(s.percentage),
-        stripe_account_id: (Array.isArray(s.profiles) ? s.profiles[0] : s.profiles)!.stripe_account_id,
+        stripe_account_id: stripeByClub.get(s.club_id)!.stripe_account_id,
       }));
     } else {
-      const { data: creator } = await supabaseAdmin
-        .from("profiles")
-        .select("stripe_account_id, stripe_charges_enabled")
-        .eq("id", event.creator_profile_id)
-        .single();
+      const { data: stripe } = await supabaseAdmin
+        .from("club_stripe_accounts")
+        .select("stripe_account_id, charges_enabled")
+        .eq("club_id", event.creator_profile_id)
+        .maybeSingle();
 
-      if (!creator?.stripe_account_id || !creator?.stripe_charges_enabled) {
+      if (!stripe?.stripe_account_id || !stripe?.charges_enabled) {
         return NextResponse.json(
           { error: "Event creator has not completed Stripe onboarding" },
           { status: 400 },
@@ -103,7 +113,7 @@ export async function POST(
         {
           club_id: event.creator_profile_id,
           percentage: 100,
-          stripe_account_id: creator.stripe_account_id,
+          stripe_account_id: stripe.stripe_account_id,
         },
       ];
     }

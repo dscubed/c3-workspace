@@ -27,7 +27,7 @@ export async function GET(
 
     const { data: splits } = await supabaseAdmin
       .from("event_payout_splits")
-      .select("id, event_id, club_id, percentage, created_at, profiles(id, first_name, avatar_url, stripe_account_id, stripe_charges_enabled)")
+      .select("id, event_id, club_id, percentage, created_at, profiles(id, first_name, avatar_url)")
       .eq("event_id", eventId);
 
     return NextResponse.json({ data: splits ?? [] });
@@ -94,22 +94,32 @@ export async function PUT(
 
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id, stripe_account_id, stripe_charges_enabled")
+      .select("id")
       .in("id", clubIds);
 
-    const profileMap = new Map(
-      (profiles ?? []).map((p) => [p.id, p]),
-    );
+    const profileIds = new Set((profiles ?? []).map((p) => p.id));
 
     for (const split of splits) {
-      const p = profileMap.get(split.club_id);
-      if (!p) {
+      if (!profileIds.has(split.club_id)) {
         return NextResponse.json(
           { error: `Club ${split.club_id} not found` },
           { status: 400 },
         );
       }
-      if (!p.stripe_account_id) {
+    }
+
+    const { data: stripeRows } = await supabaseAdmin
+      .from("club_stripe_accounts")
+      .select("club_id, stripe_account_id, charges_enabled")
+      .in("club_id", clubIds);
+
+    const stripeMap = new Map(
+      (stripeRows ?? []).map((r) => [r.club_id, r]),
+    );
+
+    for (const split of splits) {
+      const s = stripeMap.get(split.club_id);
+      if (!s?.stripe_account_id) {
         return NextResponse.json(
           {
             error: `Club ${split.club_id} has not connected Stripe`,
@@ -117,7 +127,7 @@ export async function PUT(
           { status: 400 },
         );
       }
-      if (!p.stripe_charges_enabled) {
+      if (!s.charges_enabled) {
         return NextResponse.json(
           {
             error: `Club ${split.club_id} has not completed Stripe onboarding`,

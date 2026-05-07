@@ -1,44 +1,26 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@c3/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@c3/supabase/admin";
+import { requireClubAdmin } from "@/lib/auth/clubGuard";
 
-export async function GET() {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile, error: profileErr } = await supabaseAdmin
-      .from("profiles")
-      .select(
-        "stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_connected_at",
-      )
-      .eq("id", user.id)
-      .single();
-
-    if (profileErr || !profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      data: {
-        stripe_account_id: profile.stripe_account_id ?? null,
-        charges_enabled: profile.stripe_charges_enabled,
-        payouts_enabled: profile.stripe_payouts_enabled,
-        connected_at: profile.stripe_connected_at ?? null,
-      },
-    });
-  } catch (error) {
-    console.error("[stripe status] error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+export async function GET(req: NextRequest) {
+  const clubId = req.nextUrl.searchParams.get("club_id");
+  const auth = await requireClubAdmin(clubId);
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
+
+  const { data: row } = await supabaseAdmin
+    .from("club_stripe_accounts")
+    .select("stripe_account_id, charges_enabled, payouts_enabled, connected_at")
+    .eq("club_id", auth.clubId)
+    .maybeSingle();
+
+  return NextResponse.json({
+    data: {
+      stripe_account_id: row?.stripe_account_id ?? null,
+      charges_enabled: row?.charges_enabled ?? false,
+      payouts_enabled: row?.payouts_enabled ?? false,
+      connected_at: row?.connected_at ?? null,
+    },
+  });
 }

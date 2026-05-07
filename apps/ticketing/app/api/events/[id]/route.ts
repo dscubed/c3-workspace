@@ -755,11 +755,22 @@ export async function PATCH(
       let eventName: string | null = null;
       const { data: eventRow } = await supabaseAdmin
         .from("events")
-        .select("timezone, name")
+        .select("timezone, name, creator_profile_id")
         .eq("id", eventId)
         .single();
       if (!pricingTimeZone) pricingTimeZone = eventRow?.timezone ?? null;
       eventName = eventRow?.name ?? null;
+
+      // Guard: skip Stripe sync if creator hasn't connected Stripe
+      let creatorStripeEnabled = false;
+      if (eventRow?.creator_profile_id) {
+        const { data: stripeRow } = await supabaseAdmin
+          .from("club_stripe_accounts")
+          .select("charges_enabled")
+          .eq("club_id", eventRow.creator_profile_id)
+          .maybeSingle();
+        creatorStripeEnabled = stripeRow?.charges_enabled ?? false;
+      }
 
       for (const tier of pricing) {
         const validationError = validateTicketTierInput(tier);
@@ -887,8 +898,8 @@ export async function PATCH(
         }
       }
 
-      // Stripe sync — fire-and-forget so autosave latency stays low
-      if (upsertedTiers.length > 0) {
+      // Stripe sync — fire-and-forget, only if creator has completed Stripe Connect
+      if (upsertedTiers.length > 0 && creatorStripeEnabled) {
         import("@/lib/stripe/syncTiers")
           .then(({ syncTierStripeProducts }) =>
             syncTierStripeProducts(eventId, eventName ?? "Event", upsertedTiers),

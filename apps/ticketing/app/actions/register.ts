@@ -33,6 +33,17 @@ export async function registerForEvent(
     throw new Error("Email is required to register");
   }
 
+  // Duplicate check — one email, one registration per event
+  const { data: existing } = await supabaseAdmin
+    .from("event_registrations")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("email", email)
+    .maybeSingle();
+  if (existing) {
+    throw new Error("This email is already registered for this event");
+  }
+
   // Everything that isn't a core identity field is a custom answer
   const {
     first_name: _fn,
@@ -50,11 +61,17 @@ export async function registerForEvent(
     .eq("id", eventId)
     .single();
 
+  // Resolve user_id by typed email — auto-link ticket to whoever owns that email
+  const { data: matchedUserId } = await supabaseAdmin.rpc(
+    "get_user_id_by_email",
+    { p_email: email },
+  );
+
   const { data: registration, error: insertError } = await supabaseAdmin
     .from("event_registrations")
     .insert({
       event_id: eventId,
-      user_id: user?.id ?? null,
+      user_id: (matchedUserId as string | null) ?? null,
       type: "registration",
       email,
       first_name: firstName,

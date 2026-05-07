@@ -24,31 +24,49 @@ interface CheckoutPayload {
   consumed_at: string | null;
 }
 
+export async function GET() {
+  return Response.json({ ok: true, route: "stripe webhook" });
+}
+
 export async function POST(request: Request) {
+  console.log("[stripe webhook] === incoming POST ===");
   try {
     const body = await request.text();
     const signature = (await headers()).get("Stripe-Signature");
 
     if (!signature) {
+      console.warn("[stripe webhook] missing signature header");
       return new Response("Missing Stripe signature", { status: 401 });
     }
+    console.log("[stripe webhook] body length:", body.length);
 
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!,
-    );
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!,
+      );
+    } catch (e) {
+      console.error("[stripe webhook] signature verify FAILED:", e);
+      return new Response("invalid signature", { status: 400 });
+    }
+    console.log("[stripe webhook] verified event:", event.type, event.id);
 
     if (!allowedEvents.includes(event.type)) {
+      console.log("[stripe webhook] event type ignored:", event.type);
       return new Response("Event type not allowed", { status: 200 });
     }
 
     if (event.type === "checkout.session.completed") {
+      console.log("[stripe webhook] dispatching checkout.session.completed");
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+      console.log("[stripe webhook] checkout.session.completed DONE");
       return Response.json("Purchase success", { status: 200 });
     }
 
     if (event.type === "account.updated") {
+      console.log("[stripe webhook] dispatching account.updated");
       await handleAccountUpdated(event.data.object as Stripe.Account);
       return Response.json("Account updated", { status: 200 });
     }
@@ -62,16 +80,22 @@ export async function POST(request: Request) {
 
     return new Response("OK", { status: 200 });
   } catch (err) {
-    console.error("[stripe webhook] error:", err);
+    console.error("[stripe webhook] handler threw:", err);
+    if (err instanceof Error) {
+      console.error("[stripe webhook] stack:", err.stack);
+    }
+    // Return 500 so Stripe retries
     return new Response(
       `Webhook error: ${err instanceof Error ? err.message : "Unknown error"}`,
-      { status: 400 },
+      { status: 500 },
     );
   }
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.log("[stripe webhook] handleCheckoutCompleted session:", session.id);
   const md = session.metadata ?? {};
+  console.log("[stripe webhook] metadata:", md);
   const eventId = md.event_id;
   const tierId = md.tier_id || null;
   const payloadId = md.payload_id || null;
@@ -81,25 +105,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Idempotency — bail if we already wrote registrations for this session
-  const { data: existing } = await supabaseAdmin
+  const { data: existing, error: existingErr } = await supabaseAdmin
     .from("event_registrations")
     .select("id")
     .eq("stripe_session_id", session.id)
     .limit(1);
+  if (existingErr) {
+    console.error("[stripe webhook] idempotency check error:", existingErr);
+  }
   if (existing && existing.length > 0) {
     console.log("[stripe webhook] already processed", session.id);
     return;
   }
+  console.log("[stripe webhook] not yet processed — proceeding");
 
   // Load checkout payload (attendee data + custom fields)
   let payload: CheckoutPayload | null = null;
   if (payloadId) {
-    const { data } = await supabaseAdmin
+    const { data, error: payloadErr } = await supabaseAdmin
       .from("checkout_payloads")
       .select("*")
       .eq("id", payloadId)
       .single();
+    if (payloadErr) {
+      console.error("[stripe webhook] payload fetch error:", payloadErr);
+    }
     payload = data as CheckoutPayload | null;
+    console.log("[stripe webhook] payload loaded:", !!payload, "user_id:", payload?.user_id);
+  } else {
+    console.warn("[stripe webhook] no payload_id in metadata");
   }
 
   // Identity: prefer attendee_data[0], fall back to Stripe customer details
@@ -120,6 +154,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     (slot0.email as string | undefined) ?? fallbackEmail
   ).toLowerCase();
 
+  console.log("[stripe webhook] resolved email:", email, "name:", firstName, lastName);
+
   if (!email) {
     console.warn("[stripe webhook] missing email — skipping");
     return;
@@ -135,13 +171,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   } = slot0;
 
   // Fetch event details for the email
-  const { data: eventRow } = await supabaseAdmin
+  const { data: eventRow, error: eventErr } = await supabaseAdmin
     .from("events")
     .select(
       "name, start, event_venues(venue), event_images(url, sort_order)",
     )
     .eq("id", eventId)
     .single();
+  if (eventErr) {
+    console.error("[stripe webhook] event fetch error:", eventErr);
+  }
+  console.log("[stripe webhook] event row loaded:", !!eventRow, "name:", eventRow?.name);
 
   const eventDate = eventRow?.start
     ? new Date(eventRow.start).toLocaleDateString("en-AU", {
@@ -162,6 +202,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     (images ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0]
       ?.url ?? null;
 
+  console.log("[stripe webhook] inserting registration row...");
   const { data: registration, error: regErr } = await supabaseAdmin
     .from("event_registrations")
     .insert({
@@ -183,9 +224,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .single();
 
   if (regErr || !registration) {
-    console.error("[stripe webhook] registration insert failed:", regErr);
-    return;
+    console.error("[stripe webhook] registration insert FAILED:", regErr);
+    throw new Error(
+      `registration insert failed: ${regErr?.message ?? "unknown"}`,
+    );
   }
+  console.log("[stripe webhook] registration inserted:", registration.id);
 
   // Generate QR + send confirmation email
   const ticketSecret = process.env.TICKET_SECRET;
@@ -197,6 +241,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   );
   const qrBuffer = await generateQRCodeBuffer(qrPayload);
 
+  console.log("[stripe webhook] sending ticket email to", email);
   try {
     await sendTicketEmail({
       email,
@@ -208,27 +253,33 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       venueName,
       thumbnailUrl,
     });
+    console.log("[stripe webhook] email sent OK");
   } catch (err) {
-    console.error("[stripe webhook] email send failed:", err);
+    console.error("[stripe webhook] email send FAILED:", err);
   }
 
   // Mark payload consumed
   if (payload) {
-    await supabaseAdmin
+    const { error: consumeErr } = await supabaseAdmin
       .from("checkout_payloads")
       .update({ consumed_at: new Date().toISOString() })
       .eq("id", payload.id);
+    if (consumeErr) {
+      console.error("[stripe webhook] payload consume error:", consumeErr);
+    } else {
+      console.log("[stripe webhook] payload marked consumed:", payload.id);
+    }
   }
 
-  console.log(`[stripe webhook] processed ticket for ${eventId}`);
+  console.log(`[stripe webhook] processed ticket for ${eventId} ✓`);
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
   await supabaseAdmin
-    .from("profiles")
+    .from("club_stripe_accounts")
     .update({
-      stripe_charges_enabled: account.charges_enabled ?? false,
-      stripe_payouts_enabled: account.payouts_enabled ?? false,
+      charges_enabled: account.charges_enabled ?? false,
+      payouts_enabled: account.payouts_enabled ?? false,
     })
     .eq("stripe_account_id", account.id);
 }
