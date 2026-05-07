@@ -14,17 +14,17 @@ export interface StorageItem {
 export function useMediaStorage(
   category: StorageCategory,
   scrollRef: RefObject<HTMLDivElement | null>,
-) {
+): { items: StorageItem[]; isLoading: boolean; mutate: () => void } {
   const { items, isLoading, mutate } = useInfiniteScroll<StorageItem>(
     scrollRef,
     `/api/media?category=${category}`,
-    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_SITE_URL ?? null,
     { limit: 40 },
   );
 
   return {
     items,
     isLoading,
-    mutate,
+    mutate: () => mutate(),
   };
 }

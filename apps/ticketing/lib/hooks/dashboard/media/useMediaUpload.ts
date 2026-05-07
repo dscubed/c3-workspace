@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { KeyedMutator } from "swr";
 import type { StorageCategory, StorageItem } from "./useMediaStorage";
 
 export interface UploadEntry {
@@ -11,7 +10,7 @@ export interface UploadEntry {
   status: "uploading" | "done" | "error";
 }
 
-export function useMediaUpload(mutate: KeyedMutator<{ data: StorageItem[] }>) {
+export function useMediaUpload(mutate: () => void) {
   const [uploads, setUploads] = useState<UploadEntry[]>([]);
 
   const uploadFiles = async (files: FileList, category: StorageCategory) => {

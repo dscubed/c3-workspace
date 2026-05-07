@@ -1,17 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { KeyedMutator } from "swr";
 import type { StorageCategory, StorageItem } from "./useMediaStorage";
-
-interface StorageResponse {
-  data: StorageItem[];
-}
 
 export function useStorageSelection(
   items: StorageItem[],
   category: StorageCategory,
-  mutate: KeyedMutator<StorageResponse>,
+  mutate: () => void,
 ) {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());

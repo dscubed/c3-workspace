@@ -397,6 +397,9 @@ importers:
       '@c3/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@c3/hooks':
+        specifier: workspace:*
+        version: link:../../packages/hooks
       '@c3/qr':
         specifier: workspace:*
         version: link:../../packages/qr

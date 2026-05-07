@@ -48,7 +48,7 @@ export interface EventFormContextValue {
   setTheme: (t: EventTheme) => void;
   colors: ThemeColors;
   isDark: boolean;
-  accentGradient: string | undefined;
+  accentGradient: string | null;
 
   /* ── Auto-save ── */
   markDirty: (...groups: FieldGroup[]) => void;

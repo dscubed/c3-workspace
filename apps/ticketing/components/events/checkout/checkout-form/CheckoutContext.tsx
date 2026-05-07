@@ -96,7 +96,7 @@ export interface CheckoutContextValue {
   isDark: boolean;
   colors: ThemeColors;
   accentColor: string | undefined;
-  accentGradient: string | undefined;
+  accentGradient: string | null;
   solidBg: string | undefined;
   pricingCount: number;
   /* checkout fields (editor) */
@@ -400,7 +400,7 @@ export function CheckoutProvider({
       isDark,
       colors,
       accentColor,
-      accentGradient: accentGradient ?? undefined,
+      accentGradient,
       solidBg,
       pricingCount: pricing.length,
       fields,
@@ -553,7 +553,7 @@ export function CheckoutProvider({
       setTheme: noop,
       colors,
       isDark,
-      accentGradient: accentGradient ?? undefined,
+      accentGradient,
       markDirty: noop,
       flush: noopAsync,
       broadcastRef: { current: noop },

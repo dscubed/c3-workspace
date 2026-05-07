@@ -5,7 +5,7 @@ import { Loader2, ImagePlus, Upload, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { StorageCategory } from "@/lib/hooks/dashboard/media/useMediaStorage";
+import type { StorageCategory, StorageItem } from "@/lib/hooks/dashboard/media/useMediaStorage";
 import { useMediaStorage } from "@/lib/hooks/dashboard/media/useMediaStorage";
 import { useMediaUpload } from "@/lib/hooks/dashboard/media/useMediaUpload";
 
@@ -119,7 +119,7 @@ export function LibraryStorageContent({
           ref={mediaScrollRef}
           className="grid grid-cols-3 gap-2 sm:grid-cols-4 max-h-[50vh] overflow-y-auto pr-1"
         >
-          {items.map((item) => {
+          {items.map((item: StorageItem) => {
             const isSelected = selected.has(item.url);
             const isDel = deleting === item.name;
             return (
