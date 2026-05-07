@@ -8,6 +8,7 @@ import { useEventForm } from "../shared/EventFormContext";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
+import Markdown from "@/components/ui/markdown";
 
 interface EventDescriptionFieldProps {
   /** Called when the inline focus state changes (true = focused, false = blurred). */
@@ -87,7 +88,7 @@ export function EventDescriptionField({
             className={cn(
               "resize-none",
               isDark &&
-                "border-neutral-600 bg-neutral-700 text-neutral-100 placeholder:text-neutral-400",
+              "border-neutral-600 bg-neutral-700 text-neutral-100 placeholder:text-neutral-400",
             )}
           />
         ) : (
@@ -95,24 +96,24 @@ export function EventDescriptionField({
             onClick={handleClick}
             className={cn(
               mode === "edit" &&
-                !locked &&
-                "cursor-pointer rounded-md p-2 -m-2 transition-colors",
+              !locked &&
+              "cursor-pointer rounded-md p-2 -m-2 transition-colors",
               mode === "edit" &&
-                !locked &&
-                (isDark ? "hover:bg-neutral-700/50" : "hover:bg-muted/50"),
+              !locked &&
+              (isDark ? "hover:bg-neutral-700/50" : "hover:bg-muted/50"),
               mode === "edit" && locked && "cursor-not-allowed",
             )}
           >
-            <p
-              className={`whitespace-pre-wrap text-sm leading-relaxed ${
-                value ? "text-foreground/90" : "italic text-muted-foreground"
-              }`}
+            <div
+              className={`text-sm leading-relaxed ${value ? "text-foreground/90" : "italic text-muted-foreground"
+                }`}
             >
-              {value ||
+              <Markdown rawText={value ||
                 (mode === "edit"
                   ? "Click to add a description…"
-                  : "No description provided")}
-            </p>
+                  : "No description provided")} 
+              />
+            </div>
           </div>
         )}
       </SectionWrapper>

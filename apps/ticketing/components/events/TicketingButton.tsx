@@ -105,10 +105,18 @@ export function TicketingButton({
       toast.info("You're already registered for this event");
       return;
     }
-    if (editor) {
-      router.replace(`/events/${eventId}/checkout/edit`);
+    const url = editor
+      ? `/events/${eventId}/checkout/edit`
+      : `/events/${eventId}/checkout`;
+
+    // Open in new tab if this is being rendered in an iframe i.e in the connect3 events page
+    // Otherwise keep everything in the same tab
+    if (typeof window !== "undefined" && window !== window.top) {
+      window.open(url, "_blank");
+    } else if (editor) {
+      router.replace(url);
     } else {
-      router.push(`/events/${eventId}/checkout`);
+      router.push(url);
     }
   };
 
@@ -129,7 +137,7 @@ export function TicketingButton({
               <Button
                 size="lg"
                 className={cn(
-                  "w-full gap-2 rounded-lg transition-opacity",
+                  "w-full gap-2 rounded-lg transition-opacity hover:cursor-pointer",
                   !accentStyle
                     ? "bg-foreground text-background hover:bg-foreground/90"
                     : "hover:opacity-90",
@@ -154,9 +162,9 @@ export function TicketingButton({
               <Button
                 size="lg"
                 className={cn(
-                  "gap-2 rounded-lg px-10 transition-opacity",
+                  "gap-2 rounded-lg px-10 transition-opacity hover:cursor-pointer",
                   !accentStyle
-                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    ? " text-background hover:bg-foreground/90"
                     : "hover:opacity-90",
                 )}
                 style={accentStyle}
