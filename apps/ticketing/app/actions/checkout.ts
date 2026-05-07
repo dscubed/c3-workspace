@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
 import { AttendeeData } from "@c3/types";
-import { TicketingField, TicketingFieldDraft } from "@/lib/types/ticketing";
+import { TicketingFieldDraft } from "@/lib/types/ticketing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -20,8 +20,6 @@ export async function createCheckoutSession(
   additionalFields?: TicketingFieldDraft[],
   quantity?: number,
 ) {
-  console.log("ATTENDEE ", Object.keys(attendeeData));
-  console.log("FIELDS ", additionalFields);
   // Perhaps change price id to support creating checkout session for multiple items
   // Unless we want to enforce buy one ticket at a time and not have a cart system
 
@@ -37,25 +35,11 @@ export async function createCheckoutSession(
     console.log("Not authenticated");
   }
 
-  // Get customer id, creating one if it doesn't exist
-  // let customerId;
-  // const customerData = await getStripeCustomerData(user.id);
-  // if (customerData) {
-  //   customerId = customerData.customerId;
-  // } else {
-  //   // Create new stripe customer
-  //   const customer = await stripe.customers.create({
-  //     email: user.email ?? undefined,
-  //     metadata: {
-  //       userId: user.id
-  //     }
-  //   });
-  //   customerId = customer.id;
-  //   await syncOrCreateStripeData(user.id, { customerId: customerId });
-  // }
+  // Serialize attendee data and custom fields into metadata so the webhook
+  // can use them for writing to the db and creating receipt email
+  const attendeeJson = JSON.stringify(attendeeData);
+  const fieldsJson = JSON.stringify(additionalFields ?? []);
 
-  // Create checkout session
-  console.log(process.env.NEXT_PUBLIC_SITE_URL);
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -65,9 +49,13 @@ export async function createCheckoutSession(
         quantity: quantity,
       },
     ],
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`, // Change
+    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/events/success?session_id={CHECKOUT_SESSION_ID}&event_id=${eventId}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/events/cancel?event_id=${eventId}`,
     metadata: {
       event_id: eventId,
+      user_id: user?.id ?? "",
+      attendee_data: attendeeJson,
+      custom_fields: fieldsJson,
     },
   });
 

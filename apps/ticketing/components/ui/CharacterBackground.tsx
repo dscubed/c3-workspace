@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import { Character, CharacterColor, EyeExpression } from "../characters";
+import { Character, CharacterColor, EyeExpression } from "./characters";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import {
   useBreakpointLargeXX,
@@ -61,8 +61,8 @@ export function CharacterBackground() {
     let spacing = 25;
 
     if (isLargeXX) {
-      charactersPerRow = 7;
-      spacing = 14;
+      charactersPerRow = 9;
+      spacing = 15;
     } else if (isLargeX) {
       charactersPerRow = 10;
       spacing = 15;

@@ -103,5 +103,5 @@ export async function registerForEvent(
     thumbnailUrl: null,
   });
 
-  redirect(`${SITE_URL}/success?registration_id=${registration.id}`);
+  redirect(`${SITE_URL}/events/success?registration_id=${registration.id}&event_id=${eventId}`);
 }

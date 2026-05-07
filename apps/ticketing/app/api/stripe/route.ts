@@ -35,12 +35,24 @@ export async function POST(request: Request) {
 
     // Handle events
     if (event.type === "checkout.session.completed") {
+      console.log("STRIPE: handling checkout.session.completed")
       const _session = event.data.object as Stripe.Checkout.Session;
       if (!_session.metadata) {
         throw new Error("Metadata missing");
       }
 
       const eventId = _session.metadata.event_id;
+      const userId = _session.metadata.user_id || null;
+
+      // Restore attendee data from metadata (set by checkout.ts)
+      let attendeeData: Record<string, unknown> = {};
+      try {
+        if (_session.metadata.attendee_data) {
+          attendeeData = JSON.parse(_session.metadata.attendee_data);
+        }
+      } catch {
+        // metadata parsing failed — use empty defaults
+      }
 
       // Expand the current session to get more attributes
       const completeSession = await stripe.checkout.sessions.retrieve(
@@ -53,6 +65,28 @@ export async function POST(request: Request) {
       const email = completeSession.customer_details?.email ?? "";
       const fullName = completeSession.customer_details?.name ?? "";
       const firstName = fullName.split(" ")[0] || "there";
+
+      // Extract identity fields from attendeeData (set by CheckoutContext)
+      const coreAttendee = (attendeeData["0"] as Record<string, unknown>) ?? {};
+      const regEmail =
+        (coreAttendee["email"] as string) || email;
+      const regFirstName =
+        (coreAttendee["first_name"] as string) || firstName;
+      const regLastName =
+        (coreAttendee["last_name"] as string) ||
+        fullName.split(" ").slice(1).join(" ") ||
+        "";
+      const studentId = (coreAttendee["student_id"] as string) ?? null;
+      const course = (coreAttendee["course"] as string) ?? null;
+
+      // Build the custom_fields JSON from non-core keys
+      const coreKeys = new Set(["first_name", "last_name", "email", "student_id", "course"]);
+      const customFieldsJson: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(coreAttendee)) {
+        if (!coreKeys.has(key)) {
+          customFieldsJson[key] = value;
+        }
+      }
 
       // Fetch event details for the email
       const { data: eventRow } = await supabaseAdmin
@@ -82,24 +116,26 @@ export async function POST(request: Request) {
         | null;
       const thumbnailUrl = images?.[0]?.url ?? null;
 
-      // Create registration row — email/first_name/last_name are real columns,
-      // custom_fields holds any extra answers (empty for Stripe webhook path).
+      // Create registration row with restored attendee data
       const { data: registration } = await supabaseAdmin
         .from("event_registrations")
         .insert({
           event_id: eventId,
-          user_id: null, // guest checkout — no user_id available from webhook
+          user_id: userId,
           type: "ticket",
-          email: email.toLowerCase(),
-          first_name: firstName,
-          last_name: fullName.split(" ").slice(1).join(" ") || "",
-          custom_fields: {},
+          email: regEmail.toLowerCase(),
+          first_name: regFirstName,
+          last_name: regLastName,
+          student_id: studentId,
+          course: course,
+          attendee_data: customFieldsJson,
           stripe_session_id: completeSession.id,
         })
         .select("id, qr_code_id")
         .single();
 
       if (registration) {
+        console.log("STRIPE: generating QR code");
         const ticketSecret = process.env.TICKET_SECRET;
         if (!ticketSecret) throw new Error("TICKET_SECRET env var is not set");
         const qrPayload = signPayload("ticket", registration.qr_code_id, ticketSecret);

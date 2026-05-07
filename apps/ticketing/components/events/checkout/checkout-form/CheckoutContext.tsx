@@ -275,7 +275,7 @@ export function CheckoutProvider({
 
   /* ── Payment ── */
   const handlePaymentStart = useCallback(async () => {
-    const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL";
+    const tmpPriceId = "price_1THfJ6Gxt5610wKLTu9axFmL"; // TODO change this to dynamically use 
     await createCheckoutSession(
       eventId,
       tmpPriceId,

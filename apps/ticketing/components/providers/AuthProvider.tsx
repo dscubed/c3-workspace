@@ -6,6 +6,7 @@ import { useAuthStore } from "@c3/auth";
 import { useClubStore } from "@c3/auth";
 import type { Profile } from "@c3/auth";
 import type { ClubAdminRow } from "@c3/auth";
+import { claimGuestRegistrations } from "@/app/actions/claimGuestRegistrations";
 
 const supabase = createClient();
 
@@ -52,6 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(profile);
         setClubs(clubs);
         if (clubs.length > 0) setActiveClubId(clubs[0].club_id);
+        // Claim any guest registrations purchased before login
+        if (data.user.email) {
+          claimGuestRegistrations(data.user.id, data.user.email).catch(() => {});
+        }
       }
       setLoading(false);
       setClubsLoading(false);
@@ -70,6 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(profile);
         setClubs(clubs);
         if (clubs.length > 0) setActiveClubId(clubs[0].club_id);
+        // Claim any guest registrations purchased during this session
+        if (user.email) {
+          claimGuestRegistrations(user.id, user.email).catch(() => {});
+        }
       } else {
         setProfile(null);
         setClubs([]);
