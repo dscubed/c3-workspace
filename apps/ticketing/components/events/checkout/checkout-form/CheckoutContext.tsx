@@ -328,6 +328,8 @@ export function CheckoutProvider({
     try {
       await registerForEvent(eventId, attendeeData);
     } catch (err) {
+      // redirect() throws internally — let Next.js handle it
+      if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
       toast.error(err instanceof Error ? err.message : "Registration failed");
     }
   }, [eventId, attendeeData]);
