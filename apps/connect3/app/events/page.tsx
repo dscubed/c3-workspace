@@ -12,7 +12,7 @@ export default function EventsPage() {
     <div className="flex flex-col md:flex-row h-[100dvh] overflow-hidden">
       <Sidebar />
 
-      <div className="flex-1 md:ml-[68px]">
+      <div className="flex-1 md:ml-[68px] flex flex-col">
         <Suspense>{isDesktop ? <DesktopLayout /> : <MobileLayout />}</Suspense>
       </div>
     </div>
