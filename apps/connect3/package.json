@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@c3/auth": "workspace:*",
+    "@c3/hooks": "workspace:*",
     "@c3/qr": "workspace:*",
     "@c3/ui": "workspace:*",
     "@c3/search": "workspace:*",

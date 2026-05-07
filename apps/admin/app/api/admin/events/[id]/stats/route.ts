@@ -27,7 +27,7 @@ export async function GET(
 
     const { data: event, error: eventErr } = await supabaseAdmin
       .from("events")
-      .select("name, start, status, creator_profile_id, event_capacity")
+      .select("name, start, end, status, creator_profile_id, event_capacity")
       .eq("id", eventId)
       .single();
 
@@ -86,7 +86,7 @@ export async function GET(
 
     const feePerCharge = 30;
     const estimatedFees = totalSold > 0
-      ? Math.round(totalGross * 0.029) + totalSold * feePerCharge
+      ? Math.round(totalGross * 0.0175) + totalSold * feePerCharge
       : 0;
     const estimatedNet = totalGross - estimatedFees;
 
@@ -175,12 +175,43 @@ export async function GET(
       .order("payout_settled_at", { ascending: false })
       .limit(1);
 
+    const deadlineBase = event.end ?? event.start;
+    const settlementDeadline = deadlineBase
+      ? new Date(new Date(deadlineBase).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const { data: agreements } = await supabaseAdmin
+      .from("event_payout_split_agreements")
+      .select("club_id, agreed_at, split_snapshot")
+      .eq("event_id", eventId);
+
+    const currentSplitRows = (splits ?? []).map((s) => ({
+      club_id: s.club_id,
+      percentage: Number(s.percentage),
+    }));
+
+    const allAgreed =
+      agreements &&
+      currentSplitRows.length > 0 &&
+      agreements.length === currentSplitRows.length &&
+      agreements.every((a) => {
+        const aSnap = (a.split_snapshot as { club_id: string; percentage: number }[]) ?? [];
+        if (aSnap.length !== currentSplitRows.length) return false;
+        return currentSplitRows.every(
+          (s) =>
+            aSnap.find(
+              (as) => as.club_id === s.club_id && as.percentage === s.percentage,
+            ),
+        );
+      });
+
     return NextResponse.json({
       data: {
         event: {
           id: eventId,
           name: event.name,
           start: event.start,
+          end: event.end ?? null,
           status: event.status,
           creator_profile_id: event.creator_profile_id,
         },
@@ -205,6 +236,13 @@ export async function GET(
           };
         }),
         collaborators,
+        settlement_deadline: settlementDeadline,
+        agreements: (agreements ?? []).map((a) => ({
+          club_id: a.club_id,
+          agreed_at: a.agreed_at,
+          split_snapshot: a.split_snapshot,
+        })),
+        all_agreed: allAgreed,
         last_payout_at: lastPayout?.[0]?.payout_settled_at ?? null,
       },
     });

@@ -7,15 +7,15 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   MapPin,
-  UserCheck,
-  Ticket,
-  ScanLine,
-  Shield,
-  Handshake,
+  Globe,
+  Users,
+  CalendarClock,
 } from "lucide-react";
 import { useAuthStore } from "@c3/auth";
 import { useClubStore } from "@c3/auth";
-import { mockEvents, mockActivity } from "@/lib/mock-data";
+import { fetcher } from "@c3/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import useSWR from "swr";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -26,25 +26,29 @@ import {
   Tooltip,
 } from "recharts";
 
-const rawData = {
-  members: [798, 810, 819, 825, 831, 840, 847],
-  interactions: [1080, 1150, 1095, 1210, 1280, 1350, 1420],
-  tickets: [180, 188, 193, 198, 204, 209, 214],
-  revenue: [3600, 3720, 3850, 3980, 4080, 4190, 4280],
-};
-
-const WEEK_LABELS = [
-  "6w ago",
-  "5w ago",
-  "4w ago",
-  "3w ago",
-  "2w ago",
-  "Last wk",
-  "This wk",
-];
 const PURPLE = "#854ECB";
 
+interface UpcomingEvent {
+  id: string;
+  name: string | null;
+  start: string | null;
+  status: "live" | "upcoming";
+  thumbnail: string | null;
+  location: string | null;
+  registered: number;
+}
+
+interface DashboardStats {
+  upcomingEvents: UpcomingEvent[];
+  weekly: {
+    members: number[];
+    eventRegistrations: number[];
+    eventAttendees: number[];
+  };
+}
+
 function pctChange(data: number[]) {
+  if (data.length < 2 || data[data.length - 2] === 0) return 0;
   return (
     ((data[data.length - 1] - data[data.length - 2]) / data[data.length - 2]) *
     100
@@ -59,7 +63,16 @@ function shortFmt(prefix = "") {
 }
 
 function buildChartData(data: number[]) {
-  return data.map((value, i) => ({ label: WEEK_LABELS[i], value }));
+  const labels = [
+    "7w ago",
+    "6w ago",
+    "5w ago",
+    "4w ago",
+    "3w ago",
+    "Last wk",
+    "This wk",
+  ];
+  return data.map((value, i) => ({ label: labels[i] ?? `${i}`, value }));
 }
 
 function relativeTime(dateStr: string): string {
@@ -73,53 +86,6 @@ function relativeTime(dateStr: string): string {
   if (diffDays < 7) return `in ${diffDays}d`;
   if (diffDays < 30) return `in ${Math.round(diffDays / 7)}w`;
   return `in ${Math.round(diffDays / 30)}mo`;
-}
-
-function activityMeta(type: string, actor: string, detail: string | null) {
-  switch (type) {
-    case "membership":
-      return {
-        icon: UserCheck,
-        bg: "bg-green-100",
-        color: "text-green-600",
-        label: `${actor} verified their membership`,
-      };
-    case "ticket":
-      return {
-        icon: Ticket,
-        bg: "bg-blue-100",
-        color: "text-blue-600",
-        label: `${actor} bought a ticket${detail ? ` to ${detail}` : ""}`,
-      };
-    case "check_in":
-      return {
-        icon: ScanLine,
-        bg: "bg-purple-100",
-        color: "text-[#854ECB]",
-        label: `${actor} checked into ${detail ?? "an event"}`,
-      };
-    case "committee":
-      return {
-        icon: Shield,
-        bg: "bg-amber-100",
-        color: "text-amber-600",
-        label: `${actor} was added as a Committee Member`,
-      };
-    case "collaboration":
-      return {
-        icon: Handshake,
-        bg: "bg-rose-100",
-        color: "text-rose-600",
-        label: `${actor} invited you to collaborate on ${detail ?? "an event"}`,
-      };
-    default:
-      return {
-        icon: UserCheck,
-        bg: "bg-gray-100",
-        color: "text-gray-500",
-        label: `${actor} performed an action`,
-      };
-  }
 }
 
 function MetricSection({
@@ -176,59 +142,61 @@ function MetricSection({
   );
 }
 
-const metrics = [
-  {
-    id: "members",
-    label: "Members",
-    data: rawData.members,
-    fmt: shortFmt(),
-    tickFmt: shortFmt(),
-  },
-  {
-    id: "interactions",
-    label: "User Interactions",
-    data: rawData.interactions,
-    fmt: shortFmt(),
-    tickFmt: shortFmt(),
-  },
-  {
-    id: "tickets",
-    label: "Tickets Sold",
-    data: rawData.tickets,
-    fmt: shortFmt(),
-    tickFmt: shortFmt(),
-  },
-  {
-    id: "revenue",
-    label: "Revenue",
-    data: rawData.revenue,
-    fmt: shortFmt("$"),
-    tickFmt: shortFmt("$"),
-  },
-];
+type MetricId = "members" | "eventRegistrations" | "eventAttendees" | "searchAppearances";
 
 export default function OverviewPage() {
   const router = useRouter();
   const { profile } = useAuthStore();
   const { clubs, activeClubId } = useClubStore();
-  const [selected, setSelected] = useState("members");
+  const [selected, setSelected] = useState<MetricId>("members");
 
-  const upcomingEvents = mockEvents
-    .filter((e) => e.status === "live" || e.status === "upcoming")
-    .sort((a, b) => {
-      if (a.status === "live") return -1;
-      if (b.status === "live") return 1;
-      return (
-        new Date(a.start || "").getTime() - new Date(b.start || "").getTime()
-      );
-    })
-    .slice(0, 4);
+  const { data: dashboard, isLoading } = useSWR<DashboardStats>(
+    activeClubId ? `/api/admin/dashboard/stats?club_id=${activeClubId}` : null,
+    fetcher,
+  );
+
+  const weekly = dashboard?.weekly;
+  const upcomingEvents = dashboard?.upcomingEvents ?? [];
+
+  const metricDefs: { id: MetricId; label: string; data: number[]; fmt: (v: number) => string; tickFmt: (v: number) => string }[] = [
+    {
+      id: "members",
+      label: "Members",
+      data: weekly?.members ?? [],
+      fmt: shortFmt(),
+      tickFmt: shortFmt(),
+    },
+    {
+      id: "eventRegistrations",
+      label: "Event Registrations",
+      data: weekly?.eventRegistrations ?? [],
+      fmt: shortFmt(),
+      tickFmt: shortFmt(),
+    },
+    {
+      id: "eventAttendees",
+      label: "Event Attendees",
+      data: weekly?.eventAttendees ?? [],
+      fmt: shortFmt(),
+      tickFmt: shortFmt(),
+    },
+    {
+      id: "searchAppearances",
+      label: "Search Appearances",
+      data: [],
+      fmt: () => "Coming soon",
+      tickFmt: () => "",
+    },
+  ];
+
+  const activeMetric = metricDefs.find((m) => m.id === selected) ?? metricDefs[0];
+  const chartData = activeMetric.data.length > 0
+    ? buildChartData(activeMetric.data)
+    : [];
 
   const firstName = profile?.first_name ?? "there";
   const activeClub = clubs.find((c) => c.club_id === activeClubId);
   const clubName = activeClub?.club?.first_name ?? "your club";
-  const activeMetric = metrics.find((m) => m.id === selected) ?? metrics[0];
-  const chartData = buildChartData(activeMetric.data);
 
   return (
     <div className="p-4 md:p-8 space-y-6 w-full max-w-7xl">
@@ -257,7 +225,13 @@ export default function OverviewPage() {
             </button>
           </div>
 
-          {upcomingEvents.length === 0 ? (
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : upcomingEvents.length === 0 ? (
             <p className="px-6 py-8 text-sm text-muted-foreground text-center">
               No upcoming events.
             </p>
@@ -265,39 +239,42 @@ export default function OverviewPage() {
             <ul className="divide-y divide-gray-100">
               {upcomingEvents.map((event) => {
                 const isLive = event.status === "live";
-                const rel = isLive ? "Now" : relativeTime(event.start || "");
                 const initial = event.name?.charAt(0).toUpperCase() || "?";
+                const timeLabel = isLive
+                  ? "Happening now"
+                  : event.start
+                    ? new Date(event.start).toLocaleDateString("en-AU", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : null;
                 return (
-                  <li
-                    key={event.id}
-                    className="flex items-center gap-3 px-6 py-3.5 hover:bg-gray-50/70 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/dashboard/events/${event.id}`)}
-                  >
-                    <div
-                      className={`shrink-0 h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center ${isLive ? "bg-green-100" : "bg-purple-100"}`}
-                    >
+                  <li key={event.id} className="flex gap-4 px-5 py-4 hover:bg-gray-50/70 transition-colors">
+                    {/* Thumbnail */}
+                    <div className={`shrink-0 h-16 w-16 rounded-xl overflow-hidden flex items-center justify-center ${isLive ? "bg-green-100" : "bg-purple-100"}`}>
                       {event.thumbnail ? (
                         <Image
                           src={event.thumbnail}
                           alt={event.name || "Event"}
-                          width={36}
-                          height={36}
+                          width={64}
+                          height={64}
                           className="object-cover w-full h-full"
                           unoptimized
                         />
                       ) : (
-                        <span
-                          className={`text-sm font-bold ${isLive ? "text-green-600" : "text-purple-500"}`}
-                        >
+                        <span className={`text-xl font-bold ${isLive ? "text-green-600" : "text-purple-500"}`}>
                           {initial}
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {event.name}
-                        </p>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
                         {isLive && (
                           <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -305,29 +282,40 @@ export default function OverviewPage() {
                           </span>
                         )}
                       </div>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 truncate">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        {event.location_name || "TBA"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        {timeLabel && (
+                          <span className={`flex items-center gap-1 text-xs ${isLive ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+                            <CalendarClock className="h-3 w-3 shrink-0" />
+                            {timeLabel}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {event.location === "Online"
+                            ? <Globe className="h-3 w-3 shrink-0" />
+                            : <MapPin className="h-3 w-3 shrink-0" />
+                          }
+                          <span className="truncate max-w-[140px]">{event.location ?? "TBA"}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3 shrink-0" />
+                          {event.registered} registered
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className={`text-xs font-medium tabular-nums ${isLive ? "text-green-600" : "text-muted-foreground"}`}
-                      >
-                        {rel}
-                      </span>
+
+                    {/* Actions */}
+                    <div className="shrink-0 flex flex-col gap-1.5 justify-center">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/dashboard/events/${event.id}`);
-                        }}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
-                          isLive
-                            ? "bg-green-100 text-green-700 hover:bg-green-200"
-                            : "bg-[#F9ECFF] text-[#854ECB] hover:bg-purple-200"
-                        }`}
+                        onClick={() => router.push(`/events/${event.id}/checkin`)}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
                       >
-                        {isLive ? "Check in" : "Manage"}
+                        Check in
+                      </button>
+                      <button
+                        onClick={() => router.push(`/dashboard/events/${event.id}`)}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md bg-[#F9ECFF] text-[#854ECB] hover:bg-purple-200 transition-colors"
+                      >
+                        Manage
                       </button>
                     </div>
                   </li>
@@ -337,45 +325,25 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Recent activity */}
+        {/* Recent activity — coming soon */}
         <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-foreground">
-              Recent Activity
-            </h2>
-            <button
-              onClick={() => router.push("/dashboard/notifications")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              View all
-            </button>
+            <h2 className="text-sm font-semibold text-foreground">Recent Activity</h2>
           </div>
-          <ul className="divide-y divide-gray-100">
-            {mockActivity.slice(0, 5).map((item) => {
-              const {
-                icon: Icon,
-                bg,
-                color,
-                label,
-              } = activityMeta(item.type, item.actor, item.detail);
-              return (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-3 px-6 py-3.5"
-                >
-                  <div
-                    className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${bg}`}
-                  >
-                    <Icon className={`h-4 w-4 ${color}`} />
-                  </div>
-                  <p className="flex-1 text-sm text-foreground">{label}</p>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {item.time}
-                  </span>
+          <div className="relative">
+            <ul className="divide-y divide-gray-100 pointer-events-none select-none" aria-hidden>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-3 px-6 py-3.5">
+                  <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-3 w-12 shrink-0" />
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40">
+              <p className="text-sm font-medium text-muted-foreground">Coming soon</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -386,20 +354,23 @@ export default function OverviewPage() {
 
       <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="grid grid-cols-2 md:grid-cols-4">
-          {metrics.map((m, i) => (
+          {metricDefs.map((m, i) => (
             <MetricSection
               key={m.id}
               label={m.label}
-              value={m.fmt(m.data[m.data.length - 1])}
+              value={m.data.length > 0 ? m.fmt(m.data[m.data.length - 1]) : m.fmt(0)}
               data={m.data}
-              isLast={i === metrics.length - 1}
+              isLast={i === metricDefs.length - 1}
               isActive={selected === m.id}
               onClick={() => setSelected(m.id)}
             />
           ))}
         </div>
         <div className="border-t border-gray-100 px-4 py-5">
-          <ResponsiveContainer width="100%" height={200}>
+          {isLoading ? (
+            <Skeleton className="h-[200px] w-full rounded" />
+          ) : chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
             <AreaChart
               data={chartData}
               margin={{ top: 10, right: 16, bottom: 0, left: 0 }}
@@ -452,6 +423,11 @@ export default function OverviewPage() {
               />
             </AreaChart>
           </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-16">
+              No data yet
+            </p>
+          )}
         </div>
       </div>
     </div>

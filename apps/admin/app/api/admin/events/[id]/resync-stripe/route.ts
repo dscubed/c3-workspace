@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@c3/supabase/server";
 import { supabaseAdmin } from "@c3/supabase/admin";
+import { checkEventPermission } from "@c3/supabase/club-admin";
 import { syncTierStripeProducts } from "@/lib/stripe/syncTiers";
 
 export async function POST(
@@ -29,14 +30,15 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (event.creator_profile_id !== user.id) {
+    const perm = await checkEventPermission(eventId, user.id);
+    if (!perm.isCreator && !perm.isCollaborator && !perm.isClubAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { data: row } = await supabaseAdmin
       .from("club_stripe_accounts")
       .select("charges_enabled")
-      .eq("club_id", user.id)
+      .eq("club_id", event.creator_profile_id)
       .maybeSingle();
 
     if (!row?.charges_enabled) {

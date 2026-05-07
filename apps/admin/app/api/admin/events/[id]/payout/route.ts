@@ -39,6 +39,44 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    const { data: splits } = await supabaseAdmin
+      .from("event_payout_splits")
+      .select("club_id, percentage")
+      .eq("event_id", eventId);
+
+    if (splits && splits.length > 0) {
+      const { data: agreements } = await supabaseAdmin
+        .from("event_payout_split_agreements")
+        .select("club_id, split_snapshot")
+        .eq("event_id", eventId);
+
+      const currentSplitSnapshot = splits.map((s) => ({
+        club_id: s.club_id,
+        percentage: Number(s.percentage),
+      }));
+
+      const allAgreed =
+        agreements &&
+        agreements.length === splits.length &&
+        agreements.every((a) => {
+          const aSnap = (a.split_snapshot as { club_id: string; percentage: number }[]) ?? [];
+          if (aSnap.length !== currentSplitSnapshot.length) return false;
+          return currentSplitSnapshot.every(
+            (s) =>
+              aSnap.find(
+                (as) => as.club_id === s.club_id && as.percentage === s.percentage,
+              ),
+          );
+        });
+
+      if (!allAgreed) {
+        return NextResponse.json(
+          { error: "All parties must agree on splits before payout can be triggered" },
+          { status: 400 },
+        );
+      }
+    }
+
     const { data: unsettled, error: regErr } = await supabaseAdmin
       .from("event_registrations")
       .select("id, stripe_session_id, amount_total")
@@ -60,11 +98,6 @@ export async function POST(
         { status: 400 },
       );
     }
-
-    const { data: splits } = await supabaseAdmin
-      .from("event_payout_splits")
-      .select("club_id, percentage")
-      .eq("event_id", eventId);
 
     let resolvedSplits: { club_id: string; percentage: number; stripe_account_id: string }[];
 
@@ -164,8 +197,8 @@ export async function POST(
             totalFees += fee;
           }
         } catch {
-          chargeFees.set(reg.id, Math.round((reg.amount_total ?? 0) * 0.029 + 30));
-          totalFees += Math.round((reg.amount_total ?? 0) * 0.029 + 30);
+          chargeFees.set(reg.id, Math.round((reg.amount_total ?? 0) * 0.0175 + 30));
+          totalFees += Math.round((reg.amount_total ?? 0) * 0.0175 + 30);
         }
       }
 

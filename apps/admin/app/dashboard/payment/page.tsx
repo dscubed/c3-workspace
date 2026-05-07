@@ -30,11 +30,12 @@ interface EventSummary {
   id: string;
   name: string | null;
   start: string | null;
+  end: string | null;
   status: string;
   total_gross: number;
   unsettled_amount: number;
   total_sold: number;
-  payout_deadline: string | null;
+  settlement_deadline: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -275,7 +276,7 @@ export default function StripePage() {
                     <tr className="border-b bg-gray-50">
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Event</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Date</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Payout Deadline</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Settlement Deadline</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">Revenue</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Unsettled</th>
                       <th className="px-4 py-3" />
@@ -283,8 +284,18 @@ export default function StripePage() {
                   </thead>
                   <tbody>
                     {events.map((e) => {
-                      const isPastDeadline =
-                        e.payout_deadline && new Date(e.payout_deadline) < new Date();
+                      const now = new Date();
+                      const deadlineDate = e.settlement_deadline ? new Date(e.settlement_deadline) : null;
+                      const isPastDeadline = deadlineDate && deadlineDate < now;
+                      const daysUntilDeadline = deadlineDate
+                        ? Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                        : null;
+                      const deadlineSoon = daysUntilDeadline !== null && daysUntilDeadline >= 0 && daysUntilDeadline <= 7;
+                      const deadlineColor = isPastDeadline
+                        ? "text-red-600 font-medium"
+                        : deadlineSoon
+                          ? "text-amber-600 font-medium"
+                          : "text-muted-foreground";
                       return (
                         <tr key={e.id} className="border-b last:border-0 hover:bg-gray-50/50">
                           <td className="px-4 py-3">
@@ -312,9 +323,9 @@ export default function StripePage() {
                               : "—"}
                           </td>
                           <td className="px-4 py-3 text-right hidden md:table-cell whitespace-nowrap">
-                            {e.payout_deadline ? (
-                              <span className={cn(isPastDeadline ? "text-red-600 font-medium" : "text-muted-foreground")}>
-                                {new Date(e.payout_deadline).toLocaleDateString("en-AU", {
+                            {e.settlement_deadline ? (
+                              <span className={cn(deadlineColor)}>
+                                {new Date(e.settlement_deadline).toLocaleDateString("en-AU", {
                                   day: "numeric",
                                   month: "short",
                                   year: "numeric",
