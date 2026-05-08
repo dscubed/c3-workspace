@@ -3,7 +3,6 @@
 import Sidebar from "@/components/sidebar/Sidebar";
 import { HomeHero } from "@/components/home/hero/HomeHero";
 import { MobileHomeHero } from "@/components/home/hero/MobileHomeHero";
-import { TrendingCarousel } from "@/components/home/TrendingCarousel";
 
 export default function StartPage() {
   return (
@@ -23,7 +22,7 @@ export default function StartPage() {
               <HomeHero />
             </div>
           </div>
-          <TrendingCarousel />
+
         </div>
       </div>
     </div>

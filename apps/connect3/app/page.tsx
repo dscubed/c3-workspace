@@ -1,7 +1,7 @@
 "use client";
 import Sidebar from "@/components/sidebar/Sidebar";
 import { HomeGreeting } from "@/components/home/HomeGreeting";
-import { RecommendedEvents } from "@/components/home/RecommendedEvents";
+import { UpcomingEvents } from "@/components/home/UpcomingEvents";
 
 export default function Home() {
   return (
@@ -12,7 +12,7 @@ export default function Home() {
         style={{ scrollbarWidth: "none" }}
       >
         <HomeGreeting />
-        <RecommendedEvents />
+        <UpcomingEvents />
       </div>
     </div>
   );

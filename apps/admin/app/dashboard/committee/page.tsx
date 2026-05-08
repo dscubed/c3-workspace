@@ -59,6 +59,7 @@ export default function CommitteePage() {
   const [inviteRole, setInviteRole] = useState("admin");
   const [open, setOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const handleSendInvite = async () => {
     if (!inviteEmail || !activeClubId) return;
@@ -76,6 +77,7 @@ export default function CommitteePage() {
         throw new Error(error.error || "Failed to send invite");
       }
 
+      toast.success("Invite sent");
       setInviteEmail("");
       setInviteRole("admin");
       setOpen(false);
@@ -86,6 +88,30 @@ export default function CommitteePage() {
       );
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleRemove = async (userId: string) => {
+    if (!activeClubId) return;
+    setRemovingId(userId);
+    try {
+      const res = await fetch(`/api/clubs/${activeClubId}/admins`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to remove member");
+      }
+      toast.success("Member removed");
+      mutate();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove member",
+      );
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -234,12 +260,11 @@ export default function CommitteePage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          /* TODO */
-                        }}
+                        onClick={() => handleRemove(member.user_id)}
+                        disabled={removingId === member.user_id}
                         className="text-destructive hover:text-destructive"
                       >
-                        Remove
+                        {removingId === member.user_id ? "Removing..." : "Remove"}
                       </Button>
                     </td>
                   </tr>
