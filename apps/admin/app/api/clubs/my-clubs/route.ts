@@ -49,7 +49,7 @@ export async function GET() {
           status: "accepted",
           created_at: new Date(0).toISOString(),
           club: ownProfile,
-        } as (typeof rows)[number]);
+        } as unknown as (typeof rows)[number]);
       }
     }
 

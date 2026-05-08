@@ -1,6 +1,8 @@
 "use client";
 
 import useSWR from "swr";
+import Link from "next/link";
+import Image from "next/image";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import type { RegistrationWithEvent } from "@c3/types";
 
@@ -32,12 +34,14 @@ function UpcomingEventCard({ reg }: { reg: RegistrationWithEvent }) {
       rel="noopener noreferrer"
       className="group flex-shrink-0 w-56 rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow"
     >
-      <div className="w-full h-32 bg-gray-100 overflow-hidden">
+      <div className="relative w-full h-32 bg-gray-100 overflow-hidden">
         {reg.event_thumbnail ? (
-          <img
+          <Image
             src={reg.event_thumbnail}
             alt={reg.event_name ?? ""}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            unoptimized
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-violet-50">
@@ -109,12 +113,12 @@ export function UpcomingEvents() {
         {isEmpty ? (
           <div className="flex flex-col gap-1">
             <p className="text-sm text-muted-foreground">No upcoming events.</p>
-            <a
+            <Link
               href="/events"
               className="text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors"
             >
               Browse events →
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
