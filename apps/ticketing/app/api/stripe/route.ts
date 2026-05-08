@@ -174,7 +174,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const { data: eventRow, error: eventErr } = await supabaseAdmin
     .from("events")
     .select(
-      "name, start, event_venues(venue), event_images(url, sort_order)",
+      "name, event_venues(venue), event_images(url, sort_order), event_occurrences(start)",
     )
     .eq("id", eventId)
     .single();
@@ -183,8 +183,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
   console.log("[stripe webhook] event row loaded:", !!eventRow, "name:", eventRow?.name);
 
-  const eventDate = eventRow?.start
-    ? new Date(eventRow.start).toLocaleDateString("en-AU", {
+  const startTs = eventRow?.event_occurrences?.[0]?.start;
+  const eventDate = startTs
+    ? new Date(startTs).toLocaleDateString("en-AU", {
         weekday: "short",
         day: "numeric",
         month: "long",

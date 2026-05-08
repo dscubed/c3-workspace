@@ -10,7 +10,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 interface EventSlim {
   id: string;
   name: string | null;
-  start: string | null;
   url_slug: string | null;
   timezone: string | null;
 }
@@ -35,7 +34,7 @@ async function fetchEventSlim(eventId: string) {
   const [eventRes, imageRes, venueRes] = await Promise.all([
     supabaseAdmin
       .from("events")
-      .select("id, name, start, url_slug, timezone")
+      .select("id, name, url_slug, timezone, event_occurrences(start)")
       .eq("id", eventId)
       .single(),
     supabaseAdmin
@@ -52,8 +51,12 @@ async function fetchEventSlim(eventId: string) {
       .limit(1),
   ]);
 
+  const effectiveStart =
+    (eventRes.data as any)?.event_occurrences?.[0]?.start ?? null;
+
   return {
     event: (eventRes.data as EventSlim | null) ?? null,
+    start: effectiveStart as string | null,
     thumbnailUrl: (imageRes.data?.[0]?.url as string | undefined) ?? null,
     venueName: (venueRes.data?.[0]?.venue as string | null | undefined) ?? null,
   };
@@ -92,7 +95,7 @@ export default async function SuccessPage({
     const tierId = session.metadata?.tier_id;
     if (!eventId) redirect("/");
 
-    const { event, thumbnailUrl, venueName } = await fetchEventSlim(eventId);
+    const { event, thumbnailUrl, venueName, start: effectiveStart } = await fetchEventSlim(eventId);
 
     let tierName: string | null = null;
     if (tierId) {
@@ -127,7 +130,7 @@ export default async function SuccessPage({
           flow="ticket"
           isAuthed={isAuthed}
           eventName={event?.name ?? "Event"}
-          eventDate={formatEventDate(event?.start ?? null, event?.timezone ?? null)}
+          eventDate={formatEventDate(effectiveStart, event?.timezone ?? null)}
           venueName={venueName}
           thumbnailUrl={thumbnailUrl}
           tierName={tierName}
@@ -150,7 +153,7 @@ export default async function SuccessPage({
 
   if (!registration) redirect("/");
 
-  const { event, thumbnailUrl, venueName } = await fetchEventSlim(
+  const { event, thumbnailUrl, venueName, start: effectiveStartReg } = await fetchEventSlim(
     registration.event_id,
   );
 
@@ -175,7 +178,7 @@ export default async function SuccessPage({
         flow={registration.type === "ticket" ? "ticket" : "registration"}
         isAuthed={isAuthed}
         eventName={event?.name ?? "Event"}
-        eventDate={formatEventDate(event?.start ?? null, event?.timezone ?? null)}
+        eventDate={formatEventDate(effectiveStartReg, event?.timezone ?? null)}
         venueName={venueName}
         thumbnailUrl={thumbnailUrl}
         tierName={tierName}

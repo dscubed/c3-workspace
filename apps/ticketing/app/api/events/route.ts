@@ -85,7 +85,7 @@ async function transformToEventCardDetails(
   return {
     id: event.id,
     name: event.name,
-    start: event.start,
+    start: event.event_occurrences?.[0]?.start ?? null,
     thumbnail: images[0]?.url ?? null,
     is_online: event.is_online,
     status: event.status,
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabaseAdmin
         .from("events")
         .select(
-          "id, name, start, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
+          "id, name, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order), event_occurrences(start)",
         )
         .in("id", recentIds);
 
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabaseAdmin
           .from("events")
           .select(
-            "id, name, start, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
+            "id, name, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order), event_occurrences(start)",
           )
           .in("id", recentIds)
           .or(clubEventFilter);
@@ -285,7 +285,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabaseAdmin
           .from("events")
           .select(
-            "id, name, start, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
+            "id, name, is_online, category, status, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order), event_occurrences(start)",
           )
           .in("id", requestedIds)
           .or(clubEventFilter);
@@ -312,7 +312,7 @@ export async function GET(request: NextRequest) {
       let query = supabaseAdmin
         .from("events")
         .select(
-          "id, name, start, is_online, category, status, created_at, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
+          "id, name, is_online, category, status, created_at, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order), event_occurrences(start)",
         )
         .or(
           collabEventIds.length > 0
@@ -360,7 +360,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from("events")
       .select(
-        "id, name, start, is_online, category, status, created_at, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
+        "id, name, is_online, category, status, created_at, profiles!creator_profile_id(id, first_name, avatar_url), event_venues(type, venue, sort_order), event_images(url, sort_order)",
       )
       .or(
         collabEventIds.length > 0
