@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
 import { fetchEventForEdit } from "@/lib/event-server/check-access";
-import EditEventClient from "./EditEventClient";
 import Unauthorized from "./Unauthorized";
+import EventForm from "@/components/event-form/EventForm";
 
 export default async function EditEventPage({
   params,
@@ -25,5 +25,5 @@ export default async function EditEventPage({
     return <Unauthorized reason={result.reason} eventId={id} />;
   }
 
-  return <EditEventClient eventId={id} data={result.data} />;
+  return <EventForm eventId={id} data={result.data} />;
 }
