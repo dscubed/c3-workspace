@@ -222,15 +222,10 @@ export async function PUT(
 
     const name: string = body.name ?? "";
     const description: string | null = body.description || null;
-    const startDate: string = body.startDate;
-    const startTime: string = body.startTime;
-    const endDate: string | null = body.endDate || null;
-    const endTime: string | null = body.endTime || null;
     const timezone: string | null = body.timezone || null;
     const isOnline: boolean = body.isOnline ?? false;
     const locationType: string =
       body.locationType ?? (isOnline ? "online" : "tba");
-    const onlineLink: string | null = body.onlineLink || null;
     const isRecurring: boolean = body.isRecurring ?? false;
     const category: string | null = body.category || null;
     const tags: string[] = body.tags ?? [];
@@ -288,9 +283,8 @@ export async function PUT(
       }
     }
 
-    /* ── Build timestamps ── */
-    const startTs = buildUtcTimestamp(startDate, startTime, timezone);
-    const endTs = buildUtcTimestamp(endDate, endTime, timezone);
+    /* ── Build timestamps from first occurrence (for occurrence inserts only, not events row) ── */
+    // events.start / events.end are no longer written — derived from occurrences at read time
 
     /* ── Clean up removed carousel images from storage ── */
     const { data: oldImages } = await supabaseAdmin
@@ -316,11 +310,8 @@ export async function PUT(
     const updatePayload: Record<string, unknown> = {
       name,
       description,
-      start: startTs,
-      end: endTs,
       is_online: locationType === "online",
       location_type: locationType,
-      online_link: locationType === "online" ? onlineLink : null,
       is_recurring: isRecurring,
       category,
       tags,
@@ -527,16 +518,6 @@ export async function PATCH(
       if ("isRecurring" in body)
         payload.is_recurring = body.isRecurring ?? false;
       if ("timezone" in body) payload.timezone = body.timezone || null;
-      if ("startDate" in body || "startTime" in body) {
-        const sd = body.startDate;
-        const st = body.startTime;
-        payload.start = buildUtcTimestamp(sd, st, body.timezone);
-      }
-      if ("endDate" in body || "endTime" in body) {
-        const ed = body.endDate;
-        const et = body.endTime;
-        payload.end = buildUtcTimestamp(ed, et, body.timezone);
-      }
       if ("status" in body) {
         payload.status = body.status;
         if (body.status === "published") {
@@ -591,14 +572,12 @@ export async function PATCH(
     /* ── location ── */
     if (groups.includes("location")) {
       const locationType: string = body.locationType ?? "tba";
-      const onlineLink: string | null = body.onlineLink || null;
       const venues: VenuePayload[] = body.venues ?? [];
 
       await supabaseAdmin
         .from("events")
         .update({
           location_type: locationType,
-          online_link: locationType === "online" ? onlineLink : null,
           is_online: locationType === "online",
         })
         .eq("id", eventId);

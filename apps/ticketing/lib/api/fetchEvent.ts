@@ -91,12 +91,9 @@ interface RawEvent {
   id: string;
   name: string | null;
   description: string | null;
-  start: string | null;
-  end: string | null;
   timezone: string | null;
   is_online: boolean;
   location_type: string | null;
-  online_link: string | null;
   is_recurring: boolean;
   category: string | null;
   tags: string[] | null;
@@ -127,9 +124,6 @@ export interface FetchedEventData {
   status: "draft" | "published" | "archived";
   /** Display name of the organising club — used in the membership field label. */
   clubName: string | null;
-  /** Raw UTC start/end strings for availability window checking. */
-  startUtc: string | null;
-  endUtc: string | null;
 }
 
 /**
@@ -145,24 +139,8 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
 
   const { data } = (await res.json()) as { data: RawEvent };
 
-  /* ── Parse dates ── */
-  let startDate = "";
-  let startTime = "";
-  let endDate = "";
-  let endTime = "";
   const eventTimeZone =
     data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  if (data.start) {
-    const parts = splitUtcTimestampInTimeZone(data.start, eventTimeZone);
-    startDate = parts.date;
-    startTime = parts.time;
-  }
-  if (data.end) {
-    const parts = splitUtcTimestampInTimeZone(data.end, eventTimeZone);
-    endDate = parts.date;
-    endTime = parts.time;
-  }
 
   /* ── Location type ── */
   const locationType: LocationType =
@@ -183,13 +161,12 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
       onlineLink: v.online_link ?? undefined,
     }));
   } else {
-    // Legacy fallback: derive from location_type and online_link on the event row
+    // Legacy fallback: derive from location_type on the event row
     if (locationType === "online") {
       venues.push({
         id: "venue-online",
         type: "online",
         location: { displayName: "", address: "" },
-        onlineLink: data.online_link ?? "",
       });
     }
   }
@@ -213,19 +190,7 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     },
   );
 
-  // Legacy backward compat: synthesize one occurrence from the event's
-  // start/end dates when the DB has no occurrences yet.
-  if (occurrences.length === 0 && startDate) {
-    occurrences.push({
-      id: `legacy-${data.id}`,
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-    });
-  }
-
-  /* ── Creator profile (fetch separately — owner is not in event_hosts) ── */
+  /* ── Primary location (derived from first non-TBA venue for legacy compat) ── */
   let creatorProfile: ClubProfile | undefined;
   try {
     const profileRes = await fetch(
@@ -335,15 +300,10 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
   const formData: Partial<EventFormData> = {
     name: data.name ?? "",
     description: data.description ?? "",
-    startDate,
-    startTime,
-    endDate,
-    endTime,
     timezone: eventTimeZone,
     location,
     isOnline: data.is_online,
     locationType,
-    onlineLink: data.online_link ?? "",
     venues,
     isRecurring: occurrences.length > 1,
     occurrences,
@@ -368,7 +328,5 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     status: (data.status ?? "draft") as "draft" | "published" | "archived",
     urlSlug: data.url_slug,
     clubName: data.club_name ?? creatorProfile?.first_name ?? null,
-    startUtc: data.start ?? null,
-    endUtc: data.end ?? null,
   };
 }

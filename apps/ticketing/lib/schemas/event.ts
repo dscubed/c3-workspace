@@ -112,17 +112,12 @@ export const EventFormDataSchema = z.object({
   description: z.string(),
 
   /* ── Timing ── */
-  startDate: z.string(), // YYYY-MM-DD
-  startTime: z.string(), // HH:MM
-  endDate: z.string(),
-  endTime: z.string(),
   timezone: z.string(), // IANA tz identifier
 
   /* ── Location ── */
   location: LocationDataSchema,
   isOnline: z.boolean(),
   locationType: LocationTypeSchema,
-  onlineLink: z.string(),
   venues: z.array(VenueSchema),
 
   /* ── Recurrence ── */
@@ -174,17 +169,12 @@ export type EventFormData = z.infer<typeof EventFormDataSchema>;
 export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   name: "event",
   description: "event",
-  startDate: "event",
-  startTime: "event",
-  endDate: "event",
-  endTime: "event",
   timezone: "event",
   isOnline: "event",
   isRecurring: "event",
   category: "event",
   tags: "event",
   locationType: "location",
-  onlineLink: "location",
   location: "location",
   venues: "location",
   occurrences: "occurrences",
@@ -195,3 +185,28 @@ export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   links: "links",
   theme: "theme",
 } as const;
+
+/**
+ * Derive effective start/end dates from the chronologically first occurrence.
+ * Used by all components that previously read form.startDate etc.
+ */
+export function getEffectiveDates(occurrences: OccurrenceFormData[]): {
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+} {
+  if (occurrences.length === 0) {
+    return { startDate: "", startTime: "", endDate: "", endTime: "" };
+  }
+  const sorted = [...occurrences].sort((a, b) =>
+    (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime),
+  );
+  const first = sorted[0]!;
+  return {
+    startDate: first.startDate,
+    startTime: first.startTime,
+    endDate: first.endDate,
+    endTime: first.endTime,
+  };
+}

@@ -1,15 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  fetchEventServer,
-  getAllPublishedEventIds,
-  publicToFetchedData,
-  resolveEventByIdOrSlug,
-} from "@/lib/api/fetchEventServer";
+import { fetchEventServer } from "@/lib/event-server/fetchEventServer";
+import { getAllPublishedEventIds } from "@/lib/event-server/published-events";
+import { resolveEventByIdOrSlug } from "@/lib/event-server/resolve-slug";
 import { createClient } from "@c3/supabase/server";
 import { TicketingButton } from "@/components/events/TicketingButton";
 import EventForm from "@/components/event-form/EventForm";
 import type { ThemeAccent } from "@/components/events/shared/types";
+import { publicToFetchedData } from "@/lib/event-server/transform";
 
 /* ── Static generation ─────────────────────────────────────────── */
 
@@ -54,10 +52,13 @@ export async function generateMetadata({
     "Check out this event on Connect3 — the all-in-one ticketing solution for clubs.";
   const ogImage = event.images[0]?.url ?? `${SITE_URL}/og-default.png`;
 
-  const startDate = event.start
-    ? new Date(event.start).toISOString()
+  const firstOcc = event.occurrences?.[0];
+  const startDate = firstOcc?.start
+    ? new Date(firstOcc.start).toISOString()
     : undefined;
-  const endDate = event.end ? new Date(event.end).toISOString() : undefined;
+  const endDate = firstOcc?.end
+    ? new Date(firstOcc.end).toISOString()
+    : undefined;
 
   return {
     title,
@@ -106,9 +107,13 @@ export async function generateMetadata({
 function EventJsonLd({
   event,
   canonicalUrl,
+  startDate,
+  endDate,
 }: {
   event: Awaited<ReturnType<typeof fetchEventServer>>;
   canonicalUrl: string;
+  startDate: string | undefined;
+  endDate: string | undefined;
 }) {
   if (!event) return null;
 
@@ -143,8 +148,8 @@ function EventJsonLd({
     name: event.name ?? "Untitled Event",
     description: event.description ?? undefined,
     url: canonicalUrl,
-    startDate: event.start ?? undefined,
-    endDate: event.end ?? undefined,
+    startDate: startDate ?? undefined,
+    endDate: endDate ?? undefined,
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: event.is_online
       ? "https://schema.org/OnlineEventAttendanceMode"
@@ -251,10 +256,22 @@ export default async function EventPage({
   }
 
   const canonicalUrl = `${SITE_URL}/events/${event.url_slug ?? event.id}`;
+  const firstOcc = event.occurrences?.[0];
+  const metaStartDate = firstOcc?.start
+    ? new Date(firstOcc.start).toISOString()
+    : undefined;
+  const metaEndDate = firstOcc?.end
+    ? new Date(firstOcc.end).toISOString()
+    : undefined;
 
   return (
     <>
-      <EventJsonLd event={event} canonicalUrl={canonicalUrl} />
+      <EventJsonLd
+        event={event}
+        canonicalUrl={canonicalUrl}
+        startDate={metaStartDate}
+        endDate={metaEndDate}
+      />
       <EventForm
         mode="preview"
         eventId={event.id}

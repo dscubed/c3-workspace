@@ -32,15 +32,23 @@ export function EventDetailModal({
   const venues: Venue[] = form.venues;
   const occurrences: OccurrenceFormData[] = form.occurrences;
 
+  const sorted = useMemo(
+    () =>
+      [...occurrences].sort((a, b) =>
+        (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime),
+      ),
+    [occurrences],
+  );
+
   const dateTime = useMemo<DateTimeData>(
     () => ({
-      startDate: form.startDate,
-      startTime: form.startTime,
-      endDate: form.endDate,
-      endTime: form.endTime,
+      startDate: sorted[0]?.startDate ?? "",
+      startTime: sorted[0]?.startTime ?? "",
+      endDate: sorted[0]?.endDate ?? "",
+      endTime: sorted[0]?.endTime ?? "",
       timezone: form.timezone,
     }),
-    [form.startDate, form.startTime, form.endDate, form.endTime, form.timezone],
+    [sorted, form.timezone],
   );
   const realVenues = useMemo(
     () => venues.filter((v) => v.type !== "tba"),

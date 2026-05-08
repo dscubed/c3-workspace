@@ -2,16 +2,18 @@
 
 import { useEventForm } from "../shared/EventFormContext";
 import { DateDisplay } from "../preview/DateDisplay";
+import { getEffectiveDates } from "@/lib/schemas/event";
 
 export function EventDateField() {
   const { form } = useEventForm();
+  const dates = getEffectiveDates(form.occurrences);
   return (
     <DateDisplay
       value={{
-        startDate: form.startDate,
-        startTime: form.startTime,
-        endDate: form.endDate,
-        endTime: form.endTime,
+        startDate: dates.startDate,
+        startTime: dates.startTime,
+        endDate: dates.endDate,
+        endTime: dates.endTime,
         timezone: form.timezone,
         extraOccurrences:
           form.occurrences.length > 1 ? form.occurrences.length - 1 : undefined,

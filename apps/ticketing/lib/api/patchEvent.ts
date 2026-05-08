@@ -35,10 +35,6 @@ function buildPatchBody(
   if (groups.includes("event")) {
     body.name = form.name;
     body.description = form.description;
-    body.startDate = form.startDate;
-    body.startTime = form.startTime;
-    body.endDate = form.endDate;
-    body.endTime = form.endTime;
     body.timezone = form.timezone;
     body.isOnline = form.locationType === "online";
     body.locationType = form.locationType;
@@ -52,7 +48,6 @@ function buildPatchBody(
     body.location = form.location;
     body.isOnline = form.locationType === "online";
     body.locationType = form.locationType;
-    body.onlineLink = form.onlineLink;
     body.venues = form.venues;
   }
 

@@ -27,8 +27,8 @@ export function EventPricingField({
       onChange={(tiers) => updateField("pricing", tiers)}
       eventCapacity={form.eventCapacity}
       onEventCapacityChange={(cap) => updateField("eventCapacity", cap)}
-      eventStartDate={form.startDate}
-      eventStartTime={form.startTime}
+      eventStartDate={form.occurrences[0]?.startDate}
+      eventStartTime={form.occurrences[0]?.startTime}
       onAfterSave={onAfterSave}
       modalOpen={modalOpen}
       onModalOpenChange={onModalOpenChange}

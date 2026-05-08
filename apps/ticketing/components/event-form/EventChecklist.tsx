@@ -34,7 +34,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
   {
     id: "start-date",
     label: "Add a start date",
-    check: (f) => !!f.startDate || (f.isRecurring && f.occurrences.length > 0),
+    check: (f) => f.occurrences.length > 0,
   },
   {
     id: "location",

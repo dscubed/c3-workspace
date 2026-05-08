@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
-import { checkEventEditAccess } from "@/lib/api/fetchEventServer";
+import { checkEventEditAccess } from "@/lib/event-server/check-access";
 import EditEventClient from "./EditEventClient";
 import Unauthorized from "./Unauthorized";
 
 export default async function EditEventPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
 
   /* ── Server-side auth check ── */
   const supabase = await createClient();

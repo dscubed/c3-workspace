@@ -363,8 +363,7 @@ function AddVenuePanel({
 
 export function DateLocationSection() {
   const { form, setForm, markDirty } = useEventForm();
-  const { timezone, occurrences, locationType, location, onlineLink, venues } =
-    form;
+  const { timezone, occurrences, locationType, location, venues } = form;
 
   const onTimezoneChange = (tz: string) => {
     setForm((prev) => ({ ...prev, timezone: tz }));
@@ -374,7 +373,6 @@ export function DateLocationSection() {
   const onLocationChange = (partial: {
     locationType?: LocationType;
     location?: LocationData;
-    onlineLink?: string;
   }) => {
     setForm((prev) => ({
       ...prev,
@@ -390,20 +388,10 @@ export function DateLocationSection() {
   };
 
   const onOccurrencesChange = (occs: OccurrenceFormData[]) => {
-    const sorted = [...occs].sort(
-      (a, b) =>
-        a.startDate.localeCompare(b.startDate) ||
-        a.startTime.localeCompare(b.startTime),
-    );
-    const first = sorted[0];
     setForm((prev) => ({
       ...prev,
       occurrences: occs,
       isRecurring: occs.length > 1,
-      startDate: first?.startDate ?? "",
-      startTime: first?.startTime ?? "",
-      endDate: first?.endDate ?? "",
-      endTime: first?.endTime ?? "",
     }));
     markDirty("event", "occurrences", "location");
   };
@@ -498,19 +486,16 @@ export function DateLocationSection() {
       onLocationChange({
         locationType: physical.type,
         location: physical.location,
-        onlineLink: online?.onlineLink ?? onlineLink,
       });
     } else if (online) {
       onLocationChange({
         locationType: "online",
         location: { displayName: "", address: "" },
-        onlineLink: online.onlineLink ?? "",
       });
     } else if (updatedVenues.length === 0) {
       onLocationChange({
         locationType: "tba",
         location: { displayName: "", address: "" },
-        onlineLink: "",
       });
     }
   }

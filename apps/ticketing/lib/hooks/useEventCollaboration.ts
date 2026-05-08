@@ -53,10 +53,6 @@ export function useEventCollaboration({
                 ...prev,
                 name: result.formData.name ?? "",
                 description: result.formData.description ?? "",
-                startDate: result.formData.startDate ?? "",
-                startTime: result.formData.startTime ?? "",
-                endDate: result.formData.endDate ?? "",
-                endTime: result.formData.endTime ?? "",
                 timezone:
                   result.formData.timezone ??
                   Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -76,7 +72,6 @@ export function useEventCollaboration({
                 },
                 isOnline: result.formData.isOnline ?? false,
                 locationType: result.formData.locationType ?? "tba",
-                onlineLink: result.formData.onlineLink ?? "",
               }));
               break;
             case "occurrences":

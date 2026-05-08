@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@c3/supabase/server";
-import { checkEventEditAccess } from "@/lib/api/fetchEventServer";
+import { checkEventEditAccess } from "@/lib/event-server/check-access";
 import CheckoutForm from "@/components/events/checkout/checkout-form/CheckoutForm";
 import Unauthorized from "../../edit/Unauthorized";
 
 export default async function CheckoutEditPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
 
   /* ── Server-side auth check (same as event edit) ── */
   const supabase = await createClient();

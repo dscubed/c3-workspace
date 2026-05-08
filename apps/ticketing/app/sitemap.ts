@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllPublishedEventCanonicals } from "@/lib/api/fetchEventServer";
+import { getAllPublishedEventCanonicals } from "@/lib/event-server/published-events";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??

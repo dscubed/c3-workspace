@@ -543,8 +543,6 @@ export async function POST(request: NextRequest) {
       id: eventId,
       name: safeName,
       description: post.caption || null,
-      start: startTimestamp,
-      end: endTimestamp,
       creator_profile_id: creatorProfileId,
       status: "draft",
       published_at: null,
@@ -556,7 +554,6 @@ export async function POST(request: NextRequest) {
       timezone: resolvedTimezone,
       source: "instagram",
       location_type: locationType ?? "tba",
-      online_link: locationType === "online" ? onlineLink : null,
     });
 
     if (eventErr) {

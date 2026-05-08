@@ -35,16 +35,11 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
   const [form, setForm] = useState<EventFormData>({
     name: initialData?.name ?? "",
     description: initialData?.description ?? "",
-    startDate: initialData?.startDate ?? "",
-    startTime: initialData?.startTime ?? "",
-    endDate: initialData?.endDate ?? "",
-    endTime: initialData?.endTime ?? "",
     timezone:
       initialData?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
     location: initialData?.location ?? { displayName: "", address: "" },
     isOnline: initialData?.isOnline ?? false,
     locationType: initialData?.locationType ?? "tba",
-    onlineLink: initialData?.onlineLink ?? "",
     venues:
       initialData?.venues && initialData.venues.length > 0
         ? initialData.venues

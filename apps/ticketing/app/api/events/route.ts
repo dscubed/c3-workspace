@@ -426,14 +426,15 @@ export async function POST(request: NextRequest) {
     const eventStatus: string = body.status ?? "draft";
     const name: string = body.name ?? "";
     const description: string | null = body.description || null;
-    const startDate: string = body.startDate;
-    const startTime: string = body.startTime;
-    const endDate: string | null = body.endDate || null;
-    const endTime: string | null = body.endTime || null;
     const timezone: string | null = body.timezone || null;
     const isOnline: boolean = body.isOnline ?? false;
     const locationType: string = body.locationType ?? (isOnline ? "online" : "tba");
-    const onlineLink: string | null = body.onlineLink || null;
+    const onlineLink: string | null =
+      ((body.venues as { type: string; onlineLink?: string }[] | undefined)?.find(
+        (v) => v.type === "online",
+      )?.onlineLink) ??
+      body.onlineLink ??
+      null;
     const isRecurring: boolean = body.isRecurring ?? false;
     const category: string | null = body.category || null;
     const tags: string[] = body.tags ?? [];
@@ -478,8 +479,8 @@ export async function POST(request: NextRequest) {
     }
 
     /* ── Build start / end timestamps ── */
-    const startTs = buildUtcTimestamp(startDate, startTime, timezone);
-    const endTs = buildUtcTimestamp(endDate, endTime, timezone);
+    /* ── Build timestamps for occurrence inserts only ── */
+    // events.start / events.end are no longer written
 
     /* ── Location will be inserted into event_venues after event creation ── */
 
@@ -515,8 +516,6 @@ export async function POST(request: NextRequest) {
       id: eventId,
       name,
       description,
-      start: startTs,
-      end: endTs,
       creator_profile_id: creatorProfileId,
       created_by_user_id: user.id,
       status: eventStatus,
@@ -526,7 +525,6 @@ export async function POST(request: NextRequest) {
       url_slug: autoSlug,
       is_online: locationType === "online",
       location_type: locationType,
-      online_link: locationType === "online" ? onlineLink : null,
       is_recurring: isRecurring,
       category,
       tags,

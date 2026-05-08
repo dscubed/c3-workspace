@@ -54,7 +54,7 @@ export function EventDetailsForm() {
   });
 
   /* ── Derived attention flags ── */
-  const needsStartDate = !form.startDate;
+  const needsStartDate = form.occurrences.length === 0;
   const needsLocation = form.locationType === "tba";
   const needsCategory = !form.category;
   const needsTags = form.tags.length < 2;
