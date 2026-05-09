@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FieldGroup } from "@/lib/api/patchEvent";
 
 interface UseFieldAutoSaveOptions {
@@ -39,7 +39,7 @@ export function useFieldAutoSave({
     saveRef.current = onSave;
   }, [onSave]);
 
-  const doSave = useCallback(async () => {
+  const doSave = async () => {
     if (savingRef.current || dirtyGroupsRef.current.size === 0) return;
     savingRef.current = true;
     setIsSaving(true);
@@ -63,10 +63,10 @@ export function useFieldAutoSave({
         setHasPendingChanges(false);
       }
     }
-  }, []);
+  };
 
   /** Mark specific field groups as dirty. Starts a throttle timer if one isn't already running. */
-  const markDirty = useCallback(
+  const markDirty =
     (...groups: FieldGroup[]) => {
       if (!enabled) return;
       for (const g of groups) dirtyGroupsRef.current.add(g);
@@ -75,31 +75,26 @@ export function useFieldAutoSave({
       if (!timerRef.current) {
         timerRef.current = setTimeout(doSave, delay);
       }
-    },
-    [enabled, delay, doSave],
-  );
+    }
 
   /** Immediately persist any pending changes (cancels timer). */
-  const flush = useCallback(async () => {
+  const flush = async () => {
     clearTimeout(timerRef.current);
     timerRef.current = undefined;
     if (dirtyGroupsRef.current.size > 0) {
       await doSave();
     }
-  }, [doSave]);
+  };
 
   /** Cancel all pending saves. */
-  const cancel = useCallback(() => {
+  const cancel = () => {
     clearTimeout(timerRef.current);
     timerRef.current = undefined;
     dirtyGroupsRef.current = new Set();
-  }, []);
+  };
 
   /** Check if a specific group is currently dirty (pending save). */
-  const isDirty = useCallback(
-    (group: FieldGroup) => dirtyGroupsRef.current.has(group),
-    [],
-  );
+  const isDirty = (group: FieldGroup) => dirtyGroupsRef.current.has(group);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
