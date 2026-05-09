@@ -507,7 +507,6 @@ export function CheckoutProvider({
       hasName: !!eventData.formData.name,
       isAutoSaving: savingFields,
       lastSavedAt,
-      draftSaved: true,
       eventStatus: (eventData.status ?? "draft") as
         | "draft"
         | "published"
@@ -558,7 +557,6 @@ export function CheckoutProvider({
       markDirty: noop,
       flush: noopAsync,
       broadcastRef: { current: noop },
-      draftSaved: true,
       isAutoSaving: savingFields,
       lastSavedAt,
     };

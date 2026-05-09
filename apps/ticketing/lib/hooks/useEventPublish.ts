@@ -6,7 +6,6 @@ import type { EventFormData, CarouselImage } from "@/components/events/shared/ty
 import type { SectionData } from "@/components/events/sections/types";
 import type { FieldGroup } from "@/lib/api/patchEvent";
 import { updateEvent } from "@/lib/api/updateEvent";
-import { createEvent } from "@/lib/api/createEvent";
 import { toast } from "sonner";
 
 interface UseEventPublishOptions {
@@ -14,8 +13,6 @@ interface UseEventPublishOptions {
   form: EventFormData;
   carouselImages: CarouselImage[];
   sections: SectionData[];
-  draftSaved: boolean;
-  setDraftSaved: (saved: boolean) => void;
   broadcast: (groups: FieldGroup[]) => void;
   initialStatus?: "draft" | "published" | "archived";
 }
@@ -26,8 +23,6 @@ export function useEventPublish({
   form,
   carouselImages,
   sections,
-  draftSaved,
-  setDraftSaved,
   broadcast,
   initialStatus = "draft",
 }: UseEventPublishOptions) {
@@ -62,12 +57,7 @@ export function useEventPublish({
     }
     setSaving(true);
     try {
-      if (draftSaved) {
-        await updateEvent(eventId!, form, carouselImages, sections, "published");
-      } else {
-        await createEvent(eventId!, form, carouselImages, sections, "published");
-        setDraftSaved(true);
-      }
+      await updateEvent(eventId!, form, carouselImages, sections, "published");
       setEventStatus("published");
       broadcast(allGroups());
       toast.success("Event published!");
@@ -85,8 +75,6 @@ export function useEventPublish({
     form,
     carouselImages,
     sections,
-    draftSaved,
-    setDraftSaved,
     broadcast,
     allGroups,
     router,

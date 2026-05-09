@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import type {
   EventFormData,
   CarouselImage,
@@ -91,17 +91,12 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
   const formWithImages: EventFormData = { ...form, imageUrls };
 
   /* ── Derived theme values ── */
-  const colors = useMemo(
-    () => getThemeColors(form.theme.mode),
-    [form.theme.mode],
-  );
+  const colors = getThemeColors(form.theme.mode);
   const isDark = colors.isDark;
   useDocumentDark(isDark);
 
-  const accentGradient = useMemo(
-    () => getAccentGradient(form.theme.accent, isDark, form.theme.accentCustom),
-    [form.theme.accent, form.theme.accentCustom, isDark],
-  );
+  const accentGradient = 
+    getAccentGradient(form.theme.accent, isDark, form.theme.accentCustom);
 
   /* ── Refs for auto-save to read latest state without closures ── */
   const formRef = useRef<EventFormData>(formWithImages);

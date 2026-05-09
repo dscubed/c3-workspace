@@ -3,11 +3,9 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useRef,
   useCallback,
-  useMemo,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { EventTheme, ThemeColors } from "./types";
@@ -40,7 +38,6 @@ export interface EventEditorContextValue {
   /* ── Auto-save status ── */
   isAutoSaving: boolean;
   lastSavedAt: Date | null;
-  draftSaved: boolean;
 
   /* ── Derived flags ── */
   hasName: boolean;
@@ -106,7 +103,6 @@ export function EventEditorProvider({
     form,
     carouselImages,
     sections,
-    draftSaved,
     isAutoSaving,
     lastSavedAt,
     flush,
@@ -136,8 +132,6 @@ export function EventEditorProvider({
       form,
       carouselImages,
       sections,
-      draftSaved,
-      setDraftSaved: () => {},
       broadcast,
       initialStatus,
     });
@@ -147,8 +141,7 @@ export function EventEditorProvider({
     router.back();
   }, [flush, router]);
 
-  const value: EventEditorContextValue = useMemo(
-    () => ({
+  const value: EventEditorContextValue = {
       eventId,
       mode: "edit",
       initialUrlSlug,
@@ -164,7 +157,6 @@ export function EventEditorProvider({
       hasName: !!form.name,
       isAutoSaving,
       lastSavedAt,
-      draftSaved,
       eventStatus,
       savingPublish,
       handleBack,
@@ -172,29 +164,7 @@ export function EventEditorProvider({
       handleUnpublish,
       openPricingModalRef,
       checklistRefsRef,
-    }),
-    [
-      eventId,
-      initialUrlSlug,
-      previewMode,
-      viewMode,
-      isEditing,
-      theme,
-      setTheme,
-      colors,
-      isDark,
-      form.name,
-      isAutoSaving,
-      lastSavedAt,
-      draftSaved,
-      eventStatus,
-      savingPublish,
-      handleBack,
-      handlePublish,
-      handleUnpublish,
-      isVisitorPreview,
-    ],
-  );
+    };
 
   return (
     <EventEditorContext.Provider value={value}>

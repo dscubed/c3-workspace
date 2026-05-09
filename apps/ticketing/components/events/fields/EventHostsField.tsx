@@ -12,7 +12,7 @@ interface EventHostsFieldProps {
 }
 
 export function EventHostsField({ onInvitesSent }: EventHostsFieldProps) {
-  const { viewMode: mode, eventId, draftSaved } = useEventEditor();
+  const { viewMode: mode, eventId } = useEventEditor();
   const { form, updateField, hostsData, setHostsData, creatorProfile } =
     useEventForm();
 
@@ -33,7 +33,7 @@ export function EventHostsField({ onInvitesSent }: EventHostsFieldProps) {
           setHostsData(data);
         }}
         eventId={eventId}
-        eventSaved={draftSaved}
+        eventSaved={true}
         onInvitesSent={onInvitesSent}
       />
     </div>

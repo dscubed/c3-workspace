@@ -26,7 +26,6 @@ export function useEventAutoSave({
   carouselImagesRef,
   sectionsRef,
 }: UseEventAutoSaveOptions) {
-  const [draftSaved] = useState(true);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(new Date());
 
   /** Ref that collaboration hook sets to broadcast after saves. */
@@ -81,8 +80,6 @@ export function useEventAutoSave({
     flush,
     isAutoSaving,
     hasPendingChanges,
-    draftSaved,
-    setDraftSaved: () => {},
     lastSavedAt,
     setLastSavedAt,
     broadcastRef,

@@ -51,7 +51,6 @@ export function EventCollabProvider({
     setHostsData,
     setSections,
     broadcastRef,
-    draftSaved,
   } = useEventForm();
 
   /* Remote theme updates must NOT call markDirty — construct directly from setForm */
@@ -71,7 +70,7 @@ export function EventCollabProvider({
     eventId,
     userId: profile?.id,
     userName: profile?.first_name ?? undefined,
-    enabled: isVisitorPreview ? false : draftSaved,
+    enabled: !isVisitorPreview,
     broadcastRef,
     setForm,
     setCarouselImages,

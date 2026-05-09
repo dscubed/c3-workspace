@@ -55,7 +55,6 @@ export interface EventFormContextValue {
   flush: () => Promise<void>;
   /** Ref for collab to wire broadcast after saves */
   broadcastRef: React.MutableRefObject<(groups: FieldGroup[]) => void>;
-  draftSaved: boolean;
   isAutoSaving: boolean;
   lastSavedAt: Date | null;
 }
@@ -92,7 +91,7 @@ export function EventFormDataProvider({
   const profile = useAuthStore((s) => s.profile);
 
   const {
-    // States
+    /* States */
     form,
     setForm,
     hostsData,
@@ -103,11 +102,11 @@ export function EventFormDataProvider({
     setCarouselImages,
     theme,
     setTheme: rawSetTheme,
-    // Theme derived values
+    /* Theme derived values */
     colors,
     isDark,
     accentGradient,
-    // refs
+    /* Form state refs */
     formRef,
     carouselImagesRef,
     sectionsRef,
@@ -117,7 +116,6 @@ export function EventFormDataProvider({
     markDirty,
     flush,
     isAutoSaving,
-    draftSaved,
     lastSavedAt,
     broadcastRef,
   } = useEventAutoSave({
@@ -168,8 +166,8 @@ export function EventFormDataProvider({
     [setCarouselImages, markDirty],
   );
 
-  const value: EventFormContextValue = useMemo(
-    () => ({
+  const value: EventFormContextValue = {
+      /* Form states and update helpers */
       form,
       setForm,
       updateField,
@@ -178,46 +176,22 @@ export function EventFormDataProvider({
       setCarouselImages,
       hostsData,
       setHostsData,
-      creatorProfile,
       sections,
       setSections,
       theme,
       setTheme,
+      /* Theme derived values */
       colors,
       isDark,
       accentGradient,
       markDirty,
+      creatorProfile, // Creator profile id (for display and permissions)
+      /* Auto-save */
       flush,
       broadcastRef,
-      draftSaved,
       isAutoSaving,
       lastSavedAt,
-    }),
-    [
-      form,
-      setForm,
-      updateField,
-      carouselImages,
-      updateImages,
-      setCarouselImages,
-      hostsData,
-      setHostsData,
-      creatorProfile,
-      sections,
-      setSections,
-      theme,
-      setTheme,
-      colors,
-      isDark,
-      accentGradient,
-      markDirty,
-      flush,
-      broadcastRef,
-      draftSaved,
-      isAutoSaving,
-      lastSavedAt,
-    ],
-  );
+    };
 
   return (
     <EventFormContext.Provider value={value}>
