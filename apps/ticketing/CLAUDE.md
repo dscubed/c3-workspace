@@ -37,7 +37,6 @@ npm run lint -- --fix
   - `date-fns` — date/time handling
   - `react-easy-crop` — image cropping
   - `sonner` — toast notifications
-  - `nanoid` — unique IDs
 
 ## Project Structure
 

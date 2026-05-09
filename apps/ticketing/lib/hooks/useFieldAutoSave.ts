@@ -66,16 +66,15 @@ export function useFieldAutoSave({
   };
 
   /** Mark specific field groups as dirty. Starts a throttle timer if one isn't already running. */
-  const markDirty =
-    (...groups: FieldGroup[]) => {
-      if (!enabled) return;
-      for (const g of groups) dirtyGroupsRef.current.add(g);
-      setHasPendingChanges(true);
-      // Only start a timer if one isn't already ticking (throttle, not debounce)
-      if (!timerRef.current) {
-        timerRef.current = setTimeout(doSave, delay);
-      }
+  const markDirty = (...groups: FieldGroup[]) => {
+    if (!enabled) return;
+    for (const g of groups) dirtyGroupsRef.current.add(g);
+    setHasPendingChanges(true);
+    // Only start a timer if one isn't already ticking (throttle, not debounce)
+    if (!timerRef.current) {
+      timerRef.current = setTimeout(doSave, delay);
     }
+  };
 
   /** Immediately persist any pending changes (cancels timer). */
   const flush = async () => {

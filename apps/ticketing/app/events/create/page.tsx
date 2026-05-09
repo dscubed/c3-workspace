@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { nanoid } from "nanoid";
 import { createClient } from "@c3/supabase/server";
 import { supabaseAdmin } from "@c3/supabase/admin";
 import { resolveManagedProfileId } from "@/lib/auth/clubAdmin";
@@ -44,7 +43,7 @@ export default async function CreateEventPage({
   }
 
   /* ── Create a minimal draft row ── */
-  const eventId = nanoid(21);
+  const eventId = crypto.randomUUID();
 
   // Find a unique default name: "Untitled Event", then "Untitled Event (1)", etc.
   const { data: existing } = await supabaseAdmin

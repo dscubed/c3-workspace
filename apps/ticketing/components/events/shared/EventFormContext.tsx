@@ -92,6 +92,7 @@ export function EventFormDataProvider({
   const profile = useAuthStore((s) => s.profile);
 
   const {
+    // States
     form,
     setForm,
     hostsData,
@@ -102,9 +103,11 @@ export function EventFormDataProvider({
     setCarouselImages,
     theme,
     setTheme: rawSetTheme,
+    // Theme derived values
     colors,
     isDark,
     accentGradient,
+    // refs
     formRef,
     carouselImagesRef,
     sectionsRef,

@@ -12,7 +12,6 @@ import {
   getThemeColors,
   getAccentGradient,
 } from "@/components/events/shared/types";
-import { FIELD_TO_GROUP } from "@/lib/schemas/event";
 import type { SectionData } from "@/components/events/sections/types";
 import type { FetchedEventData } from "@/lib/api/fetchEvent";
 import { useDocumentDark } from "./useDocumentDark";
@@ -118,6 +117,7 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
   });
 
   return {
+    // States
     form: formWithImages,
     setForm,
     hostsData,
@@ -128,10 +128,11 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
     setCarouselImages,
     theme: form.theme,
     setTheme,
+    // Theme derived values
     colors,
     isDark,
     accentGradient,
-    FIELD_TO_GROUP,
+    // refs
     formRef,
     carouselImagesRef,
     sectionsRef,

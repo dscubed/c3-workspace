@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef } from "react";
-import { nanoid } from "nanoid";
 import {
   format,
   addDays,
@@ -545,7 +544,7 @@ export function OccurrenceEditor({
 
     if (frequency === "once") {
       newOccs.push({
-        id: nanoid(),
+        id: crypto.randomUUID(),
         name: occName.trim() || undefined,
         startDate,
         startTime,
@@ -578,7 +577,7 @@ export function OccurrenceEditor({
           dayDiff > 0 ? format(addDays(current, dayDiff), "yyyy-MM-dd") : "";
 
         newOccs.push({
-          id: nanoid(),
+          id: crypto.randomUUID(),
           startDate: ds,
           startTime,
           endDate: endDateStr,
