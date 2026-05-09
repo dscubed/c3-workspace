@@ -19,7 +19,7 @@ export async function resolveEventByIdOrSlug(
   }
 
   const slugQuery = supabaseAdmin
-    .from("events")
+    .from("event_summary")
     .select("id")
     .eq("url_slug", param);
 

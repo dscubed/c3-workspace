@@ -118,7 +118,6 @@ export const EventFormDataSchema = z.object({
   venues: z.array(VenueSchema),
 
   /* ── Recurrence ── */
-  isRecurring: z.boolean(),
   occurrences: z.array(OccurrenceFormDataSchema),
 
   /* ── Metadata ── */
@@ -167,7 +166,6 @@ export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   name: "event",
   description: "event",
   timezone: "event",
-  isRecurring: "event",
   category: "event",
   tags: "event",
   venues: "location",
@@ -180,40 +178,4 @@ export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   theme: "theme",
 } as const;
 
-/**
- * Derive primary location info from venues array.
- * Venues are the single source of truth — no separate location/isOnline/locationType fields.
- */
-export function getLocationInfo(venues: Venue[]) {
-  const primary = venues.find((v) => v.type !== "tba");
-  return {
-    locationType: primary?.type ?? "tba",
-    location: primary?.location ?? ({ displayName: "", address: "" } as LocationData),
-    isOnline: venues.some((v) => v.type === "online"),
-  };
-}
-
-/**
- * Derive effective start/end dates from the chronologically first occurrence.
- * Used by all components that previously read form.startDate etc.
- */
-export function getEffectiveDates(occurrences: OccurrenceFormData[]): {
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-} {
-  if (occurrences.length === 0) {
-    return { startDate: "", startTime: "", endDate: "", endTime: "" };
-  }
-  const sorted = [...occurrences].sort((a, b) =>
-    (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime),
-  );
-  const first = sorted[0]!;
-  return {
-    startDate: first.startDate,
-    startTime: first.startTime,
-    endDate: first.endDate,
-    endTime: first.endTime,
-  };
-}
+export { getLocationInfo, getEffectiveDates } from "@c3/utils";

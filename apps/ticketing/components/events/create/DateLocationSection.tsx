@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { nanoid } from "nanoid";
 import { format, parseISO } from "date-fns";
 import {
   CalendarDays,
@@ -189,7 +188,7 @@ function AddVenuePanel({
 
   const handleConfirm = useCallback(() => {
     const venue: Venue = {
-      id: editingVenue?.id ?? nanoid(),
+      id: editingVenue?.id ?? crypto.randomUUID(),
       type: venueType,
       location: locationData,
       onlineLink: venueType === "online" ? onlineLink : undefined,
@@ -379,7 +378,6 @@ export function DateLocationSection() {
     setForm((prev) => ({
       ...prev,
       occurrences: occs,
-      isRecurring: occs.length > 1,
     }));
     markDirty("event", "occurrences", "location");
   };
@@ -441,7 +439,7 @@ export function DateLocationSection() {
       if (updated.length === 0) {
         updated = [
           {
-            id: nanoid(),
+            id: crypto.randomUUID(),
             type: "tba" as LocationType,
             location: { displayName: "", address: "" },
           },

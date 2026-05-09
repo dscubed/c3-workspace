@@ -56,7 +56,6 @@ export function useEventCollaboration({
                 timezone:
                   result.formData.timezone ??
                   Intl.DateTimeFormat().resolvedOptions().timeZone,
-                isRecurring: result.formData.isRecurring ?? false,
                 category: result.formData.category ?? "",
                 tags: result.formData.tags ?? [],
               }));
@@ -71,7 +70,6 @@ export function useEventCollaboration({
               setForm((prev) => ({
                 ...prev,
                 occurrences: result.formData.occurrences ?? [],
-                isRecurring: result.formData.isRecurring ?? false,
               }));
               break;
             case "images":

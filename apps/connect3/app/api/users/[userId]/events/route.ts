@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParameters) {
 
   try {
     let query = supabase
-      .from("events")
+      .from("event_summary")
       .select("*")
       .eq("creator_profile_id", userId)
       .order("created_at", { ascending: false });

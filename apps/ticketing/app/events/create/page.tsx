@@ -65,8 +65,6 @@ export default async function CreateEventPage({
     id: eventId,
     name: defaultName,
     description: null,
-    start: null,
-    end: null,
     creator_profile_id: creatorProfileId,
     status: "draft",
     published_at: null,

@@ -45,30 +45,37 @@ export async function GET(req: NextRequest) {
 
     if (account.charges_enabled) {
       const { data: events } = await supabaseAdmin
-        .from("events")
-        .select(
-          "id, name, event_ticket_tiers(id, name, price, stripe_product_id)",
-        )
+        .from("event_summary")
+        .select("id, name")
         .eq("creator_profile_id", auth.clubId);
 
+      const eventIds = (events ?? []).map((e) => e.id!).filter(Boolean);
+
+      const tiersByEvent = new Map<string, { id: string; name: string; price: number; stripe_product_id: string | null }[]>();
+      if (eventIds.length > 0) {
+        const { data: allTiers } = await supabaseAdmin
+          .from("event_ticket_tiers")
+          .select("event_id, id, name, price, stripe_product_id")
+          .in("event_id", eventIds);
+
+        for (const t of allTiers ?? []) {
+          const list = tiersByEvent.get(t.event_id) ?? [];
+          list.push(t);
+          tiersByEvent.set(t.event_id, list);
+        }
+      }
+
       const needsSync = (events ?? []).filter((e) => {
-        const tiers = e.event_ticket_tiers as unknown as {
-          price: number;
-          stripe_product_id: string | null;
-        }[];
-        return tiers?.some((t) => t.price > 0 && !t.stripe_product_id);
+        const tiers = tiersByEvent.get(e.id!) ?? [];
+        return tiers.some((t) => t.price > 0 && !t.stripe_product_id);
       });
 
       if (needsSync.length > 0) {
         for (const e of needsSync) {
-          const tiers = (e.event_ticket_tiers as unknown as {
-            id: string;
-            name: string;
-            price: number;
-          }[]);
+          const tiers = tiersByEvent.get(e.id!) ?? [];
           try {
             await syncTierStripeProducts(
-              e.id,
+              e.id!,
               e.name ?? "Event",
               tiers.map((t) => ({ id: t.id, name: t.name, price: t.price })),
             );

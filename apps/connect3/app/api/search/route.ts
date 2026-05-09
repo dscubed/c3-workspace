@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             .ilike("first_name", `%${term}%`)
             .limit(10),
           supabase
-            .from("events")
+            .from("event_summary")
             .select("id, name")
             .ilike("name", `%${term}%`)
             .eq("status", "published")

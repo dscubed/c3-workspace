@@ -73,7 +73,7 @@ interface RawOccurrence {
   name: string | null;
   start: string;
   end: string | null;
-  venue_ids: string[] | null;
+  event_occurrence_venues?: { venue_id: string }[] | null;
 }
 
 interface RawVenue {
@@ -94,7 +94,6 @@ interface RawEvent {
   timezone: string | null;
   is_online: boolean;
   location_type: string | null;
-  is_recurring: boolean;
   category: string | null;
   tags: string[] | null;
   status: string;
@@ -185,7 +184,7 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
         startTime: s.time,
         endDate: e.date,
         endTime: e.time,
-        venueIds: o.venue_ids ?? [],
+        venueIds: (o.event_occurrence_venues ?? []).map((v) => v.venue_id),
       };
     },
   );
@@ -293,7 +292,6 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     description: data.description ?? "",
     timezone: eventTimeZone,
     venues,
-    isRecurring: occurrences.length > 1,
     occurrences,
     category: data.category ?? "",
     tags: data.tags ?? [],

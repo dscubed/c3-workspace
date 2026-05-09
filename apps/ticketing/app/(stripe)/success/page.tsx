@@ -33,8 +33,8 @@ function formatEventDate(start: string | null, timezone: string | null) {
 async function fetchEventSlim(eventId: string) {
   const [eventRes, imageRes, venueRes] = await Promise.all([
     supabaseAdmin
-      .from("events")
-      .select("id, name, url_slug, timezone, event_occurrences(start)")
+      .from("event_summary")
+      .select("id, name, url_slug, timezone, start")
       .eq("id", eventId)
       .single(),
     supabaseAdmin
@@ -52,7 +52,7 @@ async function fetchEventSlim(eventId: string) {
   ]);
 
   const effectiveStart =
-    (eventRes.data as any)?.event_occurrences?.[0]?.start ?? null;
+    (eventRes.data as any)?.start ?? null;
 
   return {
     event: (eventRes.data as EventSlim | null) ?? null,

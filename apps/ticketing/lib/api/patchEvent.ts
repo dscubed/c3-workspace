@@ -40,7 +40,6 @@ function buildPatchBody(
     body.timezone = form.timezone;
     body.isOnline = loc.isOnline;
     body.locationType = loc.locationType;
-    body.isRecurring = form.isRecurring;
     body.category = form.category;
     body.tags = form.tags;
     if (status !== undefined) body.status = status;

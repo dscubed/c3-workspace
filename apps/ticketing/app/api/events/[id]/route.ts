@@ -226,7 +226,6 @@ export async function PUT(
     const isOnline: boolean = body.isOnline ?? false;
     const locationType: string =
       body.locationType ?? (isOnline ? "online" : "tba");
-    const isRecurring: boolean = body.isRecurring ?? false;
     const category: string | null = body.category || null;
     const tags: string[] = body.tags ?? [];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -311,7 +310,6 @@ export async function PUT(
       description,
       is_online: locationType === "online",
       location_type: locationType,
-      is_recurring: isRecurring,
       category,
       tags,
       timezone,
@@ -424,9 +422,27 @@ export async function PUT(
         name: o.name ?? null,
         start: buildUtcTimestamp(o.startDate, o.startTime, timezone),
         end: buildUtcTimestamp(o.endDate, o.endTime, timezone),
-        venue_ids: o.venueIds ?? [],
       }));
-      await supabaseAdmin.from("event_occurrences").insert(occRows);
+      const { data: insertedOccs } = await supabaseAdmin
+        .from("event_occurrences")
+        .insert(occRows)
+        .select("id");
+
+      if (insertedOccs) {
+        const junctionRows: { occurrence_id: string; venue_id: string }[] = [];
+        for (let i = 0; i < insertedOccs.length; i++) {
+          const occurrenceId = insertedOccs[i].id;
+          const venueIds = occurrences[i]?.venueIds ?? [];
+          for (const vid of venueIds) {
+            junctionRows.push({ occurrence_id: occurrenceId, venue_id: vid });
+          }
+        }
+        if (junctionRows.length > 0) {
+          await supabaseAdmin
+            .from("event_occurrence_venues")
+            .insert(junctionRows);
+        }
+      }
     }
 
     return NextResponse.json({ id: eventId, message: "Event updated" });
@@ -514,8 +530,6 @@ export async function PATCH(
       if ("isOnline" in body) payload.is_online = body.isOnline ?? false;
       if ("locationType" in body)
         payload.location_type = body.locationType ?? "tba";
-      if ("isRecurring" in body)
-        payload.is_recurring = body.isRecurring ?? false;
       if ("timezone" in body) payload.timezone = body.timezone || null;
       if ("status" in body) {
         payload.status = body.status;
@@ -590,21 +604,12 @@ export async function PATCH(
           .eq("event_id", eventId);
         const existingIds = new Set((existingVenues ?? []).map((v) => v.id));
 
-        // Separate new (nanoid) vs existing (UUID) venues
-        const uuidRegex =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const toInsert = venues.filter(
-          (v) => !uuidRegex.test(v.id) || !existingIds.has(v.id),
-        );
-        const toUpdate = venues.filter(
-          (v) => uuidRegex.test(v.id) && existingIds.has(v.id),
-        );
+        const toInsert = venues.filter((v) => !existingIds.has(v.id));
+        const toUpdate = venues.filter((v) => existingIds.has(v.id));
 
         // Delete venues no longer present
-        const keepIds = venues
-          .filter((v) => uuidRegex.test(v.id))
-          .map((v) => v.id);
-        if (keepIds.length > 0) {
+        if (existingIds.size > 0) {
+          const keepIds = venues.map((v) => v.id).filter((id) => existingIds.has(id));
           await supabaseAdmin
             .from("event_venues")
             .delete()
@@ -620,6 +625,7 @@ export async function PATCH(
         if (toInsert.length > 0) {
           const rows = toInsert.map((v, i) => ({
             event_id: eventId,
+            id: v.id,
             type: v.type,
             venue: v.location.displayName || null,
             address: v.location.address || null,
@@ -657,7 +663,7 @@ export async function PATCH(
       const occurrences: OccurrencePayload[] = body.occurrences ?? [];
       const occTimezone: string | null = body.timezone ?? null;
 
-      // Delete existing occurrences
+      // Delete existing occurrences (cascade removes junction rows)
       await supabaseAdmin
         .from("event_occurrences")
         .delete()
@@ -670,9 +676,27 @@ export async function PATCH(
           name: o.name ?? null,
           start: buildUtcTimestamp(o.startDate, o.startTime, occTimezone),
           end: buildUtcTimestamp(o.endDate, o.endTime, occTimezone),
-          venue_ids: o.venueIds ?? [],
         }));
-        await supabaseAdmin.from("event_occurrences").insert(rows);
+        const { data: inserted } = await supabaseAdmin
+          .from("event_occurrences")
+          .insert(rows)
+          .select("id");
+
+        if (inserted) {
+          const junctionRows: { occurrence_id: string; venue_id: string }[] = [];
+          for (let i = 0; i < inserted.length; i++) {
+            const occurrenceId = inserted[i].id;
+            const venueIds = occurrences[i]?.venueIds ?? [];
+            for (const vid of venueIds) {
+              junctionRows.push({ occurrence_id: occurrenceId, venue_id: vid });
+            }
+          }
+          if (junctionRows.length > 0) {
+            await supabaseAdmin
+              .from("event_occurrence_venues")
+              .insert(junctionRows);
+          }
+        }
       }
       updatedGroups.push("occurrences");
     }

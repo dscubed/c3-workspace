@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: event } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("name")
       .eq("id", registration.event_id)
       .single();
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: event } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("name")
       .eq("id", eventId)
       .single();

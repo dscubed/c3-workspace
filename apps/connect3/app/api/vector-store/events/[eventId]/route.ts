@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParameters) {
     const { eventId } = await params;
 
     const { data: existingEvent, error: fetchError } = await supabase
-      .from("events")
+      .from("event_summary")
       .select("creator_profile_id")
       .eq("id", eventId)
       .single();
@@ -115,7 +115,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParameters) 
     const { eventId } = await params;
 
     const { data: existingEvent, error: fetchError } = await supabase
-      .from("events")
+      .from("event_summary")
       .select("creator_profile_id")
       .eq("id", eventId)
       .single();

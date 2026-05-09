@@ -25,10 +25,10 @@ const REGISTRATION_WITH_EVENT_SELECT = `
   ${REGISTRATION_SELECT},
   events(
     name,
-    start,
     status,
     event_images(url, sort_order),
-    event_venues(venue, type, sort_order)
+    event_venues(venue, type, sort_order),
+    event_occurrences(start)
   )
 `;
 
@@ -64,10 +64,10 @@ function toRegistration(row: any): EventRegistration {
 function toRegistrationWithEvent(row: any): RegistrationWithEvent {
   const event = row.events as {
     name: string | null;
-    start: string | null;
     status: string;
     event_images: { url: string; sort_order: number }[];
     event_venues: { venue: string | null; type: string; sort_order: number }[];
+    event_occurrences: { start: string }[];
   } | null;
 
   const images = (event?.event_images ?? []).sort(
@@ -82,7 +82,7 @@ function toRegistrationWithEvent(row: any): RegistrationWithEvent {
   return {
     ...toRegistration(row),
     event_name: event?.name ?? null,
-    event_start: event?.start ?? null,
+    event_start: event?.event_occurrences?.[0]?.start ?? null,
     event_status: event?.status ?? null,
     event_thumbnail: images[0]?.url ?? null,
     event_venue: primaryVenue?.venue ?? null,

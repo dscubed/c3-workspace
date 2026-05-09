@@ -26,8 +26,8 @@ export async function GET(
     }
 
     const { data: event, error: eventErr } = await supabaseAdmin
-      .from("events")
-      .select("name, start, end, status, creator_profile_id, event_capacity")
+      .from("event_summary")
+      .select("*")
       .eq("id", eventId)
       .single();
 
@@ -175,7 +175,7 @@ export async function GET(
       .order("payout_settled_at", { ascending: false })
       .limit(1);
 
-    const deadlineBase = event.end ?? event.start;
+    const deadlineBase = event.end ?? event.start ?? null;
     const settlementDeadline = deadlineBase
       ? new Date(new Date(deadlineBase).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString()
       : null;
@@ -210,7 +210,7 @@ export async function GET(
         event: {
           id: eventId,
           name: event.name,
-          start: event.start,
+          start: event.start ?? null,
           end: event.end ?? null,
           status: event.status,
           creator_profile_id: event.creator_profile_id,

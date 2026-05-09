@@ -34,7 +34,7 @@ export async function embedEvent(
     sections,
     hosts,
   ] = await Promise.all([
-    supabase.from("events").select("*").eq("id", eventId).single(),
+    supabase.from("event_summary").select("*").eq("id", eventId).single(),
     supabase
       .from("event_venues")
       .select("*")

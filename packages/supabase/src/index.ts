@@ -16,3 +16,21 @@ export {
   fetchEventRegistrations,
   fetchUserRegisteredEventIds,
 } from "./registrations";
+export {
+  fetchEventRow,
+  fetchEventHosts,
+  fetchEventImages,
+  fetchEventTiers,
+  fetchEventLinks,
+  fetchEventSections,
+  fetchEventOccurrences,
+  fetchEventVenues,
+  type EventRow,
+  type HostRow,
+  type ImageRow,
+  type TierRow,
+  type LinkRow,
+  type SectionRow,
+  type OccurrenceRow,
+  type VenueRow,
+} from "./event-fetchers";

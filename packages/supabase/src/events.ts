@@ -5,18 +5,6 @@ import type {
   AvatarProfile,
 } from "@c3/types";
 
-const EVENT_CARD_SELECT = `
-  id,
-  name,
-  start,
-  status,
-  category,
-  is_online,
-  profiles!creator_profile_id(id, first_name, avatar_url),
-  event_images(url, sort_order),
-  event_venues(type, venue, sort_order)
-`;
-
 async function getEventCollaborators(
   eventId: string,
 ): Promise<AvatarProfile[] | null> {
@@ -38,21 +26,11 @@ async function getEventCollaborators(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function toEventCardDetails(row: any): Promise<EventCardDetails> {
-  const collaborators = await getEventCollaborators(row.id);
-
-  const profile = row.profiles as unknown as AvatarProfile;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const images: { url: string; sort_order: number }[] = (
-    row.event_images ?? []
-  ).sort((a: any, b: any) => a.sort_order - b.sort_order);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const venues: { type: string; venue: string | null; sort_order: number }[] = (
-    row.event_venues ?? []
-  ).sort((a: any, b: any) => a.sort_order - b.sort_order);
-  const primaryVenue =
-    venues.find((v) => v.type !== "tba" && v.type !== "online") ?? venues[0];
+function toEventCardDetails(
+  row: any,
+  hostProfiles: Map<string, AvatarProfile>,
+): EventCardDetails {
+  const profile = hostProfiles.get(row.creator_profile_id);
 
   return {
     id: row.id,
@@ -61,8 +39,8 @@ async function toEventCardDetails(row: any): Promise<EventCardDetails> {
     status: row.status,
     category: row.category ?? null,
     is_online: row.is_online ?? false,
-    location_name: primaryVenue?.venue ?? null,
-    thumbnail: images[0]?.url ?? null,
+    location_name: row.location_text ?? null,
+    thumbnail: row.thumbnail_url ?? null,
     host: profile
       ? {
           id: profile.id,
@@ -70,7 +48,7 @@ async function toEventCardDetails(row: any): Promise<EventCardDetails> {
           avatar_url: profile.avatar_url,
         }
       : { id: "", first_name: "Unknown", avatar_url: null },
-    collaborators,
+    collaborators: null,
   };
 }
 
@@ -83,7 +61,6 @@ async function toEventCardDetails(row: any): Promise<EventCardDetails> {
 export async function fetchClubEventCards(
   clubId: string,
 ): Promise<EventCardDetails[]> {
-  // Step 1: get event IDs where this club is a co-host
   const { data: hostRows } = await supabaseAdmin
     .from("event_hosts")
     .select("event_id")
@@ -92,21 +69,53 @@ export async function fetchClubEventCards(
 
   const collabEventIds = (hostRows ?? []).map((r) => r.event_id);
 
-  // Step 2: fetch events where creator OR co-host
   const orFilter =
     collabEventIds.length > 0
       ? `creator_profile_id.eq.${clubId},id.in.(${collabEventIds.join(",")})`
       : `creator_profile_id.eq.${clubId}`;
 
   const { data, error } = await supabaseAdmin
-    .from("events")
-    .select(EVENT_CARD_SELECT)
+    .from("event_summary")
+    .select("*")
     .or(orFilter)
-    .order("start", { ascending: false, nullsFirst: false });
+    .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
 
-  return Promise.all((data ?? []).map(toEventCardDetails));
+  const rows = data ?? [];
+
+  const creatorIds = [
+    ...new Set(
+      rows.map((r) => r.creator_profile_id as string).filter(Boolean),
+    ),
+  ];
+
+  const hostProfiles = new Map<string, AvatarProfile>();
+  if (creatorIds.length > 0) {
+    const { data: profileRows } = await supabaseAdmin
+      .from("profiles")
+      .select("id, first_name, avatar_url")
+      .in("id", creatorIds);
+
+    for (const p of profileRows ?? []) {
+      hostProfiles.set(p.id, {
+        id: p.id,
+        first_name: p.first_name,
+        avatar_url: p.avatar_url,
+      });
+    }
+  }
+
+  const events = rows.map((row) => toEventCardDetails(row, hostProfiles));
+
+  const eventsWithCollaborators = await Promise.all(
+    events.map(async (event) => {
+      const collaborators = await getEventCollaborators(event.id);
+      return { ...event, collaborators };
+    }),
+  );
+
+  return eventsWithCollaborators;
 }
 
 /**

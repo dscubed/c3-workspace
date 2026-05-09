@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { nanoid } from "nanoid";
 import type {
   EventFormData,
   CarouselImage,
@@ -42,12 +41,11 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
         ? initialData.venues
         : [
             {
-              id: nanoid(),
+              id: crypto.randomUUID(),
               type: "tba" as const,
               location: { displayName: "", address: "" },
             },
           ],
-    isRecurring: initialData?.isRecurring ?? false,
     occurrences: initialData?.occurrences ?? [],
     category: initialData?.category ?? "",
     tags: initialData?.tags ?? [],

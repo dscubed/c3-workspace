@@ -44,7 +44,7 @@ async function getReferencedFileIds(): Promise<{
 
   // Fetch all openai_file_id from events
   const { data: events, error: eventsError } = await supabase
-    .from("events")
+    .from("event_summary")
     .select("openai_file_id")
     .not("openai_file_id", "is", null);
 

@@ -9,51 +9,30 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!,
 );
 
-/**
- * Transform database event record to match our event schema
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformDbEventToEventSchema(dbEvent: any): Event {
-  const tiers: { price: number }[] = dbEvent.event_ticket_tiers ?? [];
+function transformDbEventToEventSchema(
+  dbEvent: any,
+  tiers: { price: number }[],
+): Event {
   const prices = tiers.map((t) => t.price);
-  const images: { url: string; sort_order: number }[] = (
-    dbEvent.event_images ?? []
-  ).sort(
-    (a: { sort_order: number }, b: { sort_order: number }) =>
-      a.sort_order - b.sort_order,
-  );
-  const venues: {
-    type: string;
-    venue: string | null;
-    address: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    sort_order: number;
-  }[] = (dbEvent.event_venues ?? []).sort(
-    (a: { sort_order: number }, b: { sort_order: number }) =>
-      a.sort_order - b.sort_order,
-  );
-  const primaryVenue = venues.find((v) => v.type !== "tba") ?? venues[0];
   return {
     id: dbEvent.id,
     name: dbEvent.name,
     creatorProfileId: dbEvent.creator_profile_id,
     description: dbEvent.description ?? undefined,
-    start: dbEvent.start,
+    start: dbEvent.start ?? null,
     end: dbEvent.end ?? undefined,
     publishedAt:
       dbEvent.published_at ?? dbEvent.created_at ?? new Date().toISOString(),
     isOnline:
-      typeof dbEvent.is_online === "boolean"
-        ? dbEvent.is_online
-        : dbEvent.location_type === "online",
-    thumbnail: images[0]?.url ?? undefined,
+      typeof dbEvent.is_online === "boolean" ? dbEvent.is_online : false,
+    thumbnail: dbEvent.thumbnail_url ?? undefined,
     category: dbEvent.category ?? undefined,
     location: {
-      venue: primaryVenue?.venue ?? "TBA",
-      address: primaryVenue?.address ?? "",
-      latitude: primaryVenue?.latitude ?? 0,
-      longitude: primaryVenue?.longitude ?? 0,
+      venue: dbEvent.location_text ?? "TBA",
+      address: "",
+      latitude: 0,
+      longitude: 0,
     },
     pricing: {
       min: prices.length > 0 ? Math.min(...prices) : 0,
@@ -67,20 +46,12 @@ interface RouteParameters {
   params: Promise<{ eventId: string }>;
 }
 
-/**
- * Retrieve a single event by its id
- * @param request
- * @param param1
- * @returns
- */
 export async function GET(request: NextRequest, { params }: RouteParameters) {
   const { eventId } = await params;
   try {
     const { data: dbEvent, error } = await supabase
-      .from("events")
-      .select(
-        "*, event_venues(type, venue, address, latitude, longitude, sort_order), event_images(url, sort_order), event_ticket_tiers(price)",
-      )
+      .from("event_summary")
+      .select("*")
       .eq("id", eventId)
       .single();
 
@@ -91,7 +62,12 @@ export async function GET(request: NextRequest, { params }: RouteParameters) {
       );
     }
 
-    const event = transformDbEventToEventSchema(dbEvent);
+    const { data: tiers } = await supabase
+      .from("event_ticket_tiers")
+      .select("price")
+      .eq("event_id", eventId);
+
+    const event = transformDbEventToEventSchema(dbEvent, tiers ?? []);
     return NextResponse.json({ event });
   } catch (error) {
     return NextResponse.json({ error: error }, { status: 500 });
@@ -148,8 +124,6 @@ export async function POST(request: NextRequest, { params }: RouteParameters) {
       .insert({
         id,
         name: name || null,
-        start,
-        end,
         description: description || null,
         creator_profile_id,
         category,
@@ -265,8 +239,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParameters) {
       .from("events")
       .update({
         name: name || null,
-        start,
-        end,
         description: description || null,
         category,
         is_online: isOnline,

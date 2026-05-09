@@ -74,7 +74,7 @@ export async function checkEventPermission(
   userId: string,
 ): Promise<EventPermission> {
   const { data: event } = await supabaseAdmin
-    .from("events")
+    .from("event_summary")
     .select("creator_profile_id")
     .eq("id", eventId)
     .single();

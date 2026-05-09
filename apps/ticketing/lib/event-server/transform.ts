@@ -69,7 +69,7 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
       startTime: s.time,
       endDate: e.date,
       endTime: e.time,
-      venueIds: o.venue_ids ?? [],
+      venueIds: (o.event_occurrence_venues ?? []).map((v) => v.venue_id),
     };
   });
 
@@ -152,7 +152,6 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
     description: event.description ?? "",
     timezone: tz,
     venues,
-    isRecurring: occurrences.length > 1,
     occurrences,
     category: event.category ?? "",
     tags: event.tags ?? [],

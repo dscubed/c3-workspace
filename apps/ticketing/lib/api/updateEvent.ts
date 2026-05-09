@@ -29,7 +29,6 @@ export async function updateEvent(
     timezone: form.timezone,
     isOnline: loc.isOnline,
     locationType: loc.locationType,
-    isRecurring: form.isRecurring,
     category: form.category,
     tags: form.tags,
     hostIds: form.hostIds,

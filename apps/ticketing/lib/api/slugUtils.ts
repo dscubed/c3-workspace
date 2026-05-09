@@ -38,7 +38,7 @@ export async function generateUniqueSlug(
 
   const isAvailable = async (candidate: string): Promise<boolean> => {
     const { data } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("id")
       .eq("url_slug", candidate)
       .maybeSingle();

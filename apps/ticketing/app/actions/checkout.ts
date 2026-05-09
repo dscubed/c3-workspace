@@ -54,7 +54,7 @@ export async function createCheckoutSession(
     if (!user) return { error: "Sign in to purchase a member ticket" };
 
     const { data: eventRow } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("creator_profile_id")
       .eq("id", eventId)
       .single();

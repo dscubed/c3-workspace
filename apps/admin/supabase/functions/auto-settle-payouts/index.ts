@@ -34,9 +34,8 @@ Deno.serve(async (_req: Request) => {
       console.error("[auto-settle] RPC error:", eventsErr);
 
       const { data: rawEvents, error: rawErr } = await supabaseAdmin
-        .from("events")
-        .select("id, end, start, creator_profile_id")
-        .not("end", "is", null);
+        .from("event_summary")
+        .select("id, creator_profile_id, start, end");
 
       if (rawErr) {
         console.error("[auto-settle] fallback query error:", rawErr);

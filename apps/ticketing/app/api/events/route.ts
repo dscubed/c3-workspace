@@ -441,7 +441,6 @@ export async function POST(request: NextRequest) {
       )?.onlineLink) ??
       body.onlineLink ??
       null;
-    const isRecurring: boolean = body.isRecurring ?? false;
     const category: string | null = body.category || null;
     const tags: string[] = body.tags ?? [];
     const pricing: TicketTierPayload[] = body.pricing ?? [];
@@ -463,7 +462,7 @@ export async function POST(request: NextRequest) {
     const venues: VenuePayload[] = body.venues ?? [];
     const imageUrls: string[] = body.imageUrls ?? [];
     const sections: SectionPayload[] = body.sections ?? [];
-    const occurrencesInput: { startDate: string; startTime: string; endDate: string; endTime: string }[] = body.occurrences ?? [];
+    const occurrencesInput: { startDate: string; startTime: string; endDate: string; endTime: string; venueIds?: string[] }[] = body.occurrences ?? [];
 
     /* Name is required only when publishing */
     if (eventStatus === "published" && !name) {
@@ -531,7 +530,6 @@ export async function POST(request: NextRequest) {
       url_slug: autoSlug,
       is_online: locationType === "online",
       location_type: locationType,
-      is_recurring: isRecurring,
       category,
       tags,
       timezone,
@@ -661,8 +659,25 @@ export async function POST(request: NextRequest) {
         start: buildUtcTimestamp(o.startDate, o.startTime, timezone),
         end: buildUtcTimestamp(o.endDate, o.endTime, timezone),
       }));
-      const { error } = await supabaseAdmin.from("event_occurrences").insert(occRows);
-      if (error) console.error("event_occurrences insert error:", error);
+      const { data: insertedOccs } = await supabaseAdmin
+        .from("event_occurrences")
+        .insert(occRows)
+        .select("id");
+      if (insertedOccs) {
+        const junctionRows: { occurrence_id: string; venue_id: string }[] = [];
+        for (let i = 0; i < insertedOccs.length; i++) {
+          const occurrenceId = insertedOccs[i].id;
+          const venueIds = occurrencesInput[i]?.venueIds ?? [];
+          for (const vid of venueIds) {
+            junctionRows.push({ occurrence_id: occurrenceId, venue_id: vid });
+          }
+        }
+        if (junctionRows.length > 0) {
+          await supabaseAdmin
+            .from("event_occurrence_venues")
+            .insert(junctionRows);
+        }
+      }
     }
 
     return NextResponse.json(

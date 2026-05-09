@@ -23,7 +23,7 @@ export async function GET(
 
     // Verify the requesting user is an admin of the club that owns this event
     const { data: event } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("creator_profile_id")
       .eq("id", eventId)
       .single();

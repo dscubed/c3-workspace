@@ -7,9 +7,9 @@ import Unauthorized from "../../edit/Unauthorized";
 export default async function CheckoutEditPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
 
   /* ── Server-side auth check (same as event edit) ── */
   const supabase = await createClient();

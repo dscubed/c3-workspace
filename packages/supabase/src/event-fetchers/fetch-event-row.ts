@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@c3/supabase";
+import { supabaseAdmin } from "../admin";
 
 export interface EventRow {
   id: string;

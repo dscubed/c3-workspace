@@ -8,7 +8,7 @@ import { supabaseAdmin } from "@c3/supabase";
  */
 export async function getAllPublishedEventIds(): Promise<string[]> {
   const { data } = await supabaseAdmin
-    .from("events")
+    .from("event_summary")
     .select("id, url_slug")
     .eq("status", "published");
 
@@ -29,12 +29,12 @@ export async function getAllPublishedEventCanonicals(): Promise<
   { segment: string; updatedAt?: string }[]
 > {
   const { data } = await supabaseAdmin
-    .from("events")
-    .select("id, url_slug, updated_at")
+    .from("event_summary")
+    .select("id, url_slug, created_at")
     .eq("status", "published");
 
   return (data ?? []).map((e) => ({
     segment: e.url_slug ?? e.id,
-    updatedAt: e.updated_at ?? undefined,
+    updatedAt: e.created_at ?? undefined,
   }));
 }

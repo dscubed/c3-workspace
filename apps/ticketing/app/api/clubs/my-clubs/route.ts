@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
 
       /* Get events for all clubs the user admins */
       const { data: events } = await supabaseAdmin
-        .from("events")
+        .from("event_summary")
         .select(
-          "id, name, start, end, status, category, is_online, created_at, creator_profile_id, event_images(url, sort_order)",
+          "id, name, start, end, status, category, is_online, created_at, creator_profile_id, thumbnail_url",
         )
         .in("creator_profile_id", clubIds)
         .order("created_at", { ascending: false });

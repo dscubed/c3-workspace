@@ -54,11 +54,11 @@ export async function GET(request: NextRequest) {
     const buckets = getWeekBuckets(new Date());
 
     const { data: events, error: eventsErr } = await supabaseAdmin
-      .from("events")
-      .select("id, name, start, end, status, creator_profile_id, event_images(url, sort_order), event_venues(type, venue, sort_order)")
+      .from("event_summary")
+      .select("*")
       .eq("creator_profile_id", clubId)
       .eq("status", "published")
-      .order("start", { ascending: true });
+      .order("created_at", { ascending: true });
 
     if (eventsErr) {
       console.error("[dashboard stats] events error:", eventsErr);
@@ -66,9 +66,8 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date();
-    const eventIds = (events ?? []).map((e) => e.id);
+    const eventIds = (events ?? []).map((e) => e.id!);
 
-    // Batch registration counts for upcoming events in one query
     const { data: regRows } = eventIds.length > 0
       ? await supabaseAdmin
           .from("event_registrations")
@@ -89,26 +88,15 @@ export async function GET(request: NextRequest) {
         return endDate >= now;
       })
       .slice(0, 3)
-      .map((e) => {
-        const images = (e.event_images as { url: string; sort_order: number }[] | null) ?? [];
-        const thumbnail = images.sort((a, b) => a.sort_order - b.sort_order)[0]?.url ?? null;
-        const venues = (e.event_venues as { type: string; venue: string | null; sort_order: number }[] | null) ?? [];
-        const primaryVenue = venues
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .find((v) => v.type !== "tba") ?? null;
-        const location = primaryVenue?.type === "online"
-          ? "Online"
-          : primaryVenue?.venue ?? null;
-        return {
-          id: e.id,
-          name: e.name,
-          start: e.start,
-          status: e.start && new Date(e.start) <= now ? "live" : "upcoming",
-          thumbnail,
-          location,
-          registered: regCountMap.get(e.id) ?? 0,
-        };
-      });
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        start: e.start,
+        status: e.start && new Date(e.start) <= now ? "live" : "upcoming",
+        thumbnail: e.thumbnail_url ?? null,
+        location: e.location_text ?? null,
+        registered: regCountMap.get(e.id!) ?? 0,
+      }));
 
     const weekly: {
       members: number[];

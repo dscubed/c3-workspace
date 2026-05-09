@@ -21,7 +21,7 @@ export async function POST(
     }
 
     const { data: event } = await supabaseAdmin
-      .from("events")
+      .from("event_summary")
       .select("name, creator_profile_id")
       .eq("id", eventId)
       .single();

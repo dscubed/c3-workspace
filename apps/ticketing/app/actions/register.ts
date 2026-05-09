@@ -56,8 +56,8 @@ export async function registerForEvent(
 
   // Fetch event details for the confirmation email
   const { data: event } = await supabaseAdmin
-    .from("events")
-    .select("name, event_venues(venue), event_occurrences(start)")
+    .from("event_summary")
+    .select("name, start, location_text")
     .eq("id", eventId)
     .single();
 
@@ -96,7 +96,7 @@ export async function registerForEvent(
   const qrPayload = signPayload("ticket", registration.qr_code_id, ticketSecret);
   const qrBuffer = await generateQRCodeBuffer(qrPayload);
 
-  const startTs = event?.event_occurrences?.[0]?.start;
+  const startTs = event?.start;
   const eventDate = startTs
     ? new Date(startTs).toLocaleDateString("en-AU", {
         weekday: "short",
@@ -107,8 +107,7 @@ export async function registerForEvent(
         minute: "2-digit",
       })
     : undefined;
-  const venues = event?.event_venues as { venue: string | null }[] | null;
-  const venueName = venues?.[0]?.venue ?? undefined;
+  const venueName = (event?.location_text as string | undefined) ?? undefined;
 
   await sendRegistrationEmail({
     email,
