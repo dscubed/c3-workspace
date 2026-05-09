@@ -234,7 +234,6 @@ export async function PUT(
     const pricing: TicketTierPayload[] = body.pricing ?? [];
     const links: EventLinkPayload[] = body.links ?? [];
     const theme: ThemePayload | null = body.theme ?? null;
-    const location: LocationPayload | null = body.location ?? null;
     const imageUrls: string[] = body.imageUrls ?? [];
     const sections: SectionPayload[] = body.sections ?? [];
     const eventStatus: string | undefined = body.status;

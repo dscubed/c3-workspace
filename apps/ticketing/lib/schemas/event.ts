@@ -115,9 +115,6 @@ export const EventFormDataSchema = z.object({
   timezone: z.string(), // IANA tz identifier
 
   /* ── Location ── */
-  location: LocationDataSchema,
-  isOnline: z.boolean(),
-  locationType: LocationTypeSchema,
   venues: z.array(VenueSchema),
 
   /* ── Recurrence ── */
@@ -170,12 +167,9 @@ export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   name: "event",
   description: "event",
   timezone: "event",
-  isOnline: "event",
   isRecurring: "event",
   category: "event",
   tags: "event",
-  locationType: "location",
-  location: "location",
   venues: "location",
   occurrences: "occurrences",
   imageUrls: "images",
@@ -185,6 +179,19 @@ export const FIELD_TO_GROUP: Record<keyof EventFormData, FieldGroup> = {
   links: "links",
   theme: "theme",
 } as const;
+
+/**
+ * Derive primary location info from venues array.
+ * Venues are the single source of truth — no separate location/isOnline/locationType fields.
+ */
+export function getLocationInfo(venues: Venue[]) {
+  const primary = venues.find((v) => v.type !== "tba");
+  return {
+    locationType: primary?.type ?? "tba",
+    location: primary?.location ?? ({ displayName: "", address: "" } as LocationData),
+    isOnline: venues.some((v) => v.type === "online"),
+  };
+}
 
 /**
  * Derive effective start/end dates from the chronologically first occurrence.

@@ -363,22 +363,10 @@ function AddVenuePanel({
 
 export function DateLocationSection() {
   const { form, setForm, markDirty } = useEventForm();
-  const { timezone, occurrences, locationType, location, venues } = form;
+  const { timezone, occurrences, venues } = form;
 
   const onTimezoneChange = (tz: string) => {
     setForm((prev) => ({ ...prev, timezone: tz }));
-    markDirty("event", "location");
-  };
-
-  const onLocationChange = (partial: {
-    locationType?: LocationType;
-    location?: LocationData;
-  }) => {
-    setForm((prev) => ({
-      ...prev,
-      ...partial,
-      isOnline: (partial.locationType ?? prev.locationType) === "online",
-    }));
     markDirty("event", "location");
   };
 
@@ -442,9 +430,6 @@ export function DateLocationSection() {
       }
       onVenuesChange(updated);
       setAddingVenue(false);
-
-      // Sync primary location from first physical/custom venue for backward compat
-      syncPrimaryLocation(updated);
     },
     [editingVenueId, venues, onVenuesChange],
   );
@@ -470,35 +455,9 @@ export function DateLocationSection() {
           : occ,
       );
       onOccurrencesChange(updatedOccs);
-      syncPrimaryLocation(updated);
     },
     [venues, occurrences, onVenuesChange, onOccurrencesChange],
   );
-
-  /** Keep the legacy single-location fields in sync with the first relevant venue */
-  function syncPrimaryLocation(updatedVenues: Venue[]) {
-    const physical = updatedVenues.find(
-      (v) => v.type === "physical" || v.type === "custom",
-    );
-    const online = updatedVenues.find((v) => v.type === "online");
-
-    if (physical) {
-      onLocationChange({
-        locationType: physical.type,
-        location: physical.location,
-      });
-    } else if (online) {
-      onLocationChange({
-        locationType: "online",
-        location: { displayName: "", address: "" },
-      });
-    } else if (updatedVenues.length === 0) {
-      onLocationChange({
-        locationType: "tba",
-        location: { displayName: "", address: "" },
-      });
-    }
-  }
 
   return (
     <div className="space-y-5 pt-4">

@@ -39,7 +39,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
   {
     id: "location",
     label: "Add a location",
-    check: (f) => f.locationType !== "tba",
+    check: (f) => f.venues.some((v) => v.type !== "tba"),
   },
   {
     id: "category",

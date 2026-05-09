@@ -4,6 +4,7 @@ import type {
 } from "@/components/events/shared/types";
 import type { SectionData } from "@/components/events/sections/types";
 import type { SectionType } from "@/components/events/sections/types";
+import { getLocationInfo } from "@/lib/schemas/event";
 
 /**
  * All field groups that can be independently patched.
@@ -33,11 +34,12 @@ function buildPatchBody(
   const body: Record<string, unknown> = { fields: groups };
 
   if (groups.includes("event")) {
+    const loc = getLocationInfo(form.venues);
     body.name = form.name;
     body.description = form.description;
     body.timezone = form.timezone;
-    body.isOnline = form.locationType === "online";
-    body.locationType = form.locationType;
+    body.isOnline = loc.isOnline;
+    body.locationType = loc.locationType;
     body.isRecurring = form.isRecurring;
     body.category = form.category;
     body.tags = form.tags;
@@ -45,9 +47,9 @@ function buildPatchBody(
   }
 
   if (groups.includes("location")) {
-    body.location = form.location;
-    body.isOnline = form.locationType === "online";
-    body.locationType = form.locationType;
+    const loc = getLocationInfo(form.venues);
+    body.isOnline = loc.isOnline;
+    body.locationType = loc.locationType;
     body.venues = form.venues;
   }
 

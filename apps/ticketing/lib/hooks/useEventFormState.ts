@@ -37,9 +37,6 @@ export function useEventFormState({ data }: UseEventFormStateOptions) {
     description: initialData?.description ?? "",
     timezone:
       initialData?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    location: initialData?.location ?? { displayName: "", address: "" },
-    isOnline: initialData?.isOnline ?? false,
-    locationType: initialData?.locationType ?? "tba",
     venues:
       initialData?.venues && initialData.venues.length > 0
         ? initialData.venues

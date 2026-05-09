@@ -26,11 +26,17 @@ interface ThemePayload {
   accentCustom?: string;
   bgColor?: string;
 }
-interface LocationPayload {
-  displayName: string;
-  address: string;
-  lat?: number;
-  lon?: number;
+
+interface VenuePayload {
+  id: string;
+  type: "physical" | "custom" | "online" | "tba";
+  location: {
+    displayName: string;
+    address: string;
+    lat?: number;
+    lon?: number;
+  };
+  onlineLink?: string;
 }
 interface SectionPayload {
   type: string;
@@ -454,7 +460,7 @@ export async function POST(request: NextRequest) {
 
     const links: EventLinkPayload[] = body.links ?? [];
     const theme: ThemePayload | null = body.theme ?? null;
-    const location: LocationPayload | null = body.location ?? null;
+    const venues: VenuePayload[] = body.venues ?? [];
     const imageUrls: string[] = body.imageUrls ?? [];
     const sections: SectionPayload[] = body.sections ?? [];
     const occurrencesInput: { startDate: string; startTime: string; endDate: string; endTime: string }[] = body.occurrences ?? [];
@@ -534,24 +540,20 @@ export async function POST(request: NextRequest) {
     });
     if (eventErr) throw new Error(`Event insert failed: ${eventErr.message}`);
 
-    /* ── Insert venue into event_venues ── */
-    if (location?.displayName && (locationType === "physical" || locationType === "custom")) {
-      await supabaseAdmin.from("event_venues").insert({
+    /* ── Insert venues into event_venues ── */
+    if (venues.length > 0) {
+      const rows = venues.map((v, i) => ({
         event_id: eventId,
-        type: locationType,
-        venue: location.displayName,
-        address: location.address || null,
-        latitude: locationType === "physical" ? (location.lat ?? null) : null,
-        longitude: locationType === "physical" ? (location.lon ?? null) : null,
-        sort_order: 0,
-      });
-    } else if (locationType === "online") {
-      await supabaseAdmin.from("event_venues").insert({
-        event_id: eventId,
-        type: "online",
-        online_link: onlineLink,
-        sort_order: 0,
-      });
+        id: v.id,
+        type: v.type,
+        venue: v.location.displayName || null,
+        address: v.location.address || null,
+        latitude: v.type === "physical" ? (v.location.lat ?? null) : null,
+        longitude: v.type === "physical" ? (v.location.lon ?? null) : null,
+        online_link: v.type === "online" ? (v.onlineLink ?? null) : null,
+        sort_order: i,
+      }));
+      await supabaseAdmin.from("event_venues").insert(rows);
     } else {
       await supabaseAdmin.from("event_venues").insert({
         event_id: eventId,

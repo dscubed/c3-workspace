@@ -55,7 +55,7 @@ export function EventDetailsForm() {
 
   /* ── Derived attention flags ── */
   const needsStartDate = form.occurrences.length === 0;
-  const needsLocation = form.locationType === "tba";
+  const needsLocation = form.venues.every((v) => v.type === "tba");
   const needsCategory = !form.category;
   const needsTags = form.tags.length < 2;
 

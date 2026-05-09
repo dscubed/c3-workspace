@@ -287,23 +287,11 @@ export async function fetchEvent(eventId: string): Promise<FetchedEventData> {
     ...(s.data as object),
   })) as SectionData[];
 
-  /* ── Primary location (derived from first non-TBA venue for legacy compat) ── */
-  const primaryVenue = venues.find((v) => v.type !== "tba") ?? venues[0];
-  const location: LocationData = {
-    displayName: primaryVenue?.location.displayName ?? "",
-    address: primaryVenue?.location.address ?? "",
-    lat: primaryVenue?.location.lat,
-    lon: primaryVenue?.location.lon,
-  };
-
   /* ── Assemble form data ── */
   const formData: Partial<EventFormData> = {
     name: data.name ?? "",
     description: data.description ?? "",
     timezone: eventTimeZone,
-    location,
-    isOnline: data.is_online,
-    locationType,
     venues,
     isRecurring: occurrences.length > 1,
     occurrences,

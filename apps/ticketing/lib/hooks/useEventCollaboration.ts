@@ -56,9 +56,7 @@ export function useEventCollaboration({
                 timezone:
                   result.formData.timezone ??
                   Intl.DateTimeFormat().resolvedOptions().timeZone,
-                isOnline: result.formData.isOnline ?? false,
                 isRecurring: result.formData.isRecurring ?? false,
-                locationType: result.formData.locationType ?? "tba",
                 category: result.formData.category ?? "",
                 tags: result.formData.tags ?? [],
               }));
@@ -66,12 +64,7 @@ export function useEventCollaboration({
             case "location":
               setForm((prev) => ({
                 ...prev,
-                location: result.formData.location ?? {
-                  displayName: "",
-                  address: "",
-                },
-                isOnline: result.formData.isOnline ?? false,
-                locationType: result.formData.locationType ?? "tba",
+                venues: result.formData.venues ?? [],
               }));
               break;
             case "occurrences":

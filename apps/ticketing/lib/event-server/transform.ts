@@ -41,19 +41,6 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
   const primaryVenue =
     sortedVenues.find((v) => v.type !== "tba") ?? sortedVenues[0];
 
-  const locationType: LocationType = event.is_online
-    ? "online"
-    : primaryVenue && primaryVenue.type !== "tba"
-      ? (primaryVenue.type as LocationType)
-      : "tba";
-
-  const location: LocationData = {
-    displayName: primaryVenue?.venue ?? "",
-    address: primaryVenue?.address ?? "",
-    lat: primaryVenue?.latitude ?? undefined,
-    lon: primaryVenue?.longitude ?? undefined,
-  };
-
   const venues: Venue[] =
     sortedVenues.length > 0
       ? sortedVenues.map((v) => ({
@@ -164,9 +151,6 @@ export function publicToFetchedData(event: PublicEventData): FetchedEventData {
     name: event.name ?? "",
     description: event.description ?? "",
     timezone: tz,
-    location,
-    isOnline: event.is_online,
-    locationType,
     venues,
     isRecurring: occurrences.length > 1,
     occurrences,

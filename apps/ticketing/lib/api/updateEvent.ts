@@ -3,6 +3,7 @@ import type {
   CarouselImage,
 } from "@/components/events/shared/types";
 import type { SectionData } from "@/components/events/sections/types";
+import { getLocationInfo } from "@/lib/schemas/event";
 
 /**
  * PUT JSON to /api/events/[id] to update an event.
@@ -20,13 +21,14 @@ export async function updateEvent(
   sections: SectionData[],
   status?: "draft" | "published",
 ): Promise<void> {
+  const loc = getLocationInfo(form.venues);
   const body = {
     ...(status !== undefined && { status }),
     name: form.name,
     description: form.description,
     timezone: form.timezone,
-    isOnline: form.locationType === "online",
-    locationType: form.locationType,
+    isOnline: loc.isOnline,
+    locationType: loc.locationType,
     isRecurring: form.isRecurring,
     category: form.category,
     tags: form.tags,
@@ -44,7 +46,6 @@ export async function updateEvent(
     eventCapacity: form.eventCapacity ?? null,
     links: form.links.map((l) => ({ url: l.url, title: l.title })),
     theme: form.theme,
-    location: form.location,
     venues: form.venues,
     imageUrls: images
       .filter((img) => img.url && !img.uploading)
