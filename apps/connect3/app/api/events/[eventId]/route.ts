@@ -9,7 +9,6 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!,
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformDbEventToEventSchema(
   dbEvent: any,
   tiers: { price: number }[],
