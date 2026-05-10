@@ -32,7 +32,7 @@ import {
   Globe,
   Pencil,
 } from "lucide-react";
-import type { OccurrenceFormData, Venue } from "../shared/types";
+import type { OccurrenceFormData, Venue } from "../../shared/types";
 
 type Frequency = "once" | "daily" | "weekly" | "monthly";
 

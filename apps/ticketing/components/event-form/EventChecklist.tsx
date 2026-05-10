@@ -68,10 +68,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
 ];
 
 /** Map from checklist item id → ref to the relevant DOM element */
-export type ChecklistRefMap = Record<
-  string,
-  RefObject<HTMLDivElement | null>
->;
+export type ChecklistRefMap = Record<string, RefObject<HTMLDivElement | null>>;
 
 export interface EventChecklistProps {
   form: EventFormData;

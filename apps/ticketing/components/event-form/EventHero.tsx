@@ -5,7 +5,7 @@ import { useEventEditor } from "@/components/events/shared/EventEditorContext";
 import { useEventForm } from "@/components/events/shared/EventFormContext";
 import { useEventCollab } from "@/components/events/shared/EventCollabContext";
 import { EventImageField } from "@/components/events/fields";
-import { ImageManagerDialog } from "@/components/events/create/ImageManagerDialog";
+import { ImageManagerDialog } from "@/components/events/create/image/ImageManagerDialog";
 import { CollaboratorBadge } from "./CollaboratorBadge";
 
 /**

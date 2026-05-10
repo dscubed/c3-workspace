@@ -5,9 +5,13 @@ import { ResponsivePopover } from "@/components/ui/responsive-popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { PlusCircle, Search, Loader2, X, UserPlus } from "lucide-react";
-import { HostAvatarStack } from "../shared/HostAvatarStack";
+import { HostAvatarStack } from "../../shared/HostAvatarStack";
 import { useClubSearch } from "@/lib/hooks/useClubSearch";
-import type { ClubProfile, EditInputProps, HostsValue } from "../shared/types";
+import type {
+  ClubProfile,
+  EditInputProps,
+  HostsValue,
+} from "../../shared/types";
 
 interface HostsPickerProps extends EditInputProps<HostsValue> {
   creatorProfile: ClubProfile;
@@ -202,8 +206,7 @@ export function HostsPicker({
             })()}
 
           {clubs.some(
-            (c) =>
-              !selectedHosts.includes(c.id) && c.id !== creatorProfile.id,
+            (c) => !selectedHosts.includes(c.id) && c.id !== creatorProfile.id,
           ) && <Separator className="my-1" />}
 
           {/* Unselected clubs */}

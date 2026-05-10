@@ -1,9 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { Pencil } from "lucide-react";
+import { useRef, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
-import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { cn } from "@/lib/utils";
 
 import { useEventEditor } from "@/components/events/shared/EventEditorContext";
@@ -13,14 +11,12 @@ import {
   EventNameField,
   EventCategoryField,
   EventTagsField,
-  EventDateField,
-  EventLocationField,
   EventHostsField,
   EventPricingField,
   EventLinksField,
+  EventDateLocationField,
 } from "@/components/events/fields";
-import { DateLocationSection } from "@/components/events/create/DateLocationSection";
-import { EventDetailModal } from "@/components/events/preview/EventDetailModal";
+import { PricingModal } from "@/components/events/create/pricing/PricingModal";
 import { SectionWrapper } from "@/components/events/preview/SectionWrapper";
 import { AttentionBadge } from "@/components/event-form/EventChecklist";
 import { CollaboratorBadge } from "./CollaboratorBadge";
@@ -31,26 +27,20 @@ import { CollaboratorBadge } from "./CollaboratorBadge";
  * and the preview detail drawer.
  */
 export function EventDetailsForm() {
-  const { isEditing, openPricingModalRef, checklistRefsRef } = useEventEditor();
-  const { form, markDirty, flush } = useEventForm();
+  const { isEditing, pricingModalOpen, setPricingModalOpen, checklistRefsRef } =
+    useEventEditor();
+  const { form, markDirty, flush, updateField } = useEventForm();
   const { collaborators, handleFieldFocus, handleFieldBlur } = useEventCollab();
-
-  const [pricingModalOpen, setPricingModalOpen] = useState(false);
-  const [dateLocationModalOpen, setDateLocationModalOpen] = useState(false);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const startDateRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
 
-  // Register refs for EventChecklist scroll-to and modal opener — done in a layout
-  // effect so we never mutate ref.current during render.
   useEffect(() => {
     checklistRefsRef.current["start-date"] = startDateRef;
     checklistRefsRef.current.location = startDateRef;
     checklistRefsRef.current.category = categoryRef;
     checklistRefsRef.current.tags = tagsRef;
-    openPricingModalRef.current = () => setPricingModalOpen(true);
   });
 
   /* ── Derived attention flags ── */
@@ -98,63 +88,12 @@ export function EventDetailsForm() {
             onFocus={() => handleFieldFocus("location")}
             onBlur={handleFieldBlur}
           >
-            {isEditing && (
-              <AttentionBadge show={needsStartDate || needsLocation} />
-            )}
-            <CollaboratorBadge group="location" collaborators={collaborators} />
-            <div className="space-y-3">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setDateLocationModalOpen(true)}
-                    className="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 -mx-2 text-left transition-colors hover:bg-muted/50"
-                  >
-                    <EventDateField />
-                    <Pencil className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDateLocationModalOpen(true)}
-                    className="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 -mx-2 text-left transition-colors hover:bg-muted/50"
-                  >
-                    <EventLocationField />
-                    <Pencil className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                  </button>
-                  <ResponsiveModal
-                    open={dateLocationModalOpen}
-                    onOpenChange={setDateLocationModalOpen}
-                    title="Date & location"
-                    className="max-w-lg"
-                  >
-                    <div className="overflow-y-auto max-h-[70vh] pr-1">
-                      <DateLocationSection />
-                    </div>
-                  </ResponsiveModal>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setDetailModalOpen(true)}
-                    className="flex w-full items-center text-left rounded-md px-2 py-1.5 -mx-2 transition-colors hover:bg-muted/50 cursor-pointer"
-                  >
-                    <EventDateField />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailModalOpen(true)}
-                    className="flex w-full items-center text-left rounded-md px-2 py-1.5 -mx-2 transition-colors hover:bg-muted/50 cursor-pointer"
-                  >
-                    <EventLocationField />
-                  </button>
-                  <EventDetailModal
-                    open={detailModalOpen}
-                    onOpenChange={setDetailModalOpen}
-                  />
-                </>
-              )}
-            </div>
+            <EventDateLocationField
+              isEditing={isEditing}
+              collaborators={collaborators}
+              needsStartDate={needsStartDate}
+              needsLocation={needsLocation}
+            />
           </div>
 
           {/* Hosts */}
@@ -174,10 +113,19 @@ export function EventDetailsForm() {
             className="relative"
           >
             <CollaboratorBadge group="pricing" collaborators={collaborators} />
-            <EventPricingField
-              onAfterSave={() => flush()}
-              modalOpen={pricingModalOpen}
-              onModalOpenChange={setPricingModalOpen}
+            <EventPricingField />
+            <PricingModal
+              open={pricingModalOpen}
+              onOpenChange={setPricingModalOpen}
+              value={form.pricing}
+              eventCapacity={form.eventCapacity}
+              eventStartDate={form.occurrences[0]?.startDate}
+              eventStartTime={form.occurrences[0]?.startTime}
+              onSave={(tiers, cap) => {
+                updateField("pricing", tiers);
+                updateField("eventCapacity", cap);
+                flush();
+              }}
             />
           </div>
 

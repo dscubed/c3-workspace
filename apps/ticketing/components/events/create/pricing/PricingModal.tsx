@@ -22,9 +22,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Info, Plus, Trash2, Settings2 } from "lucide-react";
-import type { TicketTier } from "../shared/types";
-import { validateTicketTier as validateTier } from "../shared/pricingUtils";
-import { TicketOfferWindowFields } from "./TicketOfferWindowFields";
+import type { TicketTier } from "../../shared/types";
+import { validateTicketTier as validateTier } from "../../shared/pricingUtils";
+import { TicketOfferWindowFields } from "../TicketOfferWindowFields";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -658,9 +658,10 @@ export function PricingModal({
             <DialogDescription>
               {confirmPriceUp && (
                 <>
-                  {confirmPriceUp.sold} ticket{confirmPriceUp.sold === 1 ? "" : "s"} sold at $
-                  {confirmPriceUp.oldPrice.toFixed(2)} for{" "}
-                  &ldquo;{confirmPriceUp.tierName}&rdquo;. New buyers will pay $
+                  {confirmPriceUp.sold} ticket
+                  {confirmPriceUp.sold === 1 ? "" : "s"} sold at $
+                  {confirmPriceUp.oldPrice.toFixed(2)} for &ldquo;
+                  {confirmPriceUp.tierName}&rdquo;. New buyers will pay $
                   {confirmPriceUp.newPrice.toFixed(2)}. Past buyers are
                   unaffected. Continue?
                 </>

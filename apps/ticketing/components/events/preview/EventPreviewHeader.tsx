@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NavUserMenu } from "@/components/auth/NavUserMenu";
 import { useRouter } from "next/navigation";
-
-interface EventPreviewHeaderProps {
-  isDark: boolean;
-}
+import { useEventEditor } from "../shared/EventEditorContext";
 
 // useSyncExternalStore: server snapshot = false, client snapshot = real iframe check.
 // No setState, no effect, no hydration mismatch.
@@ -28,12 +25,13 @@ const getServerSnapshot = () => false;
  * - In iframe: Maximize (navigates top window in-place) + X (postMessage close)
  * - Standalone: Back button + NavUserMenu
  */
-export function EventPreviewHeader({ isDark }: EventPreviewHeaderProps) {
+export function EventPreviewHeader() {
   const inIframe = useSyncExternalStore(
     noopSubscribe,
     getIframeSnapshot,
     getServerSnapshot,
   );
+  const { isDark } = useEventEditor();
 
   const router = useRouter();
 

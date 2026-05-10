@@ -6,15 +6,11 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { cn } from "@/lib/utils";
 
 import { useEventEditor } from "@/components/events/shared/EventEditorContext";
 import { useEventForm } from "@/components/events/shared/EventFormContext";
 import { useEventCollab } from "@/components/events/shared/EventCollabContext";
-import {
-  EventDescriptionField,
-  EventSectionField,
-} from "@/components/events/fields";
+import { EventSectionField } from "@/components/events/fields";
 import { AttentionBadge } from "@/components/event-form/EventChecklist";
 import {
   AddSectionButton,
@@ -33,7 +29,7 @@ import { SortableSectionWrapper } from "./SortableSectionWrapper";
  * Owns all section CRUD state and DnD logic.
  */
 export function EventSectionsForm() {
-  const { isEditing, theme, checklistRefsRef } = useEventEditor();
+  const { isEditing, checklistRefsRef } = useEventEditor();
   const { sections, setSections, markDirty } = useEventForm();
   const { collaborators, getFieldLock, handleFieldFocus, clearFocus } =
     useEventCollab();
@@ -76,10 +72,17 @@ export function EventSectionsForm() {
         ref={section.type === "faq" ? faqsRef : undefined}
         className="relative mt-8"
       >
-        <CollaboratorBadge group={sectionGroup} collaborators={collaborators} />
-        {isEditing && section.type === "faq" && needsFaqBadge && (
-          <AttentionBadge show />
+        {/* Editor UI - Collaborator and Attention Badges */}
+        {isEditing && (
+          <>
+            <CollaboratorBadge
+              group={sectionGroup}
+              collaborators={collaborators}
+            />
+            <AttentionBadge show={section.type === "faq" && needsFaqBadge} />
+          </>
         )}
+
         <EventSectionField
           section={section}
           index={index}
@@ -102,26 +105,7 @@ export function EventSectionsForm() {
   };
 
   return (
-    <div
-      className={cn(theme.layout === "classic" ? "space-y-10" : "space-y-6")}
-    >
-      {/* Description */}
-      <div className="relative">
-        <CollaboratorBadge group="event" collaborators={collaborators} />
-        <EventDescriptionField
-          onFocusChange={(focused) => {
-            if (focused) {
-              handleFieldFocus("event");
-              markDirty("event");
-            } else {
-              clearFocus();
-            }
-          }}
-          locked={getFieldLock("event").locked}
-          lockedBy={getFieldLock("event").lockedBy}
-        />
-      </div>
-
+    <>
       {/* Sections */}
       <div>
         {isEditing ? (
@@ -159,6 +143,6 @@ export function EventSectionsForm() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

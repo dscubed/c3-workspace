@@ -515,7 +515,8 @@ export function CheckoutProvider({
       handleBack: () => router.replace(`/events/${eventId}/edit`),
       handlePublish: () => {},
       handleUnpublish: () => {},
-      openPricingModalRef: { current: openPricingModal },
+      pricingModalOpen,
+      setPricingModalOpen,
       checklistRefsRef: { current: {} },
     };
   }, [
@@ -530,7 +531,8 @@ export function CheckoutProvider({
     colors,
     isDark,
     eventData,
-    openPricingModal,
+    pricingModalOpen,
+    setPricingModalOpen,
   ]);
 
   const formContextValue: EventFormContextValue | null = useMemo(() => {

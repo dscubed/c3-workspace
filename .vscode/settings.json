@@ -23,5 +23,6 @@
     "typescript.tsserver.maxTsServerMemory": 4096,
     "typescript.tsserver.experimental.enableProjectDiagnostics": false,
     "typescript.disableAutomaticTypeAcquisition": true,
-    "editor.formatOnSave": false
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

@@ -4,6 +4,7 @@ export { EventCategoryField } from "./EventCategoryField";
 export { EventTagsField } from "./EventTagsField";
 export { EventDateField } from "./EventDateField";
 export { EventLocationField } from "./EventLocationField";
+export { EventDateLocationField } from "./EventDateLocationField";
 export { EventHostsField } from "./EventHostsField";
 export { EventPricingField } from "./EventPricingField";
 export { EventLinksField } from "./EventLinksField";

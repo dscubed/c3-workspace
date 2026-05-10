@@ -31,9 +31,8 @@ import type {
   LocationType,
   OccurrenceFormData,
   Venue,
-} from "../shared/types";
-import { useEventEditor } from "../shared/EventEditorContext";
-import { useEventForm } from "../shared/EventFormContext";
+} from "../../shared/types";
+import { useEventForm } from "../../shared/EventFormContext";
 
 /* ── Timezone helpers ── */
 const POPULAR_TIMEZONES = [

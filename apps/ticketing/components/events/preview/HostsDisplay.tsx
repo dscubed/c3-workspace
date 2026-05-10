@@ -29,11 +29,15 @@ export function HostsDisplay({ creatorProfile, value }: HostsDisplayProps) {
 
   const trigger = (
     <div
-      className="flex cursor-pointer items-center gap-2"
+      className="flex min-w-0 cursor-pointer items-center gap-1 sm:gap-2"
       onClick={() => isMobile && setIsOpen(true)}
     >
-      <HostAvatarStack creator={creatorProfile} hosts={value} />
-      <span className="truncate text-sm text-muted-foreground max-w-45 sm:max-w-none">
+      <HostAvatarStack
+        creator={creatorProfile}
+        hosts={value}
+        size={isMobile ? "sm" : "md"}
+      />
+      <span className="truncate text-sm md:text-base font-medium">
         {displayLabel}
       </span>
     </div>

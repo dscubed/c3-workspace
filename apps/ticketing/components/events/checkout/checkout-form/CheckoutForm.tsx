@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditorToolbox } from "@/components/events/shared/EditorToolbox";
-import { PricingModal } from "@/components/events/create/PricingModal";
+import { PricingModal } from "@/components/events/create/pricing/PricingModal";
 import { CheckoutProvider, useCheckoutContext } from "./CheckoutContext";
 import { CheckoutHeader } from "./CheckoutHeader";
 import { TicketPicker } from "./TicketPicker";
@@ -83,7 +83,9 @@ function CheckoutFormUI() {
         >
           <CheckoutHeader />
 
-          {!isEditing && !availabilityWindowOpen && <AvailabilityClosedBanner />}
+          {!isEditing && !availabilityWindowOpen && (
+            <AvailabilityClosedBanner />
+          )}
 
           {showContent && (
             <>

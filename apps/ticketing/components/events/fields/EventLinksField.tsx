@@ -1,6 +1,6 @@
 "use client";
 
-import { LinksPicker } from "../create/LinksPicker";
+import { LinksPicker } from "../create/pricing/LinksPicker";
 import { LinksDisplay } from "../preview/LinksDisplay";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";

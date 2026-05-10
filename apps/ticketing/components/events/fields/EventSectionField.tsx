@@ -11,7 +11,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { SectionData, DragHandleProps } from "../sections";
+import {
+  type SectionData,
+  type DragHandleProps,
+  SectionDragHandle,
+} from "../sections";
 import { useEditorTheme } from "../shared/EventEditorContext";
 import {
   FAQSectionCard,
@@ -19,8 +23,7 @@ import {
   PanelistsSectionCard,
   CompaniesSectionCard,
   RefundPolicySectionCard,
-  SectionDragHandle,
-} from "../sections";
+} from "../sections/section-cards";
 import {
   FAQCard,
   WhatToBringCard,

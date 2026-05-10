@@ -14,10 +14,10 @@ import {
   EventHero,
   EventDetailsForm,
   EventSectionsForm,
+  EventFormHeader,
+  EventDescriptionForm,
 } from "@/components/event-form";
-import { EventPreviewHeader } from "../events/preview/EventPreviewHeader";
 import { TicketingButton } from "../events/TicketingButton";
-import { EditorToolbox } from "../events/shared/EditorToolbox";
 import { EventChecklist } from "./EventChecklist";
 
 import type { FetchedEventData } from "@/lib/api/fetchEvent";
@@ -51,11 +51,7 @@ function EventFormUI() {
       style={solidBg ? { backgroundColor: solidBg } : undefined}
     >
       <div style={accentGradient ? { background: accentGradient } : undefined}>
-        {isVisitorPreview ? (
-          <EventPreviewHeader isDark={isDark} />
-        ) : (
-          <EditorToolbox />
-        )}
+        <EventFormHeader />
         <div
           className={cn(
             "mx-auto max-w-4xl px-3 sm:px-6 pb-24!",
@@ -63,12 +59,22 @@ function EventFormUI() {
             colors.text,
           )}
         >
+          {/* Image Carousel + Details */}
           <div className="space-y-6">
             <EventHero />
             <EventDetailsForm />
           </div>
+
+          {/* Description and Sections */}
           <div className="mt-10">
-            <EventSectionsForm />
+            <div
+              className={cn(
+                theme.layout === "classic" ? "space-y-10" : "space-y-6",
+              )}
+            >
+              <EventDescriptionForm />
+              <EventSectionsForm />
+            </div>
           </div>
         </div>
       </div>

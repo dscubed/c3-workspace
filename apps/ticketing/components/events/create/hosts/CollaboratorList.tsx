@@ -18,7 +18,7 @@ import {
   RefreshCw,
   UserMinus,
 } from "lucide-react";
-import type { ClubProfile } from "../shared/types";
+import type { ClubProfile } from "../../shared/types";
 
 export interface InviteRecord {
   id: string;

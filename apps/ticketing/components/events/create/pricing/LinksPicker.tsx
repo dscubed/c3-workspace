@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Link2, Pencil } from "lucide-react";
-import { LinksModal } from "./LinksModal";
-import type { EventLink, EditInputProps } from "../shared/types";
+import { LinksModal } from "../LinksModal";
+import type { EventLink, EditInputProps } from "../../shared/types";
 
 type LinksPickerProps = EditInputProps<EventLink[]>;
 

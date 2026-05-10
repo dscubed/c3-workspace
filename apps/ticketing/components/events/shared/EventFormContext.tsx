@@ -112,18 +112,13 @@ export function EventFormDataProvider({
     sectionsRef,
   } = useEventFormState({ data });
 
-  const {
-    markDirty,
-    flush,
-    isAutoSaving,
-    lastSavedAt,
-    broadcastRef,
-  } = useEventAutoSave({
-    eventId: isVisitorPreview ? undefined : eventId,
-    formRef,
-    carouselImagesRef,
-    sectionsRef,
-  });
+  const { markDirty, flush, isAutoSaving, lastSavedAt, broadcastRef } =
+    useEventAutoSave({
+      eventId: isVisitorPreview ? undefined : eventId,
+      formRef,
+      carouselImagesRef,
+      sectionsRef,
+    });
 
   /* Stable setTheme that also marks dirty (for local edits) */
   const setTheme = useCallback(
@@ -167,31 +162,31 @@ export function EventFormDataProvider({
   );
 
   const value: EventFormContextValue = {
-      /* Form states and update helpers */
-      form,
-      setForm,
-      updateField,
-      carouselImages,
-      updateImages,
-      setCarouselImages,
-      hostsData,
-      setHostsData,
-      sections,
-      setSections,
-      theme,
-      setTheme,
-      /* Theme derived values */
-      colors,
-      isDark,
-      accentGradient,
-      markDirty,
-      creatorProfile, // Creator profile id (for display and permissions)
-      /* Auto-save */
-      flush,
-      broadcastRef,
-      isAutoSaving,
-      lastSavedAt,
-    };
+    /* Form states and update helpers */
+    form,
+    setForm,
+    updateField,
+    carouselImages,
+    updateImages,
+    setCarouselImages,
+    hostsData,
+    setHostsData,
+    sections,
+    setSections,
+    theme,
+    setTheme,
+    /* Theme derived values */
+    colors,
+    isDark,
+    accentGradient,
+    markDirty,
+    creatorProfile, // Creator profile id (for display and permissions)
+    /* Auto-save */
+    flush,
+    broadcastRef,
+    isAutoSaving,
+    lastSavedAt,
+  };
 
   return (
     <EventFormContext.Provider value={value}>

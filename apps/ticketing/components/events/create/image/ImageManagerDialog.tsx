@@ -35,7 +35,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { CarouselImage } from "../shared/types";
+import type { CarouselImage } from "../../shared/types";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { uploadEventImage } from "@/lib/utils/uploadEventImage";
 import { createClient } from "@c3/supabase/client";

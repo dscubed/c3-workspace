@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import type { ClubProfile } from "../shared/types";
+import type { ClubProfile } from "../../shared/types";
 
 export type InviteStatus = "pending" | "accepted" | "declined";
 

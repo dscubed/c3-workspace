@@ -38,6 +38,14 @@ export const SECTION_META: Record<
   },
 };
 
+export const SECTION_ICON_MAP: Record<SectionType, React.ElementType> = {
+  faq: HelpCircle,
+  "refund-policy": ReceiptText,
+  "what-to-bring": Backpack,
+  panelists: Mic,
+  companies: Building2,
+};
+
 /** Create a blank section for a given type */
 export function createBlankSection(type: SectionType): SectionData {
   switch (type) {
@@ -61,6 +69,13 @@ export function createBlankSection(type: SectionType): SectionData {
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import type { DraggableAttributes } from "@dnd-kit/core";
 
+import {
+  Backpack,
+  Building2,
+  HelpCircle,
+  Mic,
+  ReceiptText,
+} from "lucide-react";
 export type { SyntheticListenerMap, DraggableAttributes };
 
 export interface DragHandleProps {

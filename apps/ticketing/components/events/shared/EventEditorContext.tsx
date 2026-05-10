@@ -6,7 +6,6 @@ import {
   useState,
   useRef,
   useCallback,
-  RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { EventTheme, ThemeColors } from "./types";
@@ -52,9 +51,11 @@ export interface EventEditorContextValue {
   handlePublish: () => void;
   handleUnpublish: () => void;
 
+  /* ── Pricing modal ── */
+  pricingModalOpen: boolean;
+  setPricingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
   /* ── Cross-component refs ── */
-  /** Registered by EventDetailsForm during render so TicketingButton can open pricing modal. */
-  openPricingModalRef: RefObject<() => void>;
   /** Populated by sub-components during render; EventChecklist reads for scroll-to. */
   checklistRefsRef: RefObject<Partial<ChecklistRefMap>>;
 }
@@ -118,7 +119,7 @@ export function EventEditorProvider({
   const viewMode = previewMode ? "preview" : "edit";
   const isEditing = !previewMode;
 
-  const openPricingModalRef = useRef<() => void>(() => {});
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const checklistRefsRef = useRef<Partial<ChecklistRefMap>>({});
 
   /** Stable broadcast wrapper that delegates to broadcastRef set by collab */
@@ -163,7 +164,8 @@ export function EventEditorProvider({
       handleBack,
       handlePublish,
       handleUnpublish,
-      openPricingModalRef,
+      pricingModalOpen,
+      setPricingModalOpen,
       checklistRefsRef,
     };
 

@@ -12,7 +12,7 @@ import type { Venue } from "../shared/types";
 
 const LocationMap = dynamic(
   () =>
-    import("../create/LocationMap").then((mod) => ({
+    import("../create/date-location/LocationMap").then((mod) => ({
       default: mod.LocationMap,
     })),
   { ssr: false },

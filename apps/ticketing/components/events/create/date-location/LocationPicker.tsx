@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { LocationData, EditInputProps } from "../shared/types";
+import type { LocationData, EditInputProps } from "../../shared/types";
 
 /* Dynamically import Leaflet map (no SSR) */
 const LocationMap = dynamic(
@@ -317,7 +317,12 @@ type LocationPickerProps = EditInputProps<LocationData> & {
 };
 
 /** Location picker with dialog-based Nominatim search + manual input. */
-export function LocationPicker({ value, onChange, open: controlledOpen, onOpenChange: controlledOnOpenChange }: LocationPickerProps) {
+export function LocationPicker({
+  value,
+  onChange,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: LocationPickerProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -386,7 +391,14 @@ export function LocationPicker({ value, onChange, open: controlledOpen, onOpenCh
       setPage("search");
     }
     setOpen(true);
-  }, [hasValue, value.displayName, value.address, value.lat, value.lon, setOpen]);
+  }, [
+    hasValue,
+    value.displayName,
+    value.address,
+    value.lat,
+    value.lon,
+    setOpen,
+  ]);
 
   const handleSelectResult = useCallback((result: NominatimResult) => {
     const placeName = getPlaceName(result);
