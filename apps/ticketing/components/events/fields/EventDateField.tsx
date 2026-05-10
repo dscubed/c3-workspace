@@ -1,7 +1,7 @@
 "use client";
 
 import { useEventForm } from "../shared/EventFormContext";
-import { DateDisplay } from "../preview/DateDisplay";
+import { DateDisplay } from "../preview/date-location/DateDisplay";
 import { getEffectiveDates } from "@/lib/schemas/event";
 
 export function EventDateField() {

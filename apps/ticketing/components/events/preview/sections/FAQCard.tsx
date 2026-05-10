@@ -1,4 +1,4 @@
-import type { SectionData } from "../sections";
+import type { SectionData } from "../../sections";
 
 interface FAQCardProps {
   data: SectionData & { type: "faq" };

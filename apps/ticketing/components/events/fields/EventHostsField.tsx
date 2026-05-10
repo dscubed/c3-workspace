@@ -1,7 +1,7 @@
 "use client";
 
 import { HostsDialog } from "../create/hosts/HostsDialog";
-import { HostsDisplay } from "../preview/HostsDisplay";
+import { HostsDisplay } from "../preview/hosts/HostsDisplay";
 import { Users } from "lucide-react";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";

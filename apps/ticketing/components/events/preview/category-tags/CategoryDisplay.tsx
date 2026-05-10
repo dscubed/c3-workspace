@@ -1,5 +1,5 @@
-import { CategoryPill } from "../shared/EventPills";
-import type { PreviewInputProps } from "../shared/types";
+import { CategoryPill } from "../../shared/EventPills";
+import type { PreviewInputProps } from "../../shared/types";
 
 type CategoryDisplayProps = PreviewInputProps<string>;
 

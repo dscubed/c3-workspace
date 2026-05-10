@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { ClubProfile } from "../shared/types";
+import type { ClubProfile } from "../../shared/types";
 
 interface HostDisplayContentProps {
   creatorProfile: ClubProfile;

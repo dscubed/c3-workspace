@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/hover-card";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
-import { TagPill } from "../shared/EventPills";
-import type { PreviewInputProps } from "../shared/types";
+import { TagPill } from "../../shared/EventPills";
+import type { PreviewInputProps } from "../../shared/types";
 
 type TagsDisplayProps = PreviewInputProps<string[]>;
 

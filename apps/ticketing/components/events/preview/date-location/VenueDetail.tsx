@@ -8,11 +8,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MapPin, Globe, ExternalLink } from "lucide-react";
-import type { Venue } from "../shared/types";
+import type { Venue } from "../../shared/types";
 
 const LocationMap = dynamic(
   () =>
-    import("../create/date-location/LocationMap").then((mod) => ({
+    import("../../create/date-location/LocationMap").then((mod) => ({
       default: mod.LocationMap,
     })),
   { ssr: false },

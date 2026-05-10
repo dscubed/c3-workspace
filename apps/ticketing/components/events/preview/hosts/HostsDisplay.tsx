@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/hover-card";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Users } from "lucide-react";
-import { HostAvatarStack } from "../shared/HostAvatarStack";
+import { HostAvatarStack } from "../../shared/HostAvatarStack";
 import { HostDisplayContent } from "./HostDisplayContent";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
-import type { ClubProfile, PreviewInputProps } from "../shared/types";
+import type { ClubProfile, PreviewInputProps } from "../../shared/types";
 
 interface HostsDisplayProps extends PreviewInputProps<ClubProfile[]> {
   creatorProfile: ClubProfile;

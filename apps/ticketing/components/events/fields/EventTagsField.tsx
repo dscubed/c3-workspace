@@ -1,7 +1,7 @@
 "use client";
 
 import { TagsPicker } from "../create/TagsPicker";
-import { TagsDisplay } from "../preview/TagsDisplay";
+import { TagsDisplay } from "../preview/category-tags/TagsDisplay";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
 

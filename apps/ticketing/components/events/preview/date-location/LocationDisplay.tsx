@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin } from "lucide-react";
-import type { LocationData, PreviewInputProps } from "../shared/types";
+import type { LocationData, PreviewInputProps } from "../../shared/types";
 
 type LocationDisplayProps = PreviewInputProps<LocationData> & {
   /** Number of additional venues beyond the displayed one */
@@ -9,7 +9,10 @@ type LocationDisplayProps = PreviewInputProps<LocationData> & {
 };
 
 /** Read-only location display — shows name + address, or "TBA" when empty. */
-export function LocationDisplay({ value, extraVenues = 0 }: LocationDisplayProps) {
+export function LocationDisplay({
+  value,
+  extraVenues = 0,
+}: LocationDisplayProps) {
   const hasValue = !!value.displayName;
 
   return (

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/hover-card";
 import { ResponsiveModal } from "@/components/ui/responsive-modal";
 import { Tags } from "lucide-react";
-import { formatPricingLabel } from "../shared/pricingUtils";
+import { formatPricingLabel } from "../../shared/pricingUtils";
 import { PricingDisplayContent } from "./PricingDisplayContent";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 

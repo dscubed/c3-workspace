@@ -1,5 +1,5 @@
 import { CalendarDays } from "lucide-react";
-import type { DateTimeData, PreviewInputProps } from "../shared/types";
+import type { DateTimeData, PreviewInputProps } from "../../shared/types";
 
 /** Compact format: 12/03 12:00 PM */
 function formatCompactDate(date: string, time: string): string {

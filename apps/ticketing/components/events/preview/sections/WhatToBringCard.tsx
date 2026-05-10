@@ -1,4 +1,4 @@
-import type { SectionData } from "../sections";
+import type { SectionData } from "../../sections";
 
 interface WhatToBringCardProps {
   data: SectionData & { type: "what-to-bring" };

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { ImageCarousel } from "../create/image/ImageCarousel";
-import { ImageCarouselPreview } from "../preview/ImageCarouselPreview";
+import { ImageCarouselPreview } from "../preview/image/ImageCarouselPreview";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
 

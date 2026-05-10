@@ -6,6 +6,7 @@ import {
   useState,
   useRef,
   useCallback,
+  type RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { EventTheme, ThemeColors } from "./types";

@@ -1,4 +1,4 @@
-import type { SectionData } from "../sections";
+import type { SectionData } from "../../sections";
 
 interface RefundPolicyCardProps {
   data: SectionData & { type: "refund-policy" };

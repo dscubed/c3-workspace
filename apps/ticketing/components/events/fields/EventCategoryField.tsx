@@ -1,7 +1,7 @@
 "use client";
 
 import { CategoryPicker } from "../create/CategoryPicker";
-import { CategoryDisplay } from "../preview/CategoryDisplay";
+import { CategoryDisplay } from "../preview/category-tags/CategoryDisplay";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
 

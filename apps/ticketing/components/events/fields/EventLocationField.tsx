@@ -1,7 +1,7 @@
 "use client";
 
 import { useEventForm } from "../shared/EventFormContext";
-import { LocationDisplay } from "../preview/LocationDisplay";
+import { LocationDisplay } from "../preview/date-location/LocationDisplay";
 import { getLocationInfo } from "@/lib/schemas/event";
 
 export function EventLocationField() {

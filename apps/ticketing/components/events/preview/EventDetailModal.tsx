@@ -10,9 +10,11 @@ import {
 } from "@/components/ui/accordion";
 import { CalendarDays } from "lucide-react";
 import type { DateTimeData, OccurrenceFormData, Venue } from "../shared/types";
-import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
-import { VenueAccordionItem, VenueInlineList } from "./VenueDetail";
+import {
+  VenueAccordionItem,
+  VenueInlineList,
+} from "./date-location/VenueDetail";
 import {
   formatDateFull,
   formatTimeRange,

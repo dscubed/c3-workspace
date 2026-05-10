@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { ImagePlus } from "lucide-react";
-import type { PreviewInputProps } from "../shared/types";
+import type { PreviewInputProps } from "../../shared/types";
 
 type ImagePreviewProps = PreviewInputProps<string | null>;
 

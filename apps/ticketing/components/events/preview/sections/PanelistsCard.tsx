@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { SectionData } from "../sections";
+import type { SectionData } from "../../sections";
 
 interface PanelistsCardProps {
   data: SectionData & { type: "panelists" };

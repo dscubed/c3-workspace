@@ -1,7 +1,7 @@
 "use client";
 
 import { Tags } from "lucide-react";
-import { PricingDisplay } from "../preview/PricingDisplay";
+import { PricingDisplay } from "../preview/pricing/PricingDisplay";
 import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
 import { formatPricingLabel } from "../shared/pricingUtils";
