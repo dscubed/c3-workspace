@@ -16,10 +16,10 @@ export function EventPricingField({
   modalOpen,
   onModalOpenChange,
 }: EventPricingFieldProps) {
-  const { viewMode: mode } = useEventEditor();
+  const { viewMode } = useEventEditor();
   const { form, updateField } = useEventForm();
 
-  if (mode === "preview") return <PricingDisplay value={form.pricing} />;
+  if (viewMode === "preview") return <PricingDisplay value={form.pricing} />;
 
   return (
     <PricingPicker

@@ -6,6 +6,7 @@ import {
   useState,
   useRef,
   useCallback,
+  RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { EventTheme, ThemeColors } from "./types";
@@ -53,9 +54,9 @@ export interface EventEditorContextValue {
 
   /* ── Cross-component refs ── */
   /** Registered by EventDetailsForm during render so TicketingButton can open pricing modal. */
-  openPricingModalRef: React.MutableRefObject<() => void>;
+  openPricingModalRef: RefObject<() => void>;
   /** Populated by sub-components during render; EventChecklist reads for scroll-to. */
-  checklistRefsRef: React.MutableRefObject<Partial<ChecklistRefMap>>;
+  checklistRefsRef: RefObject<Partial<ChecklistRefMap>>;
 }
 
 const EventEditorContext = createContext<EventEditorContextValue | null>(null);

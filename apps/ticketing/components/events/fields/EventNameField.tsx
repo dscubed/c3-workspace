@@ -6,11 +6,11 @@ import { useEventEditor } from "../shared/EventEditorContext";
 import { useEventForm } from "../shared/EventFormContext";
 
 export function EventNameField() {
-  const { viewMode: mode, colors } = useEventEditor();
+  const { viewMode, colors } = useEventEditor();
   const { form, updateField } = useEventForm();
   const className = colors.text;
 
-  if (mode === "preview") {
+  if (viewMode === "preview") {
     return (
       <h1
         className={cn(

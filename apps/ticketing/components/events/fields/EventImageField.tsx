@@ -11,14 +11,14 @@ interface EventImageFieldProps {
 }
 
 export function EventImageField({ onEditClick }: EventImageFieldProps) {
-  const { viewMode: mode } = useEventEditor();
+  const { viewMode } = useEventEditor();
   const { carouselImages } = useEventForm();
   const urls = useMemo(
     () => carouselImages.filter((i) => i.url && !i.uploading).map((i) => i.url),
     [carouselImages],
   );
 
-  if (mode === "preview") {
+  if (viewMode === "preview") {
     return <ImageCarouselPreview value={urls} />;
   }
 

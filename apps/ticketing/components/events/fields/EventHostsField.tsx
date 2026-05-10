@@ -12,13 +12,13 @@ interface EventHostsFieldProps {
 }
 
 export function EventHostsField({ onInvitesSent }: EventHostsFieldProps) {
-  const { viewMode: mode, eventId } = useEventEditor();
+  const { viewMode, eventId } = useEventEditor();
   const { form, updateField, hostsData, setHostsData, creatorProfile } =
     useEventForm();
 
   const value = { ids: form.hostIds, data: hostsData };
 
-  if (mode === "preview") {
+  if (viewMode === "preview") {
     return <HostsDisplay creatorProfile={creatorProfile} value={hostsData} />;
   }
 

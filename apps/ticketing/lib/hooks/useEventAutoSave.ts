@@ -62,7 +62,6 @@ export function useEventAutoSave({
   } = useFieldAutoSave({
     enabled: !!eventId,
     onSave: performAutoSave,
-    delay: 2000,
   });
 
   /* beforeunload: only warn when there are unsaved changes */

@@ -23,7 +23,7 @@ export function EventDescriptionField({
   locked,
   lockedBy,
 }: EventDescriptionFieldProps) {
-  const { isDark, viewMode: mode } = useEventEditor();
+  const { isDark, viewMode } = useEventEditor();
   const { form, updateField } = useEventForm();
   const value = form.description;
   const [focused, setFocused] = useState(false);
@@ -31,7 +31,7 @@ export function EventDescriptionField({
 
   /* Click-outside detection (ignores portaled dialogs / popovers) */
   useEffect(() => {
-    if (!focused || mode !== "edit") return;
+    if (!focused || viewMode !== "edit") return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (
@@ -47,10 +47,10 @@ export function EventDescriptionField({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [focused, mode, onFocusChange]);
+  }, [focused, viewMode, onFocusChange]);
 
   const handleClick = () => {
-    if (mode !== "edit") return;
+    if (viewMode !== "edit") return;
     if (locked) {
       toast.info(`${lockedBy ?? "Someone"} is currently editing this section`);
       return;
@@ -59,18 +59,18 @@ export function EventDescriptionField({
     onFocusChange?.(true);
   };
 
-  const showEdit = mode === "edit" && focused && !locked;
+  const showEdit = viewMode === "edit" && focused && !locked;
 
   return (
     <div
       ref={containerRef}
       className={cn(
         "relative",
-        mode === "edit" && locked && "opacity-50 pointer-events-auto",
+        viewMode === "edit" && locked && "opacity-50 pointer-events-auto",
       )}
     >
       {/* Subtle lock indicator */}
-      {mode === "edit" && locked && (
+      {viewMode === "edit" && locked && (
         <div className="absolute right-2 top-2 z-10">
           <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
         </div>
@@ -94,13 +94,13 @@ export function EventDescriptionField({
           <div
             onClick={handleClick}
             className={cn(
-              mode === "edit" &&
+              viewMode === "edit" &&
                 !locked &&
                 "cursor-pointer rounded-md p-2 -m-2 transition-colors",
-              mode === "edit" &&
+              viewMode === "edit" &&
                 !locked &&
                 (isDark ? "hover:bg-neutral-700/50" : "hover:bg-muted/50"),
-              mode === "edit" && locked && "cursor-not-allowed",
+              viewMode === "edit" && locked && "cursor-not-allowed",
             )}
           >
             <p
@@ -109,7 +109,7 @@ export function EventDescriptionField({
               }`}
             >
               {value ||
-                (mode === "edit"
+                (viewMode === "edit"
                   ? "Click to add a description…"
                   : "No description provided")}
             </p>

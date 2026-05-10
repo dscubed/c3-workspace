@@ -31,7 +31,7 @@ export function useFieldAutoSave({
   const [isSaving, setIsSaving] = useState(false);
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const dirtyGroupsRef = useRef<Set<FieldGroup>>(new Set());
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const savingRef = useRef(false);
   const saveRef = useRef(onSave);
 

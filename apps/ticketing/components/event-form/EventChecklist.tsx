@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, RefObject } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -70,7 +70,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
 /** Map from checklist item id → ref to the relevant DOM element */
 export type ChecklistRefMap = Record<
   string,
-  React.RefObject<HTMLDivElement | null>
+  RefObject<HTMLDivElement | null>
 >;
 
 export interface EventChecklistProps {
@@ -129,27 +129,15 @@ export function EventChecklist({
 
   const scrollToElement = useCallback(
     (id: string) => {
-      const ref = checklistRefsRef?.current?.[id];
-      if (!ref?.current) return;
-      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Quick pop animation
-      ref.current.style.transition = "transform 0.2s ease";
-      ref.current.style.transform = "scale(1.03)";
-      setTimeout(() => {
-        if (ref.current) {
-          ref.current.style.transition = "";
-          ref.current.style.transform = "";
-          setTimeout(() => {
-            if (ref.current) {
-              ref.current.style.transition = "";
-              ref.current.style.transform = "";
-            }
-          }, 200);
-        }
-      }, 300);
+      const node = checklistRefsRef.current?.[id]?.current;
+      if (!node) return;
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.animate(
+        { transform: ["scale(1.03)", "scale(1)"] },
+        { duration: 500, easing: "ease-out" },
+      );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [checklistRefsRef],
   );
 
   return (
